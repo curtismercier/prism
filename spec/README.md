@@ -6,7 +6,7 @@ created: 2026-05-12
 updated: 2026-05-12
 author: Curtis Mercier
 license: CC BY 4.0
-complements: amp/0.3, amps/1.0, maps/0.1, seams/0.2, seeds/0.2, atlas/0.2
+complements: amp/0.3, amps/1.1, maps/0.1, seams/0.2, seeds/0.2, atlas/0.2, phase/0.3, mlx/0.1, mlr/0.1
 ---
 
 # PRISM — Projected Representations from Inscribed Source Markup v0.1
@@ -425,9 +425,11 @@ PRISM is **about artifacts**. Other protocols in the family govern other concern
 | **SEAMS** | Provenance traceability | PRISM frontmatter naturally carries SEAMS origin markers (`session:`, `created:`). |
 | **SEEDS** | Template scaffolding | A seed MAY emit a PRISM-conformant document with required anchors pre-stubbed. |
 | **ATLAS** | Living architecture maps | An ATLAS map MAY be a PRISM `decision` or custom-type artifact with hyperlinked navigation. |
-| **PHASE** | Session prompt configuration | A PHASE config MAY load PRISM artifacts as context using surgical-read operations. |
+| **PHASE** | Session prompt configuration; multi-phase work | A PHASE config MAY load PRISM artifacts as context using surgical-read operations. T2 phase folders MAY author their READMEs as PRISM artifacts (see PHASE v0.3 §13). |
+| **MLX** | Audit-before-close discipline | MLX outputs naturally fit PRISM artifact shape when verbose enough — the audit list lands as a section-anchored briefing. |
+| **MLR** | Mid-session learning review | An MLR note (§3.3 of MLR spec) is a PRISM artifact when produced. Section anchors enable surgical handoff between the in-flight MLR and the post-cycle reflection. |
 
-PRISM is **independent** — it can be used without any other protocol. It is **composable** — it slots cleanly into a stack that includes AMP, AMPS, MAPS, and SEAMS.
+PRISM is **independent** — it can be used without any other protocol. It is **composable** — it slots cleanly into a stack that includes AMP, AMPS, MAPS, SEAMS, PHASE, MLX, and MLR.
 
 ---
 
