@@ -71,6 +71,8 @@ The methodology being applied (parallel-rival approaches with explicit convergen
 
 Filed on-disk as an explicit phase, not "in my head" — the lesson from s01-643d67 (substrate over mental state).
 
+**Stub already on disk** at `Gravicity/personal/prism/skills/prism-authoring/SKILL.md` (filed s01-643d67 via MLX audit). The full skill content lands AFTER Phase 5 convergence; the stub names the path + lists what the full v1 should cover.
+
 Phase 0 deliverables (this commit):
 - Project README + LICENSE files
 - Spec v0.1 draft (`../../spec/README.md`)
