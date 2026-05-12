@@ -58,6 +58,18 @@ The methodology being applied (parallel-rival approaches with explicit convergen
 | 3 | Render the same `examples/cycle-215.md` through both branches | ⬜ queued | 30m | — |
 | 4 | Honest comparison against convergence criteria (§ Decisions to surface) | ⬜ queued | 1h | — |
 | 5 | Convergence: pick-one / synthesize / both-keep — decision + dossier update | ⬜ queued | 30m | — |
+| 6 | Author SKILL.md — `skills/prism-authoring/SKILL.md` teaching agents the anchor convention + surgical-edit operations + when to author each artifact type | ⬜ queued | 1h | — |
+
+**Phase 6 details** (s01-643d67): the SKILL.md is a focused single-file skill (NOT a meta-skill — skill-forge is for building skills, PRISM is a document substrate). Scope:
+
+- ~200-300 lines
+- Lives at `skills/prism-authoring/SKILL.md` in the PRISM repo
+- Discoverable via `gh skill install curtismercier/prism prism-authoring` (matches skill-forge pattern)
+- Written AFTER both renderer branches are evaluated (Phase 5 convergence) — so the skill teaches the canonical operations that emerge from the comparison, not premature ones
+- Three sections: when-to-use, anchor convention, surgical-edit operations + render. Examples from the canonical `cycle-215.md` artifact.
+- Skill frontmatter declares `requires: prism-authoring-renderer` (whichever branch wins or the synthesis) so the install picks up the renderer at the same time
+
+Filed on-disk as an explicit phase, not "in my head" — the lesson from s01-643d67 (substrate over mental state).
 
 Phase 0 deliverables (this commit):
 - Project README + LICENSE files
