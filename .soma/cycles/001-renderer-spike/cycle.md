@@ -111,6 +111,51 @@ If the hypothesis holds, Phase 5 produces a unified architecture: spec stays as-
 If the hypothesis fails (one branch dominates outright, or a third option emerges from the comparison), Phase 5 reflects that finding honestly.
 <!-- /@section: decisions-to-surface -->
 
+<!-- @section: future-addons -->
+## Future direction — visual addons (filed s01-643d67, Curtis)
+
+Curtis surfaced after seeing Branch B render cycle 215: *"i'm looking forward to when you might include some more visual representations of work, whether it's css styles, colour 'moods' or themes for our tincture css, more sophisticated wiring diagrams -- there could be the potential to include more things like that as potential addons -- w/ each we'd consider optimizing the token efficiency allowing the potential for very few lines in, rendered html/svg, etc out."*
+
+This is genuinely the right direction — PRISM's substrate (anchor-tagged markdown) is also the right substrate for **embeddable visual addons**: tiny declarative syntax in, rich SVG/HTML out. Same token-efficiency win as the artifacts themselves.
+
+**Candidate addon types** to research / build later:
+
+| Addon | Input shape | Output | Existing prior art |
+|---|---|---|---|
+| Mermaid diagrams | mermaid code block | SVG flowchart / sequence / state | mermaid.js (mature) |
+| Tincture mood swatches | token list + theme name | inline palette card | bespoke |
+| Wiring / system diagrams | YAML-ish nodes + edges spec | SVG with semantic styling | mermaid + improvements |
+| Phase timeline | phase rows from frontmatter | horizontal track w/ status pills | bespoke |
+| Diff viewer | before/after block | side-by-side or unified diff | shiki / diff2html |
+| Metric deltas / KPI cards | data points + targets | rendered card | bespoke |
+| Architecture maps | ATLAS-protocol-style | clickable SVG | bespoke + ATLAS spec |
+| Code with annotations | code block + `# @ann: text` lines | code with margin notes | bespoke |
+
+**Likely shape**: a PRISM extension protocol (call it **PRISM Addons** v0.1 if it ships) defining the embed format. Inside any section, an addon block like:
+
+```
+<!-- @addon: mermaid -->
+graph LR
+  A[git push] --> B[GHA build]
+  B --> C[ghcr.io]
+  C --> D[atom pull]
+  D --> E[traefik flip]
+<!-- /@addon: mermaid -->
+```
+
+The parser identifies addon blocks alongside section anchors; the renderer dispatches by addon type to a registered handler. Handlers can live on the CDN (jsDelivr) so projects opt-in by name only.
+
+**Why this beats just-using-mermaid-directly**: mermaid alone is great but generic. A PRISM addon system gives us:
+- One protocol for ALL visual addons (not 5 different JS libs to learn)
+- Token-efficient: declarative input maps to rich output
+- Registry of community addons (analog to skill-forge)
+- Tincture/theme integration (addons get tenant brand palette automatically)
+- Provenance + accessibility built-in (addons declare what they show as alt text)
+
+**Status**: filed for now, not queued. Will likely graduate to cycle 002 in this repo once Branch A + B comparison resolves. Priority would be Mermaid-as-first-addon (mature, well-understood, demonstrates the registration shape) then Tincture mood swatches (most uniquely-ours).
+
+<!-- /@section: future-addons -->
+
 <!-- @section: out-of-scope -->
 ## Out of scope (this cycle)
 

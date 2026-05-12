@@ -1,0 +1,21 @@
+{
+  "name": "@curtismercier/prism-build",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "PRISM build-step renderer — reads .md, emits styled HTML/JSON/XML projections. Reference impl Branch A of cycle 001.",
+  "license": "MIT",
+  "bin": {
+    "prism": "./bin/prism.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "dependencies": {
+    "marked": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
