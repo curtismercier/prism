@@ -33,3 +33,6 @@ examples/**/*.xml
 .env
 .env.local
 *.secret
+
+# Private resume notes (not for publication)
+_resume.md
