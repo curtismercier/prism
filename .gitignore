@@ -1,0 +1,35 @@
+# Node / pnpm / npm
+node_modules/
+.pnpm-store/
+.npm/
+
+# Build outputs from build-renderer
+branches/build-renderer/dist/
+branches/build-renderer/coverage/
+*.tgz
+
+# Derived PRISM projections (the build-renderer branch will emit these
+# next to source files; they should never be committed because they're
+# fully reproducible from the .md source)
+examples/**/*.html
+examples/**/*.json
+examples/**/*.xml
+!examples/**/decision.xml   # except sample decision-type artifacts that are AUTHORED in xml
+!examples/**/taskboard.json # except sample task artifacts authored in json
+.soma/cycles/**/*.html
+.soma/cycles/**/*.json
+.soma/cycles/**/*.xml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Secrets (just in case)
+.env
+.env.local
+*.secret
