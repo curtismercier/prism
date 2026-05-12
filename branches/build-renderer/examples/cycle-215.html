@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atom multi-Server progression — decouple build, add local Server, eventual HA</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<article class="prism prism-cycle" data-type="cycle">
+    <header class="cycle-header">
+      <div class="cycle-title-row">
+        <h1>Atom multi-Server progression — decouple build, add local Server, eventual HA <span class="cycle-no">#215</span></h1>
+        <span class="status status-drafted">drafted</span>
+      </div>
+      <div class="meta-row"><span class="meta-item"><span class="meta-label">created</span> 2026-05-12</span> · <span class="meta-item"><span class="meta-label">author</span> s01-643d67 (Soma) + Curtis Mercier</span> · <span class="meta-item"><span class="meta-label">session</span> <code>s01-643d67</code></span></div>
+      <div class="refs-row"><span class="ref-group"><span class="ref-label">depends on:</span> <span class="ref">cycle:162</span> <span class="ref">cycle:153</span></span> · <span class="ref-group"><span class="ref-label">companion:</span> <span class="ref">cycle:152</span> <span class="ref">cycle:165</span></span></div>
+      
+    </header>
+    <div class="cycle-body">
+      <nav class="toc" aria-label="Sections">
+    <a href="#section-trigger" class="toc-item">trigger</a><a href="#section-context" class="toc-item">context</a><a href="#section-phases" class="toc-item">phases</a><a href="#section-decisions-locked" class="toc-item">decisions-locked</a><a href="#section-decisions-to-surface" class="toc-item">decisions-to-surface</a><a href="#section-out-of-scope" class="toc-item">out-of-scope</a><a href="#section-outtake" class="toc-item">outtake</a><a href="#section-ruled-out" class="toc-item">ruled-out</a><a href="#section-scope-clarification" class="toc-item">scope-clarification</a><a href="#section-local-atom-spectrum" class="toc-item">local-atom-spectrum</a><a href="#section-parity-discipline" class="toc-item">parity-discipline</a>
+  </nav>
+      <main class="cycle-main">
+        <div class="preamble"><h1>Cycle 215 — Atom multi-Server progression</h1>
+<blockquote>
+<p>Filed during the 2026-05-12 OVH outage as strategy. Not queued for
+execution. The progression is cheapest-first; each phase is independently
+valuable and reversible.</p>
+</blockquote>
+</div>
+        <section id="section-trigger" data-section="trigger">
+      <header class="section-header"><span class="section-tag">trigger</span></header>
+      <div class="section-body"><h2>Trigger</h2>
+<p>OVH VPS at <code>158.69.202.96</code> went offline 2026-05-12 (billing). Outage exposed the architectural cost of fusing three concerns onto one host: build, orchestrate, and serve. Curtis prompted strategy thinking (&quot;a better multi-server komodo (atom) setup, where we might work locally more on the site, less remote builds&quot;). Cycle dossier filed for later execution; no infrastructure changes made this session.</p>
+</div>
+    </section>
+<section id="section-context" data-section="context">
+      <header class="section-header"><span class="section-tag">context</span></header>
+      <div class="section-body"><h2>Context — the architectural cost the outage exposed</h2>
+<p>Today&#39;s setup fuses three concerns on one VPS:</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Today</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Build</strong></td>
+<td>atom-on-VPS runs <code>docker compose build</code> via <code>studio-blue-green-deploy</code> Action</td>
+<td>VPS down = no deploy possible</td>
+</tr>
+<tr>
+<td><strong>Orchestrate</strong></td>
+<td>atom-core (ovh-ts) manages containers via Komodo</td>
+<td>VPS down = atom UI down</td>
+</tr>
+<tr>
+<td><strong>Run</strong></td>
+<td>Same VPS serves production traffic</td>
+<td>VPS down = site down</td>
+</tr>
+</tbody></table>
+<p>When the VPS went offline 2026-05-12 (~3h before this session, reason: OVH billing), the result was: no live site, no atom UI, no deploy path for committed code. The cycle 211 Phase 2 mega-menu work landed in git (<code>1941aca4</code>) but couldn&#39;t ship.</p>
+<p>The session worked around it via local <code>pnpm build &amp;&amp; pnpm start</code> — proving the iteration loop can be local without infrastructure changes. But the deploy path remained blocked end-to-end.</p>
+<p><strong>Core observation</strong>: build is what&#39;s most expensive AND most VPS-specific in the current setup. Decouple build from the same host that serves traffic, and the VPS becomes interchangeable. Adding orchestration redundancy (multi-Server atom) is a smaller next step. Adding host redundancy is the final step.</p>
+</div>
+    </section>
+<section id="section-phases" data-section="phases">
+      <header class="section-header"><span class="section-tag">phases</span></header>
+      <div class="section-body"><h2>Phases (cheapest → most strategic)</h2>
+<!-- @section: phases.phase-0 -->
+<h3>Phase 0 — Now (zero infra change) ✅ already true</h3>
+<p>Local development loop confirmed working: <code>pnpm build &amp;&amp; pnpm start</code> against the same compose. Commits land in git; ship to OVH when it returns. No changes to atom Actions or Stack config.</p>
+<p>What this session did:</p>
+<ul>
+<li>Local prod build green on Curtis&#39;s Mac</li>
+<li>Disk space recovered (<del>7.6 GB freed; <code>package-import-method=clone</code> added to `</del>/.npmrc` so future pnpm installs use APFS clonefile and dedup at block level)</li>
+<li>Turbopack-dev CSS bug documented in <code>arzadon-fitness/.soma/body/traps.md</code></li>
+</ul>
+<p>No Phase 0 work remains.</p>
+<!-- /@section: phases.phase-0 -->
+
+<!-- @section: phases.phase-1 -->
+<h3>Phase 1 — GitHub Actions builds studio image → ghcr.io (the big single win)</h3>
+<p><strong>Status</strong>: <strong>Phase 1.a SHIPPED</strong> s01-643d67 — workflow live, builds + pushes to ghcr. Phase 1.b (atom Action consumes the image) deferred until OVH returns + Curtis greenlights.</p>
+<p><strong>Scope</strong>: replace the in-action <code>docker compose build</code> step with <code>docker pull ghcr.io/gravicity/studio:$SHA</code>. GitHub Actions builds on every push to main, tags <code>:latest</code> + <code>:$SHA</code>, pushes to ghcr.io.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Build location</td>
+<td>atom-keeper on ovh-ts</td>
+<td>GitHub Actions runner (free tier)</td>
+</tr>
+<tr>
+<td>Build time impact on VPS</td>
+<td>Heavy</td>
+<td>Zero</td>
+</tr>
+<tr>
+<td>Deploy time</td>
+<td>~3-5 min</td>
+<td>~30-60s</td>
+</tr>
+<tr>
+<td>VPS disk pressure</td>
+<td>Build cache + intermediate layers</td>
+<td>Only active+idle images</td>
+</tr>
+<tr>
+<td>Reproducibility</td>
+<td>Depends on VPS docker state</td>
+<td>Identical artifact across hosts</td>
+</tr>
+</tbody></table>
+<!-- /@section: phases.phase-1 -->
+
+<!-- @section: phases.phase-2 -->
+<h3>Phase 2 — Local atom Server resource (Curtis&#39;s &quot;lightweight&quot; surface for dev)</h3>
+<p><strong>Scope</strong>: add Curtis&#39;s Mac as a second atom Server attached to the existing atom-core on ovh-ts. Komodo Server = remote Docker daemon over SSH. Mac needs Docker Desktop / Colima / OrbStack + SSH key + inbound SSH from atom-core&#39;s Tailscale IP.</p>
+<p><strong>Win</strong>: Curtis gets one UI for everything. Lightweight container ops on local without <code>docker compose up -d</code> ceremony.</p>
+<!-- /@section: phases.phase-2 -->
+
+<!-- @section: phases.phase-3 -->
+<h3>Phase 3 — Second VPS as hot standby (HA tier)</h3>
+<p><strong>Scope</strong>: a second tiny VPS (Hetzner CX22 €4/mo) becomes a third Server resource. Either atom-core stays on ovh-ts (option A) or moves to new VPS (option B). Win: no single VPS is a SPOF for production.</p>
+<!-- /@section: phases.phase-3 -->
+
+<!-- @section: phases.phase-4 -->
+<h3>Phase 4 — Production stack replication (full HA, far horizon)</h3>
+<p>Out of scope for this dossier. Mentioned only so the end-state is visible: postgres/mongo replicas, S3-compatible object storage, multi-region option, Traefik or DNS traffic split.</p>
+<!-- /@section: phases.phase-4 --></div>
+    </section>
+<section id="section-decisions-locked" data-section="decisions-locked">
+      <header class="section-header"><span class="section-tag">decisions-locked</span></header>
+      <div class="section-body"><h2>Decisions locked</h2>
+<ul>
+<li><strong>2026-05-12 s01-643d67</strong>: Phase 1.a workflow shipped (<code>974fb9cf</code> → <code>33de7a61</code> on main). Image <code>ghcr.io/gravicity/studio:33de7a6</code> with digest <code>sha256:ee6d14ed...</code> saved to <code>.soma/secrets/ghcr.env</code></li>
+<li><strong>2026-05-12 Curtis</strong>: image stays private (matches komodo-core convention)</li>
+<li><strong>2026-05-12 Curtis</strong>: WHC ruled out for atom hosting</li>
+<li><strong>2026-05-12 Curtis</strong>: cycle 215 progression is cheapest-first; no urgency to execute Phase 1.b / 2 / 3 while OVH is paying-cycle-stuck</li>
+</ul>
+</div>
+    </section>
+<section id="section-decisions-to-surface" data-section="decisions-to-surface">
+      <header class="section-header"><span class="section-tag">decisions-to-surface</span></header>
+      <div class="section-body"><h2>Decisions to surface (before executing any phase)</h2>
+<p>These need Curtis sign-off when this cycle activates. Filing now so the prompt is ready.</p>
+<p><strong>Phase 1 decisions</strong>:</p>
+<ol>
+<li>Build trigger: push-to-main OR explicit <code>gh workflow run</code> from deploy wrapper?</li>
+<li>Image registry: ghcr.io (free for public, auth-pull for private; current path) OR a private registry like OVH&#39;s?</li>
+<li>Multi-arch (amd64 + arm64) or amd64-only? Multi-arch costs build time but unblocks running studio on Apple Silicon locally via atom (Phase 2 ergonomics).</li>
+<li>Versioning: <code>:$SHA</code> + <code>:latest</code> (default), OR semver-tagged releases?</li>
+</ol>
+<p><strong>Phase 2 decisions</strong>:</p>
+<ol>
+<li>Local Docker runtime: Docker Desktop OR Colima OR OrbStack? Recommend OrbStack unless licensing concerns.</li>
+<li>Which local containers to migrate to atom management first? somadian-local is the obvious candidate.</li>
+</ol>
+<p><strong>Phase 3 decisions</strong>:</p>
+<ol>
+<li>Hetzner OR something cheaper (Vultr $3.50, Contabo €4)?</li>
+<li>Option A vs B (atom-core stays vs moves)?</li>
+<li>Region: closest to Toronto users (Hetzner FSN1, ASH; OVH BHS=Quebec)?</li>
+</ol>
+</div>
+    </section>
+<section id="section-out-of-scope" data-section="out-of-scope">
+      <header class="section-header"><span class="section-tag">out-of-scope</span></header>
+      <div class="section-body"><h2>Out of scope (this cycle)</h2>
+<ul>
+<li>Multi-region production (Phase 4 territory)</li>
+<li>Database replication / clustering</li>
+<li>CDN tier in front of studio (orthogonal to this cycle)</li>
+<li>Replacement of OVH (the outage doesn&#39;t make OVH wrong; just makes single-VPS-dependency wrong)</li>
+<li>atom upgrade beyond v2.1.x (track separately)</li>
+<li>Anything that changes the studio image&#39;s runtime behavior — this cycle is purely about where the image is built and where it runs</li>
+</ul>
+</div>
+    </section>
+<section id="section-outtake" data-section="outtake">
+      <header class="section-header"><span class="section-tag">outtake</span></header>
+      <div class="section-body"><h2>Out-take</h2>
+<p>The outage was useful diagnostically: it surfaced that the &quot;blue-green deploy&quot; pattern (cycle 162) protects against deploy-failure but not against host-failure. The next architectural layer is host-redundancy, and the gating step is decoupling build from host. Phase 1 does that. Phase 2 + 3 compound the benefit but neither requires Phase 1 to be done first — they&#39;re independent levers.</p>
+<p>The simplest mental model: today&#39;s atom is &quot;monolith deploying its own host.&quot; Where this cycle lands: &quot;atom orchestrates N hosts where images come from somewhere else.&quot; The day Curtis says &quot;let&#39;s just put this on a second cheap VPS for fun,&quot; all three phases pay off simultaneously.</p>
+<p>No work to do now. Revisit when OVH is back + Curtis has budget for the Phase 1.b piece — the single biggest leverage and the right entry point.</p>
+</div>
+    </section>
+<section id="section-ruled-out" data-section="ruled-out">
+      <header class="section-header"><span class="section-tag">ruled-out</span></header>
+      <div class="section-body"><h2>What ruled OUT</h2>
+<h3>WHC shared cPanel hosting (Web Hosting Canada)</h3>
+<p>Confirmed by Curtis 2026-05-12: WHC product is shared cPanel only, not a VPS plan. Cannot host Komodo:</p>
+<ul>
+<li>No Docker engine + root access</li>
+<li>No persistent bind ports beyond 80/443</li>
+<li>No systemd or equivalent supervisor access</li>
+<li>Disk + RAM caps too small for image cache + container state</li>
+</ul>
+<p>Action: <strong>do not pursue WHC</strong>. Keep it for the static-site / Nextcloud niche it already serves.</p>
+</div>
+    </section>
+<section id="section-scope-clarification" data-section="scope-clarification">
+      <header class="section-header"><span class="section-tag">scope-clarification</span></header>
+      <div class="section-body"><h2>Phase 1 scope clarification — the OTHER custom images</h2>
+<p>Curtis surfaced 2026-05-12: &quot;remember there were several other containers not just the greenlight blue light.&quot; Full custom-image survey:</p>
+<table>
+<thead>
+<tr>
+<th>Image</th>
+<th>Status</th>
+<th>Source</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>studio</code></td>
+<td>✅ on ghcr (cycle 215 phase 1.a)</td>
+<td><code>clients/arzadon-fitness/studio/Dockerfile</code></td>
+<td><code>studio-app-blue</code> + <code>studio-app-green</code></td>
+</tr>
+<tr>
+<td><code>somaverse-somadian</code></td>
+<td>❌ still built on VPS via rsync deploy</td>
+<td><code>meetsoma/somadian/bins/cloud/Dockerfile</code></td>
+<td><strong>both</strong> <code>soma-hub</code> AND <code>soma-arzadon</code> containers</td>
+</tr>
+<tr>
+<td><code>gravicity-io</code></td>
+<td>❌ still built on VPS</td>
+<td>TBD</td>
+<td><code>gravicity-web</code> (marketing site)</td>
+</tr>
+<tr>
+<td><code>komodo-core:2.1.2-grav.0</code></td>
+<td>✅ on ghcr (precedent)</td>
+<td>external fork repo</td>
+<td><code>atom-core</code> + <code>atom-keeper</code></td>
+</tr>
+</tbody></table>
+<p><strong>Upstream images</strong> (no custom build, trivially pullable): kanidm/server, mongo, traefik, ghcr.io/moghtech/komodo-periphery, nginx, vaultwarden, postgres, substrate (PocketBase).</p>
+<p>To unlock Tier B local atom (studio + soma-arzadon talking to each other locally), the next single workflow to ship is <strong>somaverse-somadian → ghcr.io/gravicity/somaverse-somadian</strong>. Mirror of today&#39;s <code>build-studio.yml</code>; ~30 min of focused work.</p>
+</div>
+    </section>
+<section id="section-local-atom-spectrum" data-section="local-atom-spectrum">
+      <header class="section-header"><span class="section-tag">local-atom-spectrum</span></header>
+      <div class="section-body"><h2>Useful-local-atom spectrum</h2>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Runs locally</th>
+<th>Value</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A</strong></td>
+<td><code>studio</code> only</td>
+<td>Atom-UI muscle memory on real container; equivalent of <code>pnpm start</code></td>
+<td>Today&#39;s unlock alone</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td><code>studio</code> + <code>soma-arzadon</code></td>
+<td>Real end-to-end media flow; cross-service work locally</td>
+<td>1 more GHA workflow (somaverse-somadian) + local kanidm + env wiring</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Full prod-mirror</td>
+<td>True dev/prod parity for any work</td>
+<td>Multi-cycle; where drift bites if discipline isn&#39;t in place</td>
+</tr>
+</tbody></table>
+<p>Recommended progression: ship somaverse-somadian workflow next (unlocks Tier B), THEN install local atom-keeper (OrbStack), THEN attach to OVH atom-core as a Server (Phase 2 proper). Tier C waits until dev/prod parity discipline (env probe; service-graph body doc; canonical compose enforcement) is filed.</p>
+</div>
+    </section>
+<section id="section-parity-discipline" data-section="parity-discipline">
+      <header class="section-header"><span class="section-tag">parity-discipline</span></header>
+      <div class="section-body"><h2>Dev/prod parity discipline — gating prerequisite for Phase 2+</h2>
+<p>Curtis surfaced 2026-05-12 the risk: once local atom feels legitimate (Phase 2), an agent might silently work against a partial mirror and not notice it diverges from prod. Three structural fixes that need to land BEFORE Phase 2 carries real work:</p>
+<ol>
+<li><p><strong>Compose files are canonical in <code>Gravicity/infra</code></strong> — local atom Server doesn&#39;t fork them. Differences expressed as env overrides, never as separate compose files.</p>
+</li>
+<li><p><strong>Agent self-awareness</strong> — an env probe at boot (<code>hostname</code> + <code>docker context show</code> + <code>tailscale ip</code> cross-check) declares which world the agent is in. Result lands in preload/status.</p>
+</li>
+<li><p><strong>Service-graph body doc</strong> — one doc that says &quot;studio depends on soma-hub for auth, soma-arzadon for media, postgres for X, all on gravicity-network.&quot; Without that graph, an agent can&#39;t tell when it&#39;s running against a partial mirror.</p>
+</li>
+</ol>
+<p>Filed as <strong>Phase 0</strong> prerequisite.</p>
+</div>
+    </section>
+        
+      </main>
+    </div>
+  </article>
+</body>
+</html>

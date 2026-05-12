@@ -1,0 +1,215 @@
+/* PRISM CDN renderer — visual language v0.0
+   One stylesheet. No framework. Light-mode default; respects prefers-color-scheme. */
+
+/* ── Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --prism-bg:           #fbfaf7;
+  --prism-fg:           #1c1c1c;
+  --prism-muted:        #6a6a6a;
+  --prism-soft:         #aaa;
+  --prism-accent:       #c9421e;    /* refraction-orange */
+  --prism-accent-soft:  #f5dccf;
+  --prism-card:         #fff;
+  --prism-border:       #e2dfd8;
+  --prism-border-soft:  #ecebe6;
+  --prism-status-shipped:    #5a8c4e;
+  --prism-status-in-progress:#c9421e;
+  --prism-status-queued:     #9a9a9a;
+  --prism-status-drafted:    #b89a3a;
+  --prism-status-superseded: #888;
+  --prism-status-archived:   #aaa;
+  --prism-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --prism-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --prism-serif: "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --prism-bg:           #1a1a1a;
+    --prism-fg:           #ecebe6;
+    --prism-muted:        #a6a6a6;
+    --prism-soft:         #6a6a6a;
+    --prism-accent:       #ec7950;
+    --prism-accent-soft:  #3a2620;
+    --prism-card:         #232323;
+    --prism-border:       #3a3a3a;
+    --prism-border-soft:  #2a2a2a;
+  }
+}
+
+body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--prism-sans); margin: 0; line-height: 1.55; }
+
+/* ── Loading + error states ─────────────────────────────────────────── */
+.prism-loading, .prism-error {
+  max-width: 720px; margin: 4rem auto; padding: 2rem; border-radius: 0.75rem;
+  background: var(--prism-card); border: 1px solid var(--prism-border);
+  color: var(--prism-muted); font-family: var(--prism-mono); font-size: 0.9rem;
+}
+.prism-error { border-color: var(--prism-accent); }
+.prism-error strong { color: var(--prism-accent); }
+.prism-error small { display: block; margin-top: 0.5rem; }
+
+/* ── Article shell ──────────────────────────────────────────────────── */
+.prism {
+  max-width: 1080px; margin: 0 auto; padding: 2.5rem 2rem 6rem;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.cycle-header {
+  border-bottom: 1px solid var(--prism-border);
+  padding-bottom: 1.5rem; margin-bottom: 2rem;
+}
+.cycle-title-row {
+  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+}
+.cycle-header h1 {
+  margin: 0; font-family: var(--prism-serif); font-size: 2rem; font-weight: 500;
+  letter-spacing: -0.02em; line-height: 1.15;
+}
+.cycle-no { color: var(--prism-soft); font-family: var(--prism-mono); font-size: 1.2rem; font-weight: 400; margin-left: 0.5rem; }
+.status {
+  font-family: var(--prism-mono); font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.25rem 0.6rem; border-radius: 1rem;
+  background: var(--prism-border-soft); color: var(--prism-muted);
+  white-space: nowrap;
+}
+.status-shipped     { background: rgba(90,140,78,0.12); color: var(--prism-status-shipped); }
+.status-in-progress, .status-in { background: var(--prism-accent-soft); color: var(--prism-status-in-progress); }
+.status-queued      { background: rgba(154,154,154,0.15); color: var(--prism-status-queued); }
+.status-drafted     { background: rgba(184,154,58,0.15); color: var(--prism-status-drafted); }
+.status-superseded, .status-archived { background: rgba(170,170,170,0.1); color: var(--prism-soft); }
+
+.meta-row, .refs-row {
+  margin-top: 0.75rem; font-family: var(--prism-mono); font-size: 0.78rem;
+  color: var(--prism-muted); letter-spacing: 0.02em;
+}
+.meta-label { color: var(--prism-soft); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 0.25rem; }
+.meta-item code { background: var(--prism-border-soft); padding: 0.05rem 0.3rem; border-radius: 0.2rem; }
+.ref-label { color: var(--prism-soft); margin-right: 0.25rem; }
+.ref {
+  display: inline-block; background: var(--prism-card); border: 1px solid var(--prism-border);
+  padding: 0.1rem 0.4rem; border-radius: 0.2rem; font-size: 0.72rem; margin: 0 0.15rem;
+}
+
+.purpose {
+  margin-top: 1.25rem; padding: 1rem 1.25rem;
+  background: var(--prism-card); border-left: 3px solid var(--prism-accent);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.purpose-label {
+  font-family: var(--prism-mono); font-size: 0.65rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--prism-accent); margin-bottom: 0.5rem;
+}
+.purpose p { margin: 0; color: var(--prism-fg); font-size: 0.95rem; line-height: 1.55; }
+.purpose p + p { margin-top: 0.5rem; }
+
+/* ── Body layout: sidebar TOC + main ────────────────────────────────── */
+.cycle-body {
+  display: grid; grid-template-columns: 200px 1fr; gap: 2.5rem; align-items: start;
+}
+@media (max-width: 800px) {
+  .cycle-body { grid-template-columns: 1fr; }
+  .toc { order: 2; }
+}
+
+/* ── TOC sidebar ────────────────────────────────────────────────────── */
+.toc {
+  position: sticky; top: 1rem; align-self: start;
+  display: flex; flex-direction: column; gap: 0.1rem;
+  font-family: var(--prism-mono); font-size: 0.75rem;
+  border-left: 1px solid var(--prism-border-soft);
+  padding-left: 1rem;
+}
+.toc-item {
+  color: var(--prism-muted); text-decoration: none; padding: 0.2rem 0;
+  letter-spacing: 0.02em; transition: color 0.15s;
+}
+.toc-item:hover { color: var(--prism-accent); }
+
+/* ── Main column ────────────────────────────────────────────────────── */
+.cycle-main section {
+  margin: 0 0 2.5rem 0; scroll-margin-top: 1rem;
+}
+.section-flash {
+  animation: flash 1.2s ease-out;
+}
+@keyframes flash {
+  0%   { background-color: var(--prism-accent-soft); }
+  100% { background-color: transparent; }
+}
+.section-header {
+  margin-bottom: 0.75rem;
+}
+.section-tag {
+  font-family: var(--prism-mono); font-size: 0.7rem;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--prism-accent); font-weight: 600;
+}
+
+/* ── Markdown inside sections ───────────────────────────────────────── */
+.section-body h2, .section-body h3, .section-body h4 {
+  font-family: var(--prism-serif); font-weight: 500;
+  letter-spacing: -0.01em; margin-top: 1.25rem; margin-bottom: 0.5rem;
+}
+.section-body h2 { font-size: 1.4rem; }
+.section-body h3 { font-size: 1.15rem; }
+.section-body h4 { font-size: 1rem; color: var(--prism-muted); }
+.section-body p { margin: 0.75rem 0; }
+.section-body p:first-child { margin-top: 0; }
+.section-body ul, .section-body ol { padding-left: 1.5rem; margin: 0.75rem 0; }
+.section-body li { margin: 0.25rem 0; }
+.section-body strong { font-weight: 600; }
+.section-body code {
+  font-family: var(--prism-mono); font-size: 0.86em;
+  background: var(--prism-border-soft); padding: 0.05rem 0.35rem;
+  border-radius: 0.2rem;
+}
+.section-body pre {
+  font-family: var(--prism-mono); font-size: 0.82rem;
+  background: var(--prism-card); border: 1px solid var(--prism-border);
+  padding: 1rem; border-radius: 0.5rem; overflow-x: auto;
+  margin: 1rem 0; line-height: 1.5;
+}
+.section-body pre code { background: none; padding: 0; }
+.section-body blockquote {
+  margin: 1rem 0; padding: 0.5rem 1rem;
+  border-left: 3px solid var(--prism-accent-soft);
+  color: var(--prism-muted); font-style: italic;
+}
+.section-body table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.section-body th, .section-body td {
+  text-align: left; padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--prism-border-soft);
+}
+.section-body th {
+  font-family: var(--prism-mono); font-size: 0.75rem;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--prism-muted); font-weight: 600;
+  border-bottom: 2px solid var(--prism-border);
+}
+.section-body tr:hover td { background: var(--prism-border-soft); }
+.section-body a { color: var(--prism-accent); text-decoration: none; border-bottom: 1px solid var(--prism-accent-soft); }
+.section-body a:hover { border-bottom-color: var(--prism-accent); }
+
+/* ── Preamble + trailer ─────────────────────────────────────────────── */
+.preamble, .trailer {
+  margin-bottom: 2rem; padding: 0.75rem 1rem;
+  background: var(--prism-border-soft); border-radius: 0.5rem;
+  font-size: 0.95rem; color: var(--prism-muted);
+}
+.preamble blockquote, .trailer blockquote {
+  border: none; padding: 0; margin: 0;
+}
+
+/* ── Frontmatter dl (default layout) ────────────────────────────────── */
+.frontmatter-dl {
+  display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem;
+  margin-top: 1rem; font-family: var(--prism-mono); font-size: 0.78rem;
+}
+.frontmatter-dl dt { color: var(--prism-soft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+.frontmatter-dl dd { margin: 0; color: var(--prism-fg); }
+.frontmatter-dl pre { margin: 0; padding: 0.4rem; background: var(--prism-border-soft); border-radius: 0.25rem; }
