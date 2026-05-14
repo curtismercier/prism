@@ -108,6 +108,16 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .cycle-body {
   display: grid; grid-template-columns: 200px 1fr; gap: 2.5rem; align-items: start;
 }
+/* When the artifact has no TOC sidebar (type=decision, type=task, type=briefing,
+   or any artifact the renderer emits without an <aside class="toc">), collapse to a
+   single full-width column. Otherwise <main> lands in the 200px column and content
+   wraps word-per-line. */
+.cycle-body:not(:has(> .toc)) {
+  grid-template-columns: 1fr;
+}
+.cycle-body:not(:has(> .toc)) > .cycle-main {
+  max-width: none;
+}
 @media (max-width: 800px) {
   .cycle-body { grid-template-columns: 1fr; }
   .toc { order: 2; }
