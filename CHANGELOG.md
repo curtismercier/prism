@@ -10,6 +10,14 @@ spec v0.1.
 
 ## [Unreleased]
 
+### Added
+
+- **CONTRIBUTING.md** — Contribution guide covering the three change
+  classes (editorial / markdown content / substantial), PR gates,
+  commit & code discipline, the branching-cycle pattern, and release
+  flow. Drawn from Conventional Commits, Keep a Changelog, JSON Schema,
+  and AsyncAPI patterns — sized for a small Markdown-substrate project.
+
 ## [0.1.1] - 2026-05-14
 
 ### Fixed
