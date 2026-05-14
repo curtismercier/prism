@@ -10,10 +10,13 @@ branches/build-renderer/coverage/
 
 # Derived PRISM projections (the build-renderer branch will emit these
 # next to source files; they should never be committed because they're
-# fully reproducible from the .md source)
+# fully reproducible from the .md source). The build-renderer's OWN
+# examples (branches/build-renderer/examples/*) ARE tracked — they
+# serve as the canonical demo of what projections look like.
 examples/**/*.html
 examples/**/*.json
 examples/**/*.xml
+examples/styles.css
 !examples/**/decision.xml   # except sample decision-type artifacts that are AUTHORED in xml
 !examples/**/taskboard.json # except sample task artifacts authored in json
 .soma/cycles/**/*.html
