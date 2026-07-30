@@ -10,9 +10,9 @@ This is one of two parallel implementations developed under the [PRISM renderer 
 **synthesize** — this runtime renderer for human viewing, the build-step branch retained for JSON/XML
 pipeline outputs. See [`../../.soma/cycles/001-renderer-spike/`](../../.soma/cycles/001-renderer-spike/).
 
-<!-- CORRECTED 2026-07-30 (meetsoma s01-2a3668): this line read "Scaffold only. Phase 1.B
-     implementation queued" long after the implementation shipped and the cycle resolved. It was
-     believed on sight and nearly caused a rebuild of working code. -->
+<!-- CORRECTED 2026-07-30: this line read "Scaffold only. Phase 1.B implementation queued" long
+     after the implementation shipped and cycle 001 resolved. It was believed on sight and nearly
+     caused a rebuild of working code. -->
 
 ## Layouts
 

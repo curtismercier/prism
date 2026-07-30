@@ -13,9 +13,29 @@ branches/build-renderer/coverage/
 # fully reproducible from the .md source). The build-renderer's OWN
 # examples (branches/build-renderer/examples/*) ARE tracked — they
 # serve as the canonical demo of what projections look like.
-examples/**/*.html
-examples/**/*.json
-examples/**/*.xml
+# NOTE: a pattern containing a slash is ANCHORED TO THE REPO ROOT. The former
+# `examples/**/*.json` form matched only <root>/examples/, never
+# branches/*/examples/ — so projections under the branch example dirs were
+# neither tracked nor ignored, one `git add -A` away from being committed. Same
+# class as the stale styles.css that kept a released fix from reaching output for
+# 2.5 months; fixed there, missed here. Leading `**/` makes it match at any depth.
+**/examples/**/*.html
+**/examples/**/*.json
+**/examples/**/*.xml
+
+# Viewer pages are SOURCE, not projections: `index.html` and `*-view.html` are
+# hand-written pages that mount <soma-artifact>. Only `<basename>.html` emitted next
+# to a `<basename>.md` is derived.
+!**/examples/**/index.html
+!**/examples/**/*-view.html
+
+# ...but DATA files are source, not projections. `<name>.data.json` is the input a
+# data-driven layout reads; only `<name>.json` is emitted by `render --format all`.
+!**/*.data.json
+
+# The build-renderer's own examples ARE tracked — they are the canonical demo of
+# what projections look like.
+!branches/build-renderer/examples/**
 # styles.css is DERIVED — the renderer copies it from branches/cdn-renderer/styles.css
 # on every render. Unanchored pattern on purpose: the old `examples/styles.css` form
 # was anchored to the repo root, so the copy under branches/build-renderer/examples/
