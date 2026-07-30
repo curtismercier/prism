@@ -1,0 +1,98 @@
+name: prism
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Single Node version: build-renderer declares engines node>=22, and CI's job here is
+# enforcing the CONTRIBUTING PR gates, not proving cross-version support.
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+    env:
+      PRISM: branches/build-renderer/bin/prism.mjs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: branches/build-renderer/pnpm-lock.yaml
+
+      - name: Install renderer deps (frozen lockfile)
+        working-directory: branches/build-renderer
+        run: pnpm install --frozen-lockfile
+
+      # Gate: "prism validate clean on any touched .md artifact"
+      - name: Validate every example artifact
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          n=0
+          for f in examples/*.md; do
+            node "$PRISM" validate "$f"
+            n=$((n + 1))
+          done
+          [ "$n" -gt 0 ] || { echo "::error::no examples/*.md found — validate gate would pass vacuously"; exit 1; }
+          echo "validated $n artifact(s)"
+
+      # Negative test: validate must FAIL on a malformed artifact. Without this, a
+      # validate step that silently stopped blocking would still show a green tick.
+      # Guards the fix where an unclosed anchor was warn-only and reported "clean".
+      - name: Negative test — validate must reject malformed artifacts
+        run: |
+          set -euo pipefail
+          bad="$RUNNER_TEMP/unclosed.md"
+          printf '%s\n' '---' 'type: decision' 'title: CI negative fixture' 'status: draft' '---' '' '<!-- @section: never-closed -->' '## Never closed' 'body' > "$bad"
+          if node "$PRISM" validate "$bad"; then
+            echo "::error::validate exited 0 on an unclosed section anchor — the validate gate is not blocking"
+            exit 1
+          fi
+          echo "validate correctly rejected the malformed artifact"
+
+      # Gate: "renders cleanly to all three projections"
+      - name: Render all projections and assert output
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          OUT="$RUNNER_TEMP/prism-projections"
+          mkdir -p "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          for f in examples/*.md; do
+            node "$PRISM" render "$f" --format all --out "$OUT"
+            b=$(basename "$f" .md)
+            for ext in html json xml; do
+              [ -s "$OUT/$b.$ext" ] || { echo "::error::empty or missing projection: $b.$ext"; exit 1; }
+            done
+            grep -qF '<!DOCTYPE html>' "$OUT/$b.html"
+            grep -qF 'class="prism' "$OUT/$b.html"
+            grep -qF '<?xml version="1.0"' "$OUT/$b.xml"
+            node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+              if (!j.type) throw new Error("JSON projection missing .type");
+              if (Object.keys(j.sections || {}).length === 0) throw new Error("JSON projection has no sections");' "$OUT/$b.json"
+          done
+
+      # Regression guard for v0.1.1: type=decision rendered into the 200px TOC column.
+      # The bug needed both halves — a .cycle-body with no .toc child (structure) and a
+      # stylesheet lacking the collapse rule (CSS). Assert both, plus that cycles still
+      # get their sidebar. Verified to fail against the pre-fix (v0.1.0) styles.css.
+      - name: Regression guard — non-cycle single-column layout
+        run: |
+          set -euo pipefail
+          html="$OUT/decision-example.html"
+          grep -qF 'data-type="decision"' "$html"
+          grep -qF 'class="cycle-body"' "$html"
+          if grep -qF 'class="toc"' "$html"; then
+            echo "::error::decision artifacts now emit a TOC — re-point this guard at the new layout"
+            exit 1
+          fi
+          rule=$(grep -A1 -F '.cycle-body:not(:has(> .toc))' "$OUT/styles.css")
+          grep -qF 'grid-template-columns: 1fr' <<<"$rule"
+          grep -qF 'class="toc"' "$OUT/cycle-215.html"
+          echo "single-column path present for non-cycle types; cycle sidebar intact"
