@@ -61,6 +61,11 @@ export function parsePrism(source) {
 
   const sections = new Map();
   const ranges = [];
+  // Names of anchors that open but never close. Reported so callers (notably
+  // `prism validate`) can treat them as blocking errors: an unclosed anchor is
+  // dropped from `sections`, which makes it unaddressable by read/edit/append
+  // while a warning-only parse would still look "clean".
+  const unclosed = [];
   let m;
   const openRe = new RegExp(SECTION_OPEN_RE.source, 'g');
   while ((m = openRe.exec(body)) !== null) {
@@ -72,6 +77,7 @@ export function parsePrism(source) {
     const closeMatch = body.slice(openEnd).match(closeRe);
     if (!closeMatch) {
       console.warn(`[prism] unclosed section: @section: ${name}`);
+      unclosed.push(name);
       continue;
     }
     const closeStart = openEnd + closeMatch.index;
@@ -85,5 +91,5 @@ export function parsePrism(source) {
   const preamble = ranges.length ? body.slice(0, ranges[0].start).trim() : body.trim();
   const trailer = ranges.length ? body.slice(ranges[ranges.length-1].end).trim() : '';
 
-  return { frontmatter, sections, preamble, trailer, rawBody: body };
+  return { frontmatter, sections, preamble, trailer, rawBody: body, unclosed };
 }
