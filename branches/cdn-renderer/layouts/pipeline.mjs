@@ -77,6 +77,24 @@ const STYLE = `
 .pl-tbl td.gap{color:var(--pl-gap);font-weight:600}
 .pl-assume{font-size:.85em;color:var(--pl-dim);margin-top:2em;border-top:1px solid var(--pl-line);padding-top:.9em}
 .pl-assume code{font-size:.95em}
+.pl-pc{display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:.9em 0 .2em}
+@media(max-width:720px){.pl-pc{grid-template-columns:1fr}}
+.pl-pc>div{border:1px solid var(--pl-line);border-radius:9px;padding:.7em .9em}
+.pl-pc h4{margin:0 0 .45em;font-size:.82em;text-transform:uppercase;letter-spacing:.06em}
+.pl-pc.pros h4,.pl-pc div.pros h4{color:var(--pl-play)}
+.pl-pc div.cons h4{color:var(--pl-gap)}
+.pl-pc ul{margin:0;padding-left:1.1em}
+.pl-pc li{margin:.3em 0;font-size:.88em}
+.pl-live{position:sticky;top:0;z-index:5;background:var(--pl-bg);border:1px solid var(--pl-line);border-radius:11px;padding:.8em 1em;margin:1.4em 0;display:flex;gap:.6em;align-items:center;flex-wrap:wrap}
+.pl-live button{font:inherit;font-size:.87em;padding:.42em .95em;border-radius:7px;border:1px solid var(--pl-line);background:var(--pl-bg);color:var(--pl-ink);cursor:pointer}
+.pl-live button.primary{background:var(--pl-play);border-color:var(--pl-play);color:#fff}
+.pl-live button.danger{background:var(--pl-gap);border-color:var(--pl-gap);color:#fff}
+.pl-live button:disabled{opacity:.45;cursor:not-allowed}
+.pl-live .pl-status{margin-left:auto;font-size:.85em;color:var(--pl-dim);font-variant-numeric:tabular-nums}
+.pl-playhead{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--pl-gap);box-shadow:0 0 6px var(--pl-gap);z-index:3;pointer-events:none}
+.pl-track{position:relative}
+.pl-measured{border:2px solid var(--pl-play);border-radius:12px;margin:1.4em 0;overflow:hidden}
+.pl-measured>header{background:var(--pl-play);color:#fff;padding:.55em 1em;font-weight:600;font-size:.92em}
 </style>`;
 
 function bars(chunks, scale) {
@@ -102,7 +120,7 @@ function scenario(s, scale) {
   const badGap = m.gap_count > 0;
   return `
   <div class="pl-scn">
-    <h3>${esc(s.label)}</h3>
+    <h3>${esc(s.label)}${s.workers > 1 ? ` <span style="font-size:.75em;color:var(--pl-play)">● ${s.workers} synth workers</span>` : ''}</h3>
     <p class="pl-note">${esc(s.note || '')}</p>
     <div class="pl-metrics">
       <div><span>time to first word</span><b>${ms(m.time_to_first_word_ms)}</b></div>
@@ -144,7 +162,10 @@ export async function renderPipeline({ frontmatter: fm, sections, preamble }) {
   // Group scenarios by overhead so each comparison shares one x-axis.
   const groups = new Map();
   for (const s of d.scenarios || []) {
-    const k = s.overhead_ms ?? 'default';
+    // Measured runs carry an explicit `group`; modelled ones group by the swept
+    // parameter. Each group gets its own axis so bars are only ever compared
+    // against bars drawn to the same scale.
+    const k = s.group ?? s.overhead_ms ?? 'default';
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(s);
   }
@@ -155,7 +176,7 @@ export async function renderPipeline({ frontmatter: fm, sections, preamble }) {
     return `
     <div class="pl-group">
       <header>
-        <span>${k === 'default' ? 'Comparison' : `Per-chunk synthesis overhead: ${ms(k)}`}</span>
+        <span>${typeof k === 'number' ? `Per-chunk synthesis overhead: ${ms(k)}` : (k === 'default' ? 'Comparison' : esc(k))}</span>
         ${xo != null ? `<span class="pl-xo">synthesis loses ground below <b>${xo}</b> chars/chunk</span>` : ''}
       </header>
       ${list.map(s => scenario(s, scale)).join('')}
@@ -169,10 +190,32 @@ export async function renderPipeline({ frontmatter: fm, sections, preamble }) {
       <span><i style="background:repeating-linear-gradient(45deg,transparent,transparent 3px,var(--pl-gap) 3px,var(--pl-gap) 6px);border:1px solid var(--pl-gap)"></i>stall — silence the listener hears</span>
     </div>`;
 
+  const notes = d.strategy_notes || {};
+  const prosCons = Object.entries(notes).map(([k, n]) => `
+    <h3 style="margin:1.4em 0 .1em;font-size:1.02rem">${esc(n.label || k)}</h3>
+    <div class="pl-pc">
+      <div class="pros"><h4>Pros</h4><ul>${(n.pros || []).map(p => `<li>${md(p).replace(/^<p>|<\/p>\n?$/g, '')}</li>`).join('')}</ul></div>
+      <div class="cons"><h4>Cons</h4><ul>${(n.cons || []).map(p => `<li>${md(p).replace(/^<p>|<\/p>\n?$/g, '')}</li>`).join('')}</ul></div>
+    </div>`).join('');
+
+  // Live benchmark controls. The dashboard's whole weakness is that its numbers
+  // are modelled; this is the button that replaces them with measured ones.
+  const live = `
+    <div class="pl-live" id="pl-live" data-text="${esc(d.sample_text || '')}" data-tts="${esc(d.tts_url || 'http://127.0.0.1:18790')}">
+      <strong style="font-size:.9em">Run it for real:</strong>
+      <button class="primary" data-strategy="current">▶ Current (uniform)</button>
+      <button class="primary" data-strategy="ramp">▶ Proposed (ramped)</button>
+      <button class="danger" data-act="cancel" disabled>■ Stop</button>
+      <span class="pl-status">idle</span>
+    </div>
+    <div id="pl-measured"></div>`;
+
   const a = d.assumptions || {};
   const assume = `
     <div class="pl-assume">
-      <strong>Assumptions</strong> — every one of these is a number we should be measuring:
+      <strong>${measured ? 'Run parameters' : 'Assumptions'}</strong> — ${measured
+        ? 'these came from the live system; nothing here is guessed'
+        : 'every one of these is a number we should be measuring'}:
       <code>${esc(JSON.stringify(a))}</code><br>
       Generated by <code>${esc(d.generated_by || 'unknown')}</code>. To change any number here,
       edit the generator and re-run it — never this layout.
@@ -186,9 +229,109 @@ export async function renderPipeline({ frontmatter: fm, sections, preamble }) {
     ${banner}
     ${md(preamble || '')}
     ${evidence}
+    ${live}
     ${groupHtml}
     ${legend}
+    ${prosCons}
     ${body}
     ${assume}
   </div>`;
+}
+
+// ── Live benchmark wiring ───────────────────────────────────────────────────
+// Attached by the host page after render (innerHTML does not execute scripts).
+// Polls the sidecar's /bench endpoint and renders MEASURED rows beside the
+// modelled ones, with a playhead tracking real elapsed time.
+export function attachPipelineLive(root) {
+  const bar = root.querySelector('#pl-live');
+  const out = root.querySelector('#pl-measured');
+  if (!bar || !out) return;
+  // Both carried on the element by render() — the data file stays the single
+  // source for the sample text, so nobody retypes it into a handler.
+  const text = bar.dataset.text || '';
+  const ttsUrl = bar.dataset.tts || 'http://127.0.0.1:18790';
+  if (!text) { bar.querySelector('.pl-status').textContent = 'no sample_text in data'; }
+  const status = bar.querySelector('.pl-status');
+  const stopBtn = bar.querySelector('[data-act="cancel"]');
+  let runId = null, timer = null;
+
+  const setBusy = (b) => {
+    bar.querySelectorAll('[data-strategy]').forEach(x => x.disabled = b);
+    stopBtn.disabled = !b;
+  };
+
+  async function poll() {
+    if (!runId) return;
+    let v;
+    try {
+      const r = await fetch(`${ttsUrl}/bench?id=${encodeURIComponent(runId)}`, { cache: 'no-store' });
+      v = await r.json();
+    } catch (e) {
+      status.textContent = `lost contact: ${e.message}`;
+      clearInterval(timer); setBusy(false); return;
+    }
+    render(v);
+    if (v.state !== 'running') {
+      clearInterval(timer); setBusy(false); runId = null;
+      status.textContent = `${v.state} — ${v.metrics?.gap_count ?? 0} stalls, ${ms(v.metrics?.total_gap_ms || 0)} lost`;
+    } else {
+      status.textContent = `running ${ms(v.elapsed_ms)} · chunk ${v.chunks.length}/${v.chunk_count ?? '?'}`;
+    }
+  }
+
+  function render(v) {
+    const done = v.chunks.filter(c => c.play_start_ms != null);
+    // Scale to elapsed while running so the playhead stays on-screen; to the
+    // final wall time once finished.
+    const scale = Math.max(v.total_wall_ms || 0, v.elapsed_ms || 1);
+    const m = v.metrics || {};
+    const headPct = Math.min(100, (v.elapsed_ms / scale) * 100);
+    out.innerHTML = `
+      <div class="pl-measured">
+        <header>✅ MEASURED — ${esc(v.strategy)} · ${v.chars} chars · ${esc(v.state)}</header>
+        <div class="pl-scn">
+          <div class="pl-metrics">
+            <div><span>first word</span><b>${m.time_to_first_word_ms != null ? ms(m.time_to_first_word_ms) : '—'}</b></div>
+            <div><span>elapsed</span><b>${ms(v.elapsed_ms)}</b></div>
+            <div><span>stalls</span><b class="${m.gap_count ? 'bad' : ''}">${m.gap_count ?? 0}</b></div>
+            <div><span>lost to stalls</span><b class="${m.gap_count ? 'bad' : ''}">${ms(m.total_gap_ms || 0)}</b></div>
+            <div><span>worst stall</span><b class="${m.gap_count ? 'bad' : ''}">${ms(m.worst_gap_ms || 0)}</b></div>
+            <div><span>synth failures</span><b class="${m.errors ? 'bad' : ''}">${m.errors ?? 0}</b></div>
+          </div>
+          ${done.length ? bars(done, scale) : '<p class="pl-note">synthesizing first chunk…</p>'}
+          <div class="pl-row"><div class="pl-lbl">now</div>
+            <div class="pl-track"><div class="pl-playhead" style="left:${headPct.toFixed(2)}%"></div></div>
+          </div>
+          <div class="pl-axis"><span>0s</span><span>${ms(scale / 2)}</span><span>${ms(scale)}</span></div>
+        </div>
+      </div>`;
+  }
+
+  bar.querySelectorAll('[data-strategy]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      setBusy(true);
+      status.textContent = 'starting…';
+      try {
+        const r = await fetch(`${ttsUrl}/bench`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, strategy: btn.dataset.strategy }),
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || 'refused');
+        runId = j.run_id;
+        timer = setInterval(poll, 250);
+      } catch (e) {
+        status.textContent = `failed: ${e.message}`;
+        setBusy(false);
+      }
+    });
+  });
+
+  stopBtn.addEventListener('click', async () => {
+    if (!runId) return;
+    await fetch(`${ttsUrl}/bench/cancel`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ run_id: runId }),
+    }).catch(() => {});
+  });
 }
