@@ -51,13 +51,13 @@ The methodology being applied (parallel-rival approaches with explicit convergen
 | Phase | Scope | Status | Est | Branch |
 |-------|-------|--------|-----|--------|
 | 0 | Scaffold both branches, shared example input, methodology doc | ✅ shipped s01-643d67 | 1h | — |
-| 1.A | Build-step renderer — CLI parses `.md`, emits `.html` | ⬜ queued | 1-2h | A |
-| 1.B | Runtime renderer — custom element `<soma-artifact>` + styles | ⬜ queued | 1-2h | B |
-| 2.A | Build-step — add `--format json/xml` output | ⬜ queued | 1h | A |
-| 2.B | Runtime — handle JSON/XML inputs via dispatch | ⬜ queued | 1h | B |
-| 3 | Render the same `examples/cycle-215.md` through both branches | ⬜ queued | 30m | — |
-| 4 | Honest comparison against convergence criteria (§ Decisions to surface) | ⬜ queued | 1h | — |
-| 5 | Convergence: pick-one / synthesize / both-keep — decision + dossier update | ⬜ queued | 30m | — |
+| 1.A | Build-step renderer — CLI parses `.md`, emits `.html` | ✅ shipped | 1-2h | A |
+| 1.B | Runtime renderer — custom element `<soma-artifact>` + styles | ✅ shipped | 1-2h | B |
+| 2.A | Build-step — add `--format json/xml` output | ✅ shipped | 1h | A |
+| 2.B | Runtime — handle JSON/XML inputs via dispatch | 🟡 partial — 1.5 of 3 formats (measured, Phase 4) | 1h | B |
+| 3 | Render the same `examples/cycle-215.md` through both branches | ✅ shipped SIB-7 | 30m | — |
+| 4 | Honest comparison against convergence criteria (§ Decisions to surface) | ✅ shipped SIB-7 → `phase-4/` | 1h | — |
+| 5 | Convergence: pick-one / synthesize / both-keep — decision + dossier update | ✅ shipped SIB-7 → **synthesize** (`phase-4/convergence.md`) | 30m | — |
 | 6 | Author SKILL.md — `skills/prism-authoring/SKILL.md` teaching agents the anchor convention + surgical-edit operations + when to author each artifact type | ⬜ queued | 1h | — |
 
 **Phase 6 details** (s01-643d67): the SKILL.md is a focused single-file skill (NOT a meta-skill — skill-forge is for building skills, PRISM is a document substrate). Scope:
@@ -81,6 +81,20 @@ Phase 0 deliverables (this commit):
 - Shared `examples/cycle-215.md` (a real cycle artifact copied from the studio repo, converted to PRISM section-anchored shape)
 
 Phases 1-4 are deliberately small per-branch so we can interleave (alternate days, alternate sessions) rather than serial-blocking one branch behind the other.
+
+**Status-table correction (SIB-7, 2026-06-02).** Phases 1.A–2.A sat at `⬜ queued`
+in this table while their output demonstrably existed and rendered — the table was
+stale, not the work. Corrected above from the artifacts rather than from memory.
+The lesson is filed as a trap: verify status claims against the artifact, never
+against the table that describes it. Phase 2.B is marked `partial` because the
+Phase 4 audit measured Branch B handling 1.5 of the 3 input formats, which is
+less than this row originally claimed.
+
+**Phase 5 resolved: synthesize.** See `phase-4/convergence.md` (itself authored as
+a `type=decision` PRISM artifact that validates clean and round-trips through all
+three projections). The methodology doc says convergence flips the cycle root to
+`shipped`; this cycle stays `in-progress` because Phase 6 (the authoring skill)
+was deliberately scheduled *after* convergence and is now unblocked but not done.
 <!-- /@section: phases -->
 
 <!-- @section: decisions-locked -->
