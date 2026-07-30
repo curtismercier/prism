@@ -16,7 +16,11 @@ branches/build-renderer/coverage/
 examples/**/*.html
 examples/**/*.json
 examples/**/*.xml
-examples/styles.css
+# styles.css is DERIVED — the renderer copies it from branches/cdn-renderer/styles.css
+# on every render. Unanchored pattern on purpose: the old `examples/styles.css` form
+# was anchored to the repo root, so the copy under branches/build-renderer/examples/
+# stayed tracked and went stale, re-introducing the v0.1.1 narrow-column bug.
+**/examples/styles.css
 !examples/**/decision.xml   # except sample decision-type artifacts that are AUTHORED in xml
 !examples/**/taskboard.json # except sample task artifacts authored in json
 .soma/cycles/**/*.html
