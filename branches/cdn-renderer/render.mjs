@@ -14,11 +14,14 @@
 import { parsePrism } from './parsers/md.mjs';
 import { renderCycle } from './layouts/cycle.mjs';
 import { renderDefault } from './layouts/default.mjs';
-import { renderPipeline } from './layouts/pipeline.mjs';
+import { renderPipeline, attachPipelineLive } from './layouts/pipeline.mjs';
 
+// A layout is either a render function, or { render, attach }. `attach` runs
+// AFTER the HTML is in the DOM — innerHTML never executes <script>, so an
+// interactive layout has no other way to bind handlers.
 const LAYOUTS = {
   cycle: renderCycle,
-  pipeline: renderPipeline,
+  pipeline: { render: renderPipeline, attach: attachPipelineLive },
   // future: decision, task, briefing, methodology, spec...
 };
 
@@ -84,7 +87,9 @@ class SomaArtifact extends HTMLElement {
 
     // Dispatch by type
     const type = parsed.frontmatter?.type || 'unknown';
-    const layout = LAYOUTS[type] || renderDefault;
+    const entry = LAYOUTS[type] || renderDefault;
+    const layout = typeof entry === 'function' ? entry : entry.render;
+    const attach = typeof entry === 'function' ? null : entry.attach;
 
     // Layouts may be async — a layout that fetches its own data (e.g. a metrics
     // JSON emitted by a collector) is how an artifact stays live without anyone
@@ -102,6 +107,14 @@ class SomaArtifact extends HTMLElement {
     }
 
     this.innerHTML = html;
+
+    if (attach) {
+      try {
+        attach(this, { frontmatter: parsed.frontmatter });
+      } catch (err) {
+        console.error('[prism] layout attach failed:', err);
+      }
+    }
 
     // Set page title from artifact if not set
     if (parsed.frontmatter?.title && !document.title.includes(parsed.frontmatter.title)) {
