@@ -14,9 +14,11 @@
 import { parsePrism } from './parsers/md.mjs';
 import { renderCycle } from './layouts/cycle.mjs';
 import { renderDefault } from './layouts/default.mjs';
+import { renderPipeline } from './layouts/pipeline.mjs';
 
 const LAYOUTS = {
   cycle: renderCycle,
+  pipeline: renderPipeline,
   // future: decision, task, briefing, methodology, spec...
 };
 
@@ -83,7 +85,21 @@ class SomaArtifact extends HTMLElement {
     // Dispatch by type
     const type = parsed.frontmatter?.type || 'unknown';
     const layout = LAYOUTS[type] || renderDefault;
-    const html = layout(parsed);
+
+    // Layouts may be async — a layout that fetches its own data (e.g. a metrics
+    // JSON emitted by a collector) is how an artifact stays live without anyone
+    // rewriting HTML. `await` on a sync return is a no-op, so this is backwards
+    // compatible with every existing layout.
+    let html;
+    try {
+      html = await layout(parsed);
+    } catch (err) {
+      this.innerHTML = `<div class="prism-error">
+        <strong>Layout <code>${type}</code> failed</strong><br>
+        <small>${err.message}</small>
+      </div>`;
+      return;
+    }
 
     this.innerHTML = html;
 
