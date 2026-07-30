@@ -55,11 +55,18 @@ function parseArgs(argv) {
 }
 
 function ensureStylesheet(outDir) {
-  // Copy styles.css from the CDN renderer to the output dir if not present.
+  // Copy styles.css from the CDN renderer into the output dir, ALWAYS overwriting.
   // The two branches share a stylesheet for fair comparison.
+  //
+  // This used to be copy-only-if-absent, which silently pinned any output dir to
+  // whatever stylesheet landed there first. That is how the v0.1.1 non-cycle
+  // narrow-column fix failed to reach branches/build-renderer/examples/ — a stale
+  // pre-fix styles.css sat there and was never refreshed, so the fixed bug
+  // reproduced at 200px on every subsequent render. styles.css is a DERIVED
+  // artifact; refreshing it is correct and edits to it are not durable by design.
   const targetPath = join(outDir, 'styles.css');
   const cdnStyles = resolve(PKG_ROOT, '../cdn-renderer/styles.css');
-  if (!existsSync(targetPath) && existsSync(cdnStyles)) {
+  if (existsSync(cdnStyles)) {
     copyFileSync(cdnStyles, targetPath);
   }
 }
@@ -153,6 +160,12 @@ function cmdValidate(file) {
   const issues = [];
   if (!parsed.frontmatter?.type) issues.push('missing frontmatter: type');
   if (!parsed.frontmatter?.status) issues.push('missing frontmatter: status');
+  // An unclosed anchor is a blocking error, not a warning. The parser drops such a
+  // section, so read/edit/append on it fail with exit 1 — validate must not call
+  // that artifact "clean" while its sections are unaddressable.
+  for (const name of parsed.unclosed || []) {
+    issues.push(`unclosed section anchor: ${name} (opened but never closed — section is unaddressable)`);
+  }
   if (parsed.frontmatter?.type === 'cycle') {
     for (const required of ['trigger', 'context', 'phases']) {
       if (!parsed.sections.has(required)) issues.push(`cycle missing required section: ${required}`);
