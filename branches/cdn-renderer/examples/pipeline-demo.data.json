@@ -1,0 +1,246 @@
+{
+  "generated_by": "a collector script; see the artifact body for the contract",
+  "data_state": "measured",
+  "data_state_note": "Measured on a live text-to-speech sidecar \u2014 the same text through every configuration, back to back. Kept verbatim as a demo of what this layout is for: an earlier MODELLED version of this same chart was wrong in SHAPE, not merely mis-tuned, and the difference only became visible once the numbers came from the system instead of assumptions.",
+  "observed_evidence": {
+    "note": "Serial synthesis was introduced deliberately to fix an ordering bug \u2014 a short later sentence could overtake a long earlier one. The docstring claims it costs no latency because 'chunk N+1 synthesizes while chunk N plays'. That gives only ONE chunk of lookahead, so any call slower than the chunk currently playing becomes audible silence. Ordering is a property of the index, not of serialising."
+  },
+  "sample_text": "Root cause found. Somadian silently truncates every reply at two thousand characters. The cut landed inside a bold marker, orphaning it. There is no error, no counter, and no log line. The bottleneck underneath it is that playback is far slower than generation. I cannot measure it yet, because health gives queue depths but no durations.",
+  "tts_url": "http://127.0.0.1:18790",
+  "strategy_notes": {
+    "current": {
+      "label": "Uniform sentence chunks (shipped)",
+      "pros": [
+        "Fastest possible first word \u2014 chunk 1 is one short sentence.",
+        "Chunk boundaries land on sentence ends, so prosody and intonation stay natural.",
+        "A failed chunk costs one sentence. At ~3% edge-tts failure that is a small, survivable hole.",
+        "Barge-in feels instant: an interruption takes effect within one short chunk.",
+        "Already shipped, simple, and predictable \u2014 no tuning constants to get wrong."
+      ],
+      "cons": [
+        "Pays the fixed per-chunk synthesis overhead N times for N sentences \u2014 worst throughput of any strategy.",
+        "Never builds a playback buffer, so there is no slack to absorb one slow chunk.",
+        "In the high-overhead regime, stalls compound and the pipeline never catches up.",
+        "More chunks means more network round trips, so more chances to hit the ~3% failure."
+      ]
+    },
+    "proposed": {
+      "label": "Ramped chunks, buffer-targeted",
+      "pros": [
+        "Keeps the fast first word \u2014 chunk 1 stays small by design.",
+        "Amortises the fixed overhead across far fewer, larger chunks.",
+        "Builds a buffer, so one slow synthesis or network hiccup is absorbed instead of heard.",
+        "Fewer round trips \u2014 fewer opportunities for the edge-tts failure.",
+        "Closed-loop on buffer depth, it self-regulates under machine load instead of falling behind permanently."
+      ],
+      "cons": [
+        "\ud83d\udd34 Blast radius grows: a failed chunk now loses a whole paragraph rather than one sentence.",
+        "\ud83d\udd34 Barge-in gets worse \u2014 interrupting cannot take effect until the current chunk ends, or must kill playback mid-paragraph. For a voice you talk over, this is a real regression.",
+        "Large chunks may hit TTS length limits or degrade prosody; unknown until measured.",
+        "Adds tuning constants \u2014 and with the wrong ones it is strictly worse than uniform.",
+        "Only helps at all in the high-overhead regime. At 1200ms it changes nothing."
+      ]
+    },
+    "parallel": {
+      "label": "Parallel synthesis, uniform chunks (measured winner)",
+      "pros": [
+        "**Zero stalls measured** \u2014 playback never starved once, versus 4 stalls serial.",
+        "Keeps small sentence chunks, so it retains every advantage of the shipped strategy: instant barge-in, natural prosody, and a one-sentence blast radius when a synthesis fails.",
+        "First word unchanged (1718ms vs 3386ms serial \u2014 in fact faster here).",
+        "Attacks the actual dominant term: spends roughly the **max** of the latency distribution instead of the **sum**.",
+        "One tuning knob (worker count), and it is not sensitive \u2014 all 5 chunks finished by 3.3s against 29.6s of playback.",
+        "Fixes the cause rather than hiding it; ramping only buys more time to absorb the same stall."
+      ],
+      "cons": [
+        "\ud83d\udd34 Re-opens the ordering hazard that serialisation was introduced to fix. Order must come from the slot index, and a regression there returns a bug that is confusing and intermittent.",
+        "N concurrent cloud calls burst edge-tts; **rate limits untested** \u2014 a long reply could fan out to dozens of simultaneous requests.",
+        "OpenVoice clone runs per chunk; thread-safety and GPU/model-lock contention **not verified** beyond \u00d74.",
+        "Work is wasted on barge-in \u2014 chunks synthesized ahead are discarded if the user interrupts.",
+        "More temp audio files in flight; unbounded fan-out on a very long reply needs a cap."
+      ]
+    }
+  },
+  "assumptions": {
+    "note": "none \u2014 these are measured",
+    "sample_chars": 338
+  },
+  "scenarios": [
+    {
+      "label": "Serial synthesis, uniform sentence chunks",
+      "note": "One synthesis worker. Chunk N+1 only begins once chunk N finishes, so the pipeline spends the SUM of a highly variable distribution and stalls whenever one call runs long.",
+      "group": "As shipped",
+      "strategy": "current",
+      "workers": 1,
+      "run_id": "current-2968715",
+      "chunks": [
+        {
+          "i": 0,
+          "chars": 85,
+          "text": "Root cause found. Somadian silently truncates every \u2026",
+          "synth_start_ms": 0,
+          "synth_ms": 1491,
+          "play_start_ms": 1491,
+          "play_ms": 7653,
+          "gap_before_ms": 1491
+        },
+        {
+          "i": 1,
+          "chars": 50,
+          "text": "The cut landed inside a bold marker, orphaning it.",
+          "synth_start_ms": 9144,
+          "synth_ms": 1412,
+          "play_start_ms": 10557,
+          "play_ms": 4753,
+          "gap_before_ms": 1412
+        },
+        {
+          "i": 2,
+          "chars": 47,
+          "text": "There is no error, no counter, and no log line.",
+          "synth_start_ms": 15310,
+          "synth_ms": 1668,
+          "play_start_ms": 16979,
+          "play_ms": 4220,
+          "gap_before_ms": 1668
+        },
+        {
+          "i": 3,
+          "chars": 76,
+          "text": "The bottleneck underneath it is that playback is far\u2026",
+          "synth_start_ms": 21199,
+          "synth_ms": 1280,
+          "play_start_ms": 22479,
+          "play_ms": 5371,
+          "gap_before_ms": 1280
+        },
+        {
+          "i": 4,
+          "chars": 76,
+          "text": "I cannot measure it yet, because health gives queue \u2026",
+          "synth_start_ms": 27849,
+          "synth_ms": 5185,
+          "play_start_ms": 33035,
+          "play_ms": 5565,
+          "gap_before_ms": 5186
+        }
+      ],
+      "metrics": {
+        "chunk_count": 5,
+        "time_to_first_word_ms": 1491,
+        "total_wall_ms": 38600,
+        "total_gap_ms": 9546,
+        "gap_count": 4,
+        "worst_gap_ms": 5186,
+        "errors": 0
+      }
+    },
+    {
+      "label": "Serial synthesis, ramped chunks",
+      "note": "Same single worker, but larger chunks buy more playback time to hide a slow call. Treats the symptom: fewer, longer stalls rather than none.",
+      "group": "Workaround: bigger chunks",
+      "strategy": "ramp",
+      "workers": 1,
+      "run_id": "ramp-3007784",
+      "chunks": [
+        {
+          "i": 0,
+          "chars": 85,
+          "text": "Root cause found. Somadian silently truncates every \u2026",
+          "synth_start_ms": 0,
+          "synth_ms": 1573,
+          "play_start_ms": 1573,
+          "play_ms": 7672,
+          "gap_before_ms": 1573
+        },
+        {
+          "i": 1,
+          "chars": 252,
+          "text": "The cut landed inside a bold marker, orphaning it. T\u2026",
+          "synth_start_ms": 9245,
+          "synth_ms": 2013,
+          "play_start_ms": 11258,
+          "play_ms": 17356,
+          "gap_before_ms": 2013
+        }
+      ],
+      "metrics": {
+        "chunk_count": 2,
+        "time_to_first_word_ms": 1573,
+        "total_wall_ms": 28614,
+        "total_gap_ms": 2013,
+        "gap_count": 1,
+        "worst_gap_ms": 2013,
+        "errors": 0
+      }
+    },
+    {
+      "label": "Parallel synthesis \u00d74, uniform chunks",
+      "note": "Ordering comes from the chunk INDEX, not from doing one at a time. Network-bound calls fan out; playback still consumes slots in order. Spends roughly the MAX of the distribution instead of the sum, and keeps small chunks.",
+      "group": "Fix: parallel synthesis",
+      "strategy": "current",
+      "workers": 4,
+      "run_id": "current-p4-3037841",
+      "chunks": [
+        {
+          "i": 0,
+          "chars": 85,
+          "text": "Root cause found. Somadian silently truncates every \u2026",
+          "synth_start_ms": 0,
+          "synth_ms": 1983,
+          "play_start_ms": 1983,
+          "play_ms": 7668,
+          "gap_before_ms": 1983
+        },
+        {
+          "i": 1,
+          "chars": 50,
+          "text": "The cut landed inside a bold marker, orphaning it.",
+          "synth_start_ms": 0,
+          "synth_ms": 2354,
+          "play_start_ms": 9651,
+          "play_ms": 4878,
+          "gap_before_ms": 0
+        },
+        {
+          "i": 2,
+          "chars": 47,
+          "text": "There is no error, no counter, and no log line.",
+          "synth_start_ms": 0,
+          "synth_ms": 1203,
+          "play_start_ms": 14529,
+          "play_ms": 4362,
+          "gap_before_ms": 0
+        },
+        {
+          "i": 3,
+          "chars": 76,
+          "text": "The bottleneck underneath it is that playback is far\u2026",
+          "synth_start_ms": 0,
+          "synth_ms": 1575,
+          "play_start_ms": 18892,
+          "play_ms": 5368,
+          "gap_before_ms": 0
+        },
+        {
+          "i": 4,
+          "chars": 76,
+          "text": "I cannot measure it yet, because health gives queue \u2026",
+          "synth_start_ms": 1203,
+          "synth_ms": 1517,
+          "play_start_ms": 24259,
+          "play_ms": 5632,
+          "gap_before_ms": 0
+        }
+      ],
+      "metrics": {
+        "chunk_count": 5,
+        "time_to_first_word_ms": 1983,
+        "total_wall_ms": 29892,
+        "total_gap_ms": 0,
+        "gap_count": 0,
+        "worst_gap_ms": 0,
+        "errors": 0
+      }
+    }
+  ]
+}

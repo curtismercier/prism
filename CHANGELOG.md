@@ -10,7 +10,40 @@ spec v0.1.
 
 ## [Unreleased]
 
+### Added
+
+- **`pipeline` layout (cdn-renderer)** — renders a linear timeline for pipelined
+  producer/consumer systems: one row per work unit, producer and consumer bars on a
+  shared time axis, and stalls drawn as literal gaps. Scenarios sharing a `group`
+  render on one axis so comparisons are like-for-like. Pros/cons per strategy come
+  from the data file.
+- **Async layouts + post-render `attach` hook** — a layout may be a function or
+  `{ render, attach }`. `render` may return a promise, so a layout can fetch its own
+  data; `attach` runs after the HTML is in the DOM, which is the only way an
+  interactive layout can bind handlers (`innerHTML` never executes `<script>`).
+  Plain-function layouts are unchanged.
+- **`examples/pipeline-demo.md`** — a worked example of the `pipeline` layout using a
+  real measured dataset, rendering standalone with no backend.
+- **`skills/prism-contributing`** — the fork-and-evolve model (your fork is an
+  instrument, not a checkout awaiting upstream), the keep-private / generalize /
+  vendor decision, layout design rules, and the contribution failure modes specific
+  to agent contributors.
+
 ### Fixed
+
+- **cdn-renderer README claimed "scaffold only" long after the implementation
+  shipped** and cycle 001 resolved. A stale status line in a README is believed on
+  sight; this one nearly caused a rebuild of working code.
+- **Projection ignore patterns were root-anchored, so they never matched
+  `branches/*/examples/`.** A pattern containing a slash anchors to the repo root, so
+  `examples/**/*.json` matched only `<root>/examples/`. Derived `.html`/`.json`/`.xml`
+  under the branch example directories were neither tracked nor ignored — one
+  `git add -A` from being committed. Same class as the stale `styles.css` that kept a
+  released fix from reaching output for 2.5 months; fixed there, missed here.
+- **Data files could be destroyed by the validation gate.** `render --format all`
+  writes its JSON projection to `<name>.json`, silently overwriting a data file of the
+  same name. Data files now use `<name>.data.json` and are explicitly tracked; the
+  convention is documented where a layout author will meet it.
 
 - **build-renderer — the v0.1.1 narrow-column fix could not reach output
   directories, so the fixed bug still reproduced.** `ensureStylesheet()`
