@@ -9,7 +9,7 @@
 //   prism edit <file.md> --section <name> --content <text>
 //   prism validate <file.md>
 
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parsePrism } from '../src/parse.mjs';
@@ -79,6 +79,10 @@ function cmdRender(file, flags) {
   const fmt = flags.format || 'html';
   const base = basename(abs, extname(abs));
   const dir = flags.out ? resolve(process.cwd(), flags.out) : dirname(abs);
+  // Create the output directory if --out names one that doesn't exist yet.
+  // Without this, the first write (the stylesheet copy) died with a raw ENOENT
+  // stack trace instead of just working.
+  mkdirSync(dir, { recursive: true });
 
   const formats = fmt === 'all' ? ['html', 'json', 'xml'] : [fmt];
   for (const f of formats) {
@@ -153,6 +157,15 @@ function cmdEdit(file, flags) {
   console.log(`✓ replaced section: ${flags.section}`);
 }
 
+// Spec §5 Artifact Types — required section anchors per standard type.
+// §5.1 cycle · §5.2 decision · §5.3 task · §5.4 briefing.
+const REQUIRED_SECTIONS = {
+  cycle:    ['trigger', 'context', 'phases', 'decisions-locked', 'out-of-scope'],
+  decision: ['context', 'options', 'decision', 'consequences'],
+  task:     ['goal', 'acceptance'],
+  briefing: ['situation', 'recommendation'],
+};
+
 function cmdValidate(file) {
   const abs = resolve(process.cwd(), file);
   const text = readFileSync(abs, 'utf8');
@@ -166,9 +179,17 @@ function cmdValidate(file) {
   for (const name of parsed.unclosed || []) {
     issues.push(`unclosed section anchor: ${name} (opened but never closed — section is unaddressable)`);
   }
-  if (parsed.frontmatter?.type === 'cycle') {
-    for (const required of ['trigger', 'context', 'phases']) {
-      if (!parsed.sections.has(required)) issues.push(`cycle missing required section: ${required}`);
+  // Required sections per spec §5 Artifact Types. Previously this checked only
+  // `cycle`, and only 3 of its 5 required sections — so a `decision` artifact with
+  // none of its required sections validated clean. Unknown/custom types are not
+  // enforced: spec §5.5 puts their requirements in the implementation's own type
+  // registry, and viewers fall back to a generic layout.
+  const required = REQUIRED_SECTIONS[parsed.frontmatter?.type];
+  if (required) {
+    for (const name of required) {
+      if (!parsed.sections.has(name)) {
+        issues.push(`${parsed.frontmatter.type} missing required section: ${name}`);
+      }
     }
   }
   if (issues.length === 0) {
