@@ -6,7 +6,24 @@ This is one of two parallel implementations developed under the [PRISM renderer 
 
 ## Status
 
-Scaffold only. Phase 1.B implementation queued — see [`../../.soma/cycles/001-renderer-spike/branch-b/README.md`](../../.soma/cycles/001-renderer-spike/branch-b/README.md) for the branch dossier.
+**Implemented.** `render.mjs` + `parsers/md.mjs` + `layouts/` are working (~600 LOC); cycle 001 resolved
+**synthesize** — this runtime renderer for human viewing, the build-step branch retained for JSON/XML
+pipeline outputs. See [`../../.soma/cycles/001-renderer-spike/`](../../.soma/cycles/001-renderer-spike/).
+
+<!-- CORRECTED 2026-07-30 (meetsoma s01-2a3668): this line read "Scaffold only. Phase 1.B
+     implementation queued" long after the implementation shipped and the cycle resolved. It was
+     believed on sight and nearly caused a rebuild of working code. -->
+
+## Layouts
+
+Dispatched by frontmatter `type`. Layouts may be **sync or async** — an async layout can fetch its
+own data, which is how an artifact stays live without anyone hand-editing HTML.
+
+| `type` | Layout | For |
+|---|---|---|
+| `cycle` | `layouts/cycle.mjs` | branching-cycle dossiers |
+| `pipeline` | `layouts/pipeline.mjs` | producer/consumer timeline comparisons — renders a Gantt of work units from a JSON emitted by a collector, so stalls are visible as literal gaps |
+| *(other)* | `layouts/default.mjs` | frontmatter + sections in document order |
 
 ## Planned usage (when shipped)
 
