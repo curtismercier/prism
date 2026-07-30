@@ -10,7 +10,60 @@ spec v0.1.
 
 ## [Unreleased]
 
+### Fixed
+
+- **build-renderer — the v0.1.1 narrow-column fix could not reach output
+  directories, so the fixed bug still reproduced.** `ensureStylesheet()`
+  copied the shared stylesheet only when the target was absent, which
+  pinned any output directory to whichever `styles.css` landed there
+  first. A stale pre-fix copy was committed at
+  `branches/build-renderer/examples/styles.css`, so rendering a
+  `type=decision` artifact there still produced the 200px column that
+  v0.1.1 was released to fix. Measured in a headless browser at a
+  1187px viewport: `.cycle-main` was **200px** wide with the stale
+  stylesheet and **1080px** with the current one — same artifact, same
+  renderer, stylesheet the only variable. `styles.css` is a derived
+  artifact and is now always refreshed on render.
+
+- **The stale stylesheet was tracked in git and the ignore rule never
+  matched it.** `.gitignore` carried `examples/styles.css`, which git
+  anchors to the repository root, so the copy under
+  `branches/build-renderer/examples/` was never ignored — and the rule
+  added in `fd09a10` did not untrack the already-committed file. The
+  pattern is now `**/examples/styles.css` and the stale copy is
+  untracked. Without this, a fresh clone reproduced the bug.
+
+- **`prism validate` enforced required sections only for `type=cycle`, and
+  only 3 of the 5 the spec requires.** Every other standard type went
+  unchecked, so a `decision` artifact carrying none of its four required
+  sections validated clean and exited 0. Required sections are now a
+  registry transcribed from spec §5: `cycle` (§5.1), `decision` (§5.2),
+  `task` (§5.3), `briefing` (§5.4). Unknown and custom types stay
+  unenforced per §5.5. Both shipped examples already carry every section
+  their type requires and still validate clean.
+
+- **`render --out <dir>` crashed with a raw `ENOENT` stack trace when the
+  target directory did not exist**, because the stylesheet copy ran
+  before any `mkdir`. The output directory is now created recursively.
+
+- **`prism validate` reported unclosed section anchors as clean and
+  exited 0.** An anchor that opens but never closes is dropped by the
+  parser, so `read`, `edit`, and `append` against that section all fail
+  with exit 1 — while `validate` printed `clean (0 sections)` and exited
+  0, greenlighting an artifact whose sections are unaddressable. The
+  parser now reports unclosed anchors and `validate` treats them as
+  blocking errors. Both shipped examples still validate clean.
+
 ### Added
+
+- **CI workflow** (`.github/workflows/prism.yml`) — closes issue #2.
+  Runs on push to `main` and on every pull request: validates every
+  `examples/*.md`, renders all three projections and asserts their
+  content, and carries a regression guard for the v0.1.1 non-cycle
+  layout that is verified to fail against the pre-fix stylesheet. Also
+  includes a negative test asserting `validate` rejects a malformed
+  artifact, so the validate gate cannot silently stop blocking. Every
+  step fails the build on violation — no warn-only steps.
 
 - **CONTRIBUTING.md** — Contribution guide covering the three change
   classes (editorial / markdown content / substantial), PR gates,
