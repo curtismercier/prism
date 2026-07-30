@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 4 audit — type=decision cross-type render test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <script type="module" src="../render.mjs"></script>
+</head>
+<body>
+  <!-- Scratch harness for cycle 001 Phase 4 branch-B audit.
+       Points the CDN renderer at examples/decision-example.md (type=decision, no TOC)
+       to check the 200px-column regression. Serve from the REPO ROOT so the
+       ../../../examples/ path resolves. -->
+  <soma-artifact src="../../../examples/decision-example.md"></soma-artifact>
+</body>
+</html>
