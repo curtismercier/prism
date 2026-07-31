@@ -30,17 +30,39 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Gate: "prism validate clean on any touched .md artifact"
+      #
+      # This loop used to be `for f in examples/*.md` — root only. PR #11 added
+      # branches/cdn-renderer/examples/pipeline-demo.md and CI went green without ever
+      # opening it: the root examples still existed, so even the n>0 vacuity guard passed.
+      # A gate that skips exactly the file a PR adds is decoration. Enumerate by find, and
+      # assert the count we validated equals the count that exists (Trait 9: state your
+      # denominator, and how you enumerated it).
       - name: Validate every example artifact
         run: |
           set -euo pipefail
-          shopt -s nullglob
+          # ONE enumeration, used for both the loop and the coverage assertion — two
+          # different find expressions would make the equality check meaningless.
+          # Deliberately POSIX-ish (no mapfile/compgen): those are bash-5 builtins, and a
+          # gate that can only run on the runner is a gate nobody rehearses before pushing.
+          ARTIFACTS=()
+          while IFS= read -r f; do ARTIFACTS+=("$f"); done < <(find . -path ./node_modules -prune -o -path '*/examples/*.md' -print | sort -u)
           n=0
-          for f in examples/*.md; do
+          for f in "${ARTIFACTS[@]}"; do
             node "$PRISM" validate "$f"
             n=$((n + 1))
           done
-          [ "$n" -gt 0 ] || { echo "::error::no examples/*.md found — validate gate would pass vacuously"; exit 1; }
-          echo "validated $n artifact(s)"
+          [ "$n" -gt 0 ] || { echo "::error::no examples/*.md found anywhere — validate gate would pass vacuously"; exit 1; }
+          # Coverage, against an INDEPENDENT denominator: enumerate examples/ DIRECTORIES
+          # by type, not by the artifact list, then assert each one contributed. Deriving
+          # the dirs from ARTIFACTS would make this trivially true — the exact shape of
+          # non-check that let PR #11's only new artifact go unvalidated behind a green tick.
+          while IFS= read -r d; do
+            ls "$d"/*.md > /dev/null 2>&1 || continue   # empty dir is not a gap
+            printf '%s\n' "${ARTIFACTS[@]}" | grep -q "^$d/" \
+              || { echo "::error::examples dir holds .md artifacts but none were validated: $d"; exit 1; }
+          done < <(find . -path ./node_modules -prune -o -type d -name examples -print)
+          echo "validated $n artifact(s) across $(printf '%s\n' "${ARTIFACTS[@]}" | xargs -n1 dirname | sort -u | wc -l) examples dir(s):"
+          printf '  %s\n' "${ARTIFACTS[@]}"
 
       # Negative test: validate must FAIL on a malformed artifact. Without this, a
       # validate step that silently stopped blocking would still show a green tick.
@@ -56,11 +78,38 @@ jobs:
           fi
           echo "validate correctly rejected the malformed artifact"
 
-      # Gate: "renders cleanly to all three projections"
+      # Gate: "renders cleanly to all three projections" — for EVERY artifact, not just root.
+      #
+      # Rendered per source directory, not into one shared dir: examples/cycle-215.md and
+      # branches/cdn-renderer/examples/cycle-215.md share a basename, so a single OUT would
+      # have one silently overwrite the other and still assert green on the survivor.
+      # $OUT (exported for the regression guard below) stays the ROOT projections.
       - name: Render all projections and assert output
         run: |
           set -euo pipefail
+          render_dir() {
+            local src_glob="$1" out="$2"
+            mkdir -p "$out"
+            shopt -s nullglob
+            for f in $src_glob; do
+              node "$PRISM" render "$f" --format all --out "$out"
+              b=$(basename "$f" .md)
+              for ext in html json xml; do
+                [ -s "$out/$b.$ext" ] || { echo "::error::empty or missing projection: $b.$ext (from $f)"; exit 1; }
+              done
+              grep -qF '<!DOCTYPE html>' "$out/$b.html"
+              grep -qF 'class="prism' "$out/$b.html"
+              grep -qF '<?xml version="1.0"' "$out/$b.xml"
+              node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+                if (!j.type) throw new Error("JSON projection missing .type");
+                if (Object.keys(j.sections || {}).length === 0) throw new Error("JSON projection has no sections");' "$out/$b.json"
+              echo "  rendered $f"
+            done
+          }
           shopt -s nullglob
+          for d in branches/*/examples; do
+            render_dir "$d/*.md" "$RUNNER_TEMP/prism-projections-$(basename "$(dirname "$d")")"
+          done
           OUT="$RUNNER_TEMP/prism-projections"
           mkdir -p "$OUT"
           echo "OUT=$OUT" >> "$GITHUB_ENV"
