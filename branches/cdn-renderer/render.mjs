@@ -11,17 +11,51 @@
 //
 // Zero build step. Zero install. Works in any modern browser.
 
-import { parsePrism } from './parsers/md.mjs';
-import { renderCycle } from './layouts/cycle.mjs';
-import { renderDefault } from './layouts/default.mjs';
-import { renderPipeline, attachPipelineLive } from './layouts/pipeline.mjs';
+// ── Module loading: the version query MUST propagate to the graph ──────────────
+//
+// Chrome keeps parsed ES modules in a module map keyed by URL. `Cache-Control:
+// no-store` does NOT evict what is already parsed — verified s01-bbca8a: with
+// no-store set, the file correct on disk AND correct on the wire, a brand-new tab
+// still executed the OLD module (`renderCycle.toString()` showed the previous
+// source). Only a DIFFERENT URL is a different key.
+//
+// So `render.mjs?v=N` busts only render.mjs; its static imports resolve to
+// unversioned URLs and stay stale forever. That produced two false diagnoses in one
+// session — "layout dispatch is broken" and "the title fix didn't apply" — while
+// both files were correct the whole time.
+//
+// Fix: read our own query off `import.meta.url` and forward it to every child
+// import. Bumping `?v=` in the HTML now busts the whole graph, which is what the
+// author already believes it does.
+const V = new URL(import.meta.url).search;                 // '' in production, '?v=N' in dev
+const load = (rel) => import(new URL(rel + V, import.meta.url).href);
+
+const [
+  { parsePrism },
+  { renderCycle },
+  { renderDefault },
+  { renderPipeline, attachPipelineLive },
+  { renderRegistry, attachRegistry },
+] = await Promise.all([
+  load('./parsers/md.mjs'),
+  load('./layouts/cycle.mjs'),
+  load('./layouts/default.mjs'),
+  load('./layouts/pipeline.mjs'),
+  load('./layouts/registry.mjs'),
+]);
 
 // A layout is either a render function, or { render, attach }. `attach` runs
 // AFTER the HTML is in the DOM — innerHTML never executes <script>, so an
 // interactive layout has no other way to bind handlers.
 const LAYOUTS = {
   cycle: renderCycle,
+  // An `arc` is cycle-shaped (through-line, phase table, gates) — same projection.
+  // Without this it silently fell to renderDefault, which looks fine and is wrong.
+  arc: renderCycle,
   pipeline: { render: renderPipeline, attach: attachPipelineLive },
+  // A sortable index over MANY artifacts. Click-through nests a <soma-artifact>,
+  // so the index inherits every layout above it without knowing any of them.
+  registry: { render: renderRegistry, attach: attachRegistry },
   // future: decision, task, briefing, methodology, spec...
 };
 
@@ -84,6 +118,14 @@ class SomaArtifact extends HTMLElement {
       </div>`;
       return;
     }
+
+    // Resolve the source to an absolute URL and hand it to the layout. A layout that
+    // fetches a sidecar file (`data: ./x.json`) must resolve it relative to the SOURCE,
+    // not to the document — otherwise the same .md renders correctly only when it
+    // happens to sit beside the page including it. Latent bug found s01-bbca8a: the
+    // registry .md lives in `_browser/` while the page is a directory above, so
+    // `./registry.json` silently resolved to the wrong path.
+    parsed.srcUrl = new URL(src, document.baseURI).href;
 
     // Dispatch by type
     const type = parsed.frontmatter?.type || 'unknown';

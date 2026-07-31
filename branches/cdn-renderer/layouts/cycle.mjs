@@ -46,7 +46,21 @@ export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
     if (!STANDARD_ORDER.includes(name)) ordered.push(name);
   }
 
-  const title = escape(fm.title || `Cycle ${fm.cycle ?? '?'}`);
+  // Fall back through the fields an artifact ACTUALLY has before inventing a number.
+  // `Cycle ${fm.cycle ?? '?'}` rendered a literal "Cycle ?" on every artifact using the
+  // project/arc/phase model, which deliberately dropped `cycle:` numbers -- ordinals are
+  // positions WITHIN an arc, never IDs, so most cycles legitimately have no number.
+  // A placeholder that fires on correct input is a bug in the placeholder. (s01-bbca8a)
+  const title = escape(
+    fm.title
+    || fm.phase
+    || fm.id
+    || fm.slug
+    || fm.name
+    || (fm.cycle != null ? `Cycle ${fm.cycle}` : '')
+    || (fm.description ? String(fm.description).split(/[.\u2014\u2013]/)[0].trim() : '')
+    || 'Untitled artifact'
+  );
   const cycleNo = fm.cycle != null ? `<span class="cycle-no">#${escape(fm.cycle)}</span>` : '';
   const status = fm.status ? `<span class="status status-${escape(String(fm.status).split(' ')[0])}">${escape(fm.status)}</span>` : '';
 
