@@ -135,8 +135,10 @@ function scenario(s, scale) {
   </div>`;
 }
 
-export async function renderPipeline({ frontmatter: fm, sections, preamble }) {
-  const src = fm.data;
+export async function renderPipeline({ frontmatter: fm, sections, preamble, srcUrl }) {
+  // `data:` resolves against the SOURCE .md, not the document (s01-bbca8a). This
+  // file worked only because its .md and .json sit beside index.html.
+  const src = fm.data ? new URL(fm.data, srcUrl || document.baseURI).href : null;
   let d;
   try {
     const res = await fetch(src, { cache: 'no-store' });

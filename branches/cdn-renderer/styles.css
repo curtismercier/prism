@@ -223,3 +223,141 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .frontmatter-dl dt { color: var(--prism-soft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
 .frontmatter-dl dd { margin: 0; color: var(--prism-fg); }
 .frontmatter-dl pre { margin: 0; padding: 0.4rem; background: var(--prism-border-soft); border-radius: 0.25rem; }
+
+/* ── layout: registry (project / arc / phase) ─────────────────────────────
+   Hierarchy first. The flat sortable table this replaced reproduced the exact
+   wall-of-cycles defect the model exists to fix (Curtis, s01-bbca8a): sorting is
+   a lens ON a structure, not a substitute for having one. Broken rows stay LOUD. */
+
+.reg { font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+.reg-counts { font-size: 13px; color: #667; }
+.reg-k { font-weight: 700; color: #223; font-variant-numeric: tabular-nums; }
+.reg-bad { color: #c0392b; }
+.reg-gen { margin-left: .75rem; opacity: .55; font-size: 12px; }
+.reg-pre { margin: .6rem 0 0; color: #445; }
+
+.reg-controls { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+  margin: .9rem 0 .4rem; padding: .6rem .7rem; background: #f4f5f8; border-radius: 8px;
+  position: sticky; top: 0; z-index: 5; }
+.reg-input { flex: 1 1 15rem; padding: .4rem .6rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
+.reg-select, .reg-btn { padding: .4rem .5rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
+.reg-btn { cursor: pointer; }
+.reg-btn:hover { background: #eef; }
+.reg-chk { font-size: 13px; color: #556; display: flex; align-items: center; gap: .3rem; }
+.reg-shown { margin-left: auto; font-size: 12px; color: #778; font-variant-numeric: tabular-nums; }
+.reg-legend { font-size: 11.5px; color: #99a; margin: 0 0 .8rem .2rem; }
+.reg-legend em { opacity: .8; }
+
+.reg-proj { margin: 0 0 1.1rem; border-top: 2px solid #d7d7e4; }
+.reg-proj-head { display: flex; align-items: center; gap: .5rem; margin: 0; padding: .7rem .2rem;
+  font-size: 16px; font-weight: 800; color: #000; cursor: pointer; user-select: none;
+  letter-spacing: -.01em; }
+.reg-proj-head:hover, .reg-proj-head:focus-visible { background: #f2f4ff; outline: none; }
+.reg-proj-name { letter-spacing: .01em; }
+.reg-proj-n { font-weight: 500; font-size: 12px; color: #889; background: #eef0f6;
+  padding: .05rem .45rem; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.reg-caret { width: .9em; display: inline-block; color: #89a; font-size: 11px; }
+.reg-closed > .reg-proj-body, .reg-closed > .reg-arc-body { display: none; }
+
+.reg-arc { margin: 0 0 .15rem .9rem; }
+.reg-arc-head { display: flex; align-items: center; gap: .5rem; padding: .3rem .3rem;
+  cursor: pointer; user-select: none; border-radius: 5px; }
+.reg-arc-head:hover, .reg-arc-head:focus-visible { background: #f4f6ff; outline: none; }
+.reg-arc-name { font-weight: 650; color: #1b2b3d; font-size: 13.5px; flex: 0 0 auto; }
+.reg-arc-n { font-size: 11.5px; color: #8a8fa0; }
+.reg-noentry { opacity: .65; font-style: italic; }
+.reg-arc-body { margin-left: 1.3rem; border-left: 2px solid #dcdce9; padding-left: .85rem; }
+.reg-entrylink { font-size: 12px; color: #5a6; padding: .2rem .3rem; cursor: pointer; color: #4a6a8a; }
+.reg-entrylink:hover { background: #f0f6ff; }
+
+.reg-row { display: flex; align-items: baseline; gap: .9rem; padding: .3rem .35rem;
+  border-radius: 5px; cursor: pointer; }
+.reg-row:hover { background: #f6f8ff; }
+.reg-row-phase .reg-nm { font-variant-numeric: tabular-nums; }
+.reg-name { flex: 1 1 auto; min-width: 0; }
+.reg-nm { font-weight: 400; color: #46506a; font-size: 12.5px; }
+.reg-title { color: #8a8fa0; font-size: 12px; margin-left: .4rem; }
+.reg-meta { display: inline-flex; gap: 1.1rem; flex: 0 0 auto; padding-left: 1.1rem;
+  border-left: 1px solid #ececf4; margin-left: .6rem; }
+.reg-d, .reg-age { font-size: 11.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
+  min-width: 5.6rem; text-align: right; letter-spacing: .01em; }
+.reg-age { min-width: 3rem; }
+.reg-drift { color: #b8860b; font-weight: 600; }
+
+.reg-pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
+  font-size: 11px; margin-right: .3rem; white-space: nowrap; background: #e8eaf0; color: #445; flex: 0 0 auto;
+  max-width: 20rem; overflow: hidden; text-overflow: ellipsis; }
+.reg-b-active  { background: #e3f0ff; color: #14508c; }
+.reg-b-seeded  { background: #fff4e0; color: #8a5a12; }
+.reg-b-shipped { background: #e3f7e8; color: #1c6b34; }
+.reg-b-broken  { background: #ffe3e3; color: #a11; }
+
+.reg-row-broken { background: #fff6f6; }
+.reg-badge-broken { display: inline-block; padding: .05rem .4rem; border-radius: 4px;
+  background: #c0392b; color: #fff; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; }
+.reg-err { display: block; color: #a11; font-size: 11.5px; font-family: ui-monospace, monospace; }
+
+.reg-detail { margin-top: 1.5rem; border-top: 3px solid #dde; padding-top: .75rem; }
+.reg-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+.reg-close { margin-left: auto; padding: .25rem .6rem; border: 1px solid #ccd;
+  background: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: #556; }
+
+@media (prefers-color-scheme: dark) {
+  .reg-k, .reg-proj-head { color: #fff; }
+  .reg-nm { color: #a8b0c4; }
+  .reg-arc-name { color: #dde3ee; }
+  .reg-proj { border-top-color: #33333f; }
+  .reg-meta { border-left-color: #26262f; }
+  .reg-counts, .reg-pre { color: #99a; }
+  .reg-controls { background: #1a1a22; }
+  .reg-input, .reg-select, .reg-btn { background: #14141b; border-color: #333; color: #dde; }
+  .reg-btn:hover, .reg-proj-head:hover, .reg-arc-head:hover, .reg-row:hover { background: #1e1e28; }
+  .reg-proj { border-top-color: #26262f; }
+  .reg-proj-n { background: #26262f; color: #9a9aa8; }
+  .reg-arc-name { color: #cdd; } .reg-arc-body { border-left-color: #2a2a34; }
+  .reg-title, .reg-d, .reg-age, .reg-arc-n, .reg-legend { color: #7a7a88; }
+  .reg-pill { background: #26262f; color: #bbc; }
+  .reg-b-active { background: #16304d; color: #8ec2ff; }
+  .reg-b-seeded { background: #3d2f14; color: #e8bd6b; }
+  .reg-b-shipped { background: #14331f; color: #7ddb9c; }
+  .reg-b-broken { background: #3d1616; color: #ff9b9b; }
+  .reg-row-broken { background: #2a1414; }
+  .reg-detail { border-top-color: #333; }
+  .reg-close { background: #1a1a22; border-color: #333; color: #bbc; }
+}
+
+/* group stats — bucket chips + last-added. A bare count says how MUCH is here,
+   never what state it is in. Zero buckets are omitted so the row stays scannable. */
+/* Right-aligned into their own column so the NAME stays the primary read and the
+   numbers form a scannable rail. Vision review after adding these: "still scannable
+   but denser -- demote the secondary info". Weight added to a header has to be taken
+   back off somewhere, or every element shouts equally. */
+.reg-stats { display: inline-flex; gap: .28rem; align-items: center; margin-left: auto;
+  flex: 0 0 auto; opacity: .82; }
+.reg-proj-head:hover .reg-stats, .reg-arc-head:hover .reg-stats { opacity: 1; }
+.reg-stat { font-size: 10px; font-weight: 600; padding: .04rem .3rem; border-radius: 3px;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em; min-width: 1.6rem; text-align: center; }
+.reg-stat-A { background: #e3f0ff; color: #14508c; }
+.reg-stat-S { background: #fff4e0; color: #8a5a12; }
+.reg-stat-C { background: #e3f7e8; color: #1c6b34; }
+.reg-stat-O { background: #ecedf2; color: #5b6070; }
+.reg-stat-x { background: #c0392b; color: #fff; }
+.reg-stat-added { font-size: 10.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
+  padding-left: .25rem; }
+.reg-stat-fresh { font-size: 10.5px; color: #5f8a5f; font-variant-numeric: tabular-nums;
+  background: #eef6ee; padding: .05rem .3rem; border-radius: 4px; }
+
+@media (prefers-color-scheme: dark) {
+  .reg-stat-A { background: #16304d; color: #8ec2ff; }
+  .reg-stat-S { background: #3d2f14; color: #e8bd6b; }
+  .reg-stat-C { background: #14331f; color: #7ddb9c; }
+  .reg-stat-O { background: #26262f; color: #9a9aa8; }
+  .reg-stat-added { color: #7a7a88; }
+  .reg-stat-fresh { background: #16261a; color: #8fc79a; }
+}
+
+/* A legacy KIND folder is NOT a missing arc — it is residue scheduled to dissolve.
+   Rendering both as "no arc entry" would send someone to fill in the ones meant to
+   disappear, entrenching the very axis we are removing. */
+.reg-kindfolder { background: #f3e8ff; color: #6b3fa0; font-style: italic; }
+@media (prefers-color-scheme: dark) { .reg-kindfolder { background: #2a1d3d; color: #c9a6f0; } }
