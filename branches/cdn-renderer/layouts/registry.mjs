@@ -128,6 +128,28 @@ let DATA_GENERATED = null;
 let DATA_FETCHED_AT = 0;
 const REFRESH_MIN_MS = 15000;      // never poll harder than this, whatever the user does
 
+// Sibling artifacts a cycle PRODUCED — a rendered map, a dashboard, a census, briefs.
+// Emitted by soma-cycles-registry.py `json` as `artifacts:[{name,href,kind}]`.
+//
+// These are REAL <a target="_blank">, not row-clicks, and the difference is the point:
+// the row opens a nested <soma-artifact> in the detail pane (a PRISM projection of the
+// cycle.md), while an artifact is a finished page that wants its own window. Routing a
+// rendered dashboard through the detail pane would try to project a page that is
+// already a page. `data-artifact` also stops the row handler from firing underneath.
+const ART_GLYPH = { view: '▦', note: '✎', img: '🖼', data: '{}' };
+const artifactChips = (r) => {
+  const list = r.artifacts || [];
+  if (!list.length) return '';
+  const more = (r.artifact_count || list.length) - list.length;
+  return `<span class="reg-arts">` + list.map((a) =>
+    `<a class="reg-art reg-art-${esc(a.kind)}" data-artifact
+        href="${esc(abs(a.href))}" target="_blank" rel="noopener"
+        title="${esc(a.name)} — opens in a new window">${ART_GLYPH[a.kind] || '•'} ${esc(
+          a.name.length > 26 ? a.name.slice(0, 24) + '…' : a.name)}</a>`).join('') +
+    (more > 0 ? `<span class="reg-art reg-art-more" title="${more} more not listed">+${more}</span>` : '') +
+    `</span>`;
+};
+
 function leafRow(r, isPhase) {
   return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
@@ -141,6 +163,7 @@ function leafRow(r, isPhase) {
       <span class="reg-nm">${esc(r.phase || r.slug)}</span>
       ${r.title ? `<span class="reg-title">${esc(r.title)}</span>` : ''}
       ${r.error ? `<span class="reg-err">${esc(r.error)}</span>` : ''}
+      ${artifactChips(r)}
     </span>
     ${pill(r)}${dates(r)}
   </div>`;
@@ -451,6 +474,10 @@ export function attachRegistry(root) {
       setOpen(box, box.classList.contains('reg-closed'));
       return;
     }
+    // An artifact link is a real navigation to its own window — let the browser have
+    // it, and do NOT also open the detail pane underneath (the click would otherwise
+    // match [data-row] on the way up and do both).
+    if (e.target.closest('[data-artifact]')) return;
     const row = e.target.closest('[data-row]');
     if (!row) return;
     const href = row.dataset.href;
