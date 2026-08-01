@@ -115,6 +115,18 @@ systematically exercised.
 - **falsification:** a filter combination with genuinely zero results must render the
   explain-yourself empty state, not a bare `0 shown`
 
+**Anchor drift (Curtis noticed the rendering split, s01-593a6d).** Measured over 265 cycles:
+**261 derived · 4 anchored · 0 with no nav.** Every cycle DOES get a navbar — the visible difference
+is that derived docs carry a `derived` badge, `toc-derived` styling and document order, while the
+four anchored ones get canonical order and stable links.
+
+🔴 **At 98.5% derived, styling derived as the degraded case is backwards.** The badge was right when
+it flagged a handful of stragglers; as a permanent watermark on 261 documents it just says "almost
+nothing here is real". **Fix: keep the marker only where it is ACTIONABLE** — surfaced when someone is
+about to edit a section surgically (where a derived id genuinely will not hold), not as ambient
+decoration. Backfilling anchors wholesale stays out of scope per §out-of-scope; anchors arrive
+**on touch**, folded into `cycle-system/06`'s migration skill — same rule as statuses.
+
 **Default view (Curtis, s01-593a6d): group by PROJECT, all groups COLLAPSED, on first load.**
 539 rows expanded is the wall this layout exists to fix — the trigger's own words. Collapsed-by-project
 is navigable at a glance and makes the estate's shape (which project owns how much) the first thing
