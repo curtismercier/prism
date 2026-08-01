@@ -155,6 +155,7 @@ function leafRow(r, isPhase) {
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
       data-bucket="${esc(r.bucket || '')}" data-broken="${r.error ? '1' : '0'}"
       data-project="${esc(r.project || '')}" data-scope="${esc(r.tree_kind || '')}"
+      data-program="${esc(r.program || '')}"
       data-git="${r.git ? '1' : '0'}"
       data-age="${r.age_days ?? -1}" data-name="${esc(r.phase || r.arc || r.slug)}"
       data-label="${esc(r.phase || r.slug)}">
@@ -278,6 +279,9 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
 
   const buckets = [...new Set(rows.map((r) => r.bucket).filter(Boolean))].sort();
   const projects = [...new Set(rows.map((r) => r.project).filter(Boolean))].sort();
+  // Programs are DERIVED from the rows, never hand-listed — a curated denominator is
+  // always the bug (this corpus learned that at 222/5 vs a real 484/18).
+  const programs = [...new Set(rows.map((r) => r.program).filter(Boolean))].sort();
   const scopes = [...new Set(rows.map((r) => r.tree_kind).filter(Boolean))].sort();
 
   // ── Stat cards ─────────────────────────────────────────────────────────────
@@ -372,6 +376,8 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
       <button type="button" class="reg-btn" data-reg-view="flat" aria-pressed="false" title="one row per cycle — click a column header to sort">flat</button>
     </div>
     <input type="search" data-reg-q placeholder="filter by slug, arc, title, status, tag…" class="reg-input">
+    <select data-reg-program class="reg-select" title="A PROGRAM spans projects. Membership is the program: field in a cycle's frontmatter — phases inherit it from their arc. Nothing is moved or symlinked to belong to one."><option value="">any program</option>
+      ${programs.map((p) => `<option value="${esc(p)}">▣ ${esc(p)}</option>`).join('')}</select>
     <select data-reg-project class="reg-select"><option value="">any project</option>
       ${projects.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select>
     <select data-reg-scope class="reg-select"><option value="">any scope</option>
@@ -422,6 +428,7 @@ export function attachRegistry(root) {
   const q = wrap.querySelector('[data-reg-q]');
   const bucketSel = wrap.querySelector('[data-reg-bucket]');
   const projSel = wrap.querySelector('[data-reg-project]');
+  const progSel = wrap.querySelector('[data-reg-program]');
   const scopeSel = wrap.querySelector('[data-reg-scope]');
   const sortSel = wrap.querySelector('[data-reg-sort]');
   const brokenOnly = wrap.querySelector('[data-reg-broken]');
@@ -602,6 +609,7 @@ export function attachRegistry(root) {
     const term = (q.value || '').trim().toLowerCase();
     const bucket = bucketSel.value, bOnly = brokenOnly.checked;
     const proj = projSel ? projSel.value : '';
+    const prog = progSel ? progSel.value : '';
     const scope = scopeSel ? scopeSel.value : '';
     const cardTest = CARD_TESTS[activeCard];
     const counts = { active: 0, seeded: 0, closed: 0, stale: 0, nogit: 0, broken: 0 };
@@ -642,6 +650,7 @@ export function attachRegistry(root) {
       const ok = (!term || (d.blob || '').includes(term))
         && (!bucket || d.bucket === bucket)
         && (!proj || d.project === proj)
+        && (!prog || d.program === prog)
         && (!scope || d.scope === scope)
         && (!cardTest || cardTest(d))
         && (!bOnly || d.broken === '1');
@@ -668,6 +677,7 @@ export function attachRegistry(root) {
     // offer the way out.
     const active = [];
     if (term) active.push(`search “${term}”`);
+    if (prog) active.push(`program ${prog}`);
     if (proj) active.push(`project ${proj}`);
     if (scope) active.push(`scope ${scope}`);
     if (bucket) active.push(`status ${bucket}`);
@@ -805,7 +815,7 @@ export function attachRegistry(root) {
     finally { refreshing = false; }
   }
 
-  [q, bucketSel, projSel, scopeSel, brokenOnly].filter(Boolean).forEach((el) => {
+  [q, bucketSel, progSel, projSel, scopeSel, brokenOnly].filter(Boolean).forEach((el) => {
     // syncCards() on every change so the reverse direction holds too: picking
     // "Closed" in the toolbar lights the closed card.
     el.addEventListener('input', () => { syncCards(); apply(); maybeRefresh(); });
