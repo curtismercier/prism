@@ -548,7 +548,49 @@ export function attachRegistry(root) {
     }
     syncCards();
     apply();
+    maybeRefresh();   // cards are a filter surface too — without this, a session that only
+                      // clicks cards never re-polls and reads a snapshot from page load.
   });
+
+  // FACET COUNTS. §decisions-locked says "cards recompute from the filtered set so they
+  // compose" — that was locked and never implemented: counts were computed once at render
+  // from `rows` and baked into the HTML, so after any filter every card lied about the
+  // current view (measured s01-593a6d: filter to Active, seeded card still read 82).
+  //
+  // Each card counts rows passing every OTHER filter but NOT its own dimension — standard
+  // facet semantics. Counting with its own filter applied would zero every card except the
+  // one you clicked, which is useless; leaving them global makes them lie. The value is
+  // narrowing by project/scope/search and reading that project's real breakdown.
+  function recountCards() {
+    const term = (q.value || '').trim().toLowerCase();
+    const bucket = bucketSel.value, bOnly = brokenOnly.checked;
+    const proj = projSel ? projSel.value : '';
+    const scope = scopeSel ? scopeSel.value : '';
+    const cardTest = CARD_TESTS[activeCard];
+    const counts = { active: 0, seeded: 0, closed: 0, stale: 0, nogit: 0, broken: 0 };
+    for (const row of wrap.querySelectorAll('[data-row]')) {
+      // Tree and flat copies both live in the DOM — count only the view being looked at,
+      // same rule the `n` total already uses, or every number doubles.
+      if ((view === 'flat') !== Boolean(row.closest('[data-reg-flat]'))) continue;
+      const d = row.dataset;
+      if (term && !(d.blob || '').includes(term)) continue;
+      if (proj && d.project !== proj) continue;
+      if (scope && d.scope !== scope) continue;
+      if (bOnly && d.broken !== '1') continue;
+      // bucket facets: ignore the bucket filter, honour the orthogonal card
+      if (!cardTest || cardTest(d)) {
+        for (const id in CARD_BUCKET) if (d.bucket === CARD_BUCKET[id]) counts[id]++;
+      }
+      // orthogonal facets: honour the bucket filter, ignore their own test
+      if (!bucket || d.bucket === bucket) {
+        for (const id in CARD_TESTS) if (CARD_TESTS[id](d)) counts[id]++;
+      }
+    }
+    for (const id in counts) {
+      const el = wrap.querySelector(`[data-card="${id}"] .reg-card-n`);
+      if (el) el.textContent = counts[id];
+    }
+  }
 
   function apply() {
     const term = (q.value || '').trim().toLowerCase();
@@ -573,6 +615,7 @@ export function attachRegistry(root) {
       if (ok && ((view === 'flat') === Boolean(row.closest('[data-reg-flat]')))) n++;
     }
     writeHash();
+    recountCards();
     // A group with nothing visible inside it is noise — hide the container too, so a
     // filter narrows the TREE rather than leaving empty scaffolding behind.
     for (const arc of wrap.querySelectorAll('[data-arc]')) {
