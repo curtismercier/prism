@@ -474,3 +474,36 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* Legend entries carry their explanation as a tooltip rather than a trailing
    sentence — same information, one line instead of three. */
 .reg-legend [title] { cursor: help; border-bottom: 1px dotted var(--prism-border-soft); }
+
+/* ── Brand lockup ──────────────────────────────────────────────────────
+   BRAND ∕ PRODUCT. The brand is adjustable (emitter reads .env); the product
+   names what this dashboard is. Weighted so the brand leads and the product
+   reads as its subtitle on the same line. */
+.reg-brand { display: inline-flex; align-items: baseline; gap: .3rem; text-decoration: none; color: inherit; }
+/* The signature swap. The sigma inherits font-family, weight and size from the
+   surrounding name -- only colour and glow differ, so the wordmark reads as ONE
+   word with a coloured letter, not as a glyph glued to text.
+   --prism-brand defaults to the accent; a host overrides it to its own colour. */
+.reg-brand-sigma {
+  color: var(--prism-brand-light, var(--prism-accent));
+}
+/* The wordmark carries FULL-strength text colour, not the inherited muted tone --
+   name / symbol / name reads white-gold-white on dark and ink-gold-ink on light.
+   It was inheriting the muted grey, which made the brand quieter than its own
+   subtitle. */
+.reg-brand-name { font-weight: 650; letter-spacing: -0.01em; color: var(--prism-fg); }
+a.reg-brand:hover .reg-brand-name { color: var(--prism-accent); }
+.reg-brand-sep { color: var(--prism-border-soft); margin: 0 .15rem; font-weight: 300; }
+.reg-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
+
+/* Dark-surface brand value. MUST come after the base .reg-brand-sigma rule: equal
+   specificity means source order decides, and the base rule sitting later silently
+   won in dark mode -- the mark rendered its pale-surface colour on a dark page.
+   A single hex cannot serve both surfaces (11.98:1 here, 1.54:1 on pale); the glow
+   is dark-only because it reads as bleed on a light background. */
+@media (prefers-color-scheme: dark) {
+  .reg-brand-sigma {
+    color: var(--prism-brand-dark, var(--prism-accent));
+    filter: drop-shadow(0 0 12px var(--prism-brand-glow, transparent));
+  }
+}

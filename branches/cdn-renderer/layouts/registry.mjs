@@ -240,6 +240,51 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
     `<button type="button" class="reg-card ${tone}" data-card="${id}" aria-pressed="false" title="${esc(title)}">
        <span class="reg-card-n">${n}</span><span class="reg-card-l">${esc(label)}</span></button>`;
 
+  // ── Branding ──────────────────────────────────────────────────────────────
+  // The emitter resolves this (from .env) and ships it in the data, because a browser
+  // cannot read a .env and this renderer has no build step. The layout stays generic:
+  // it renders whatever brand it is handed, and falls back to the artifact's own title.
+  // BRAND is who; PRODUCT is what — keeping them separate is what lets someone swap
+  // the name without the page claiming to be a different tool.
+  const b = d.brand || {};
+  const bName = b.name || '';
+  const bProduct = b.product || fm.title || 'Cycle registry';
+
+  // The canonical lockup is a SWAP, not a prefix: the first `o` in the brand name is
+  // replaced by the symbol, coloured, with the rest of the word left alone -- Sσma.
+  // Reads as name/symbol/name (white-gold-white) rather than bolting a glyph on the
+  // front. Generic by construction: "Acme Robotics" becomes "Acme Rσbotics".
+  // No `o` in the name => render it plain. A brand with nowhere to put the mark must
+  // not get a stray one.
+  function lockup(name, symbol) {
+    if (!name) return '';
+    const i = symbol ? name.search(/o/i) : -1;
+    if (i < 0) return `<span class="reg-brand-name">${esc(name)}</span>`;
+    return `<span class="reg-brand-name">${esc(name.slice(0, i))}`
+      + `<span class="reg-brand-sigma" aria-hidden="true">${esc(symbol)}</span>`
+      + `${esc(name.slice(i + 1))}</span>`;
+  }
+  const brandInner = lockup(bName, b.symbol);
+  // Host-supplied colour arrives as a CSS custom property rather than an inline colour,
+  // so the stylesheet keeps ownership of WHERE the brand colour is used and the host
+  // only says WHAT it is. Sanitised: a colour is a short token, never arbitrary CSS.
+  // TWO colours, because a brand colour is surface-dependent. The stylesheet's
+  // prefers-color-scheme block picks; the host only declares. Setting one hex for both
+  // surfaces is how a mark ends up at 1.5:1 on light and nobody notices, because it
+  // looks perfect on whichever theme the author happens to use.
+  const okColor = (v) => (/^[#a-zA-Z0-9(),.%\s-]{0,40}$/.test(v || '') ? (v || '') : '');
+  const cDark = okColor(b.color);
+  const cLight = okColor(b.color_light) || cDark;
+  const brandStyle = cDark || cLight
+    ? ` style="--prism-brand-dark:${esc(cDark)};--prism-brand-light:${esc(cLight)};--prism-brand-glow:${esc(cDark)}33"`
+    : '';
+
+  const brandHtml = brandInner
+    ? `${b.url ? `<a class="reg-brand" href="${esc(b.url)}">${brandInner}</a>` : `<span class="reg-brand">${brandInner}</span>`}
+       <span class="reg-brand-sep" aria-hidden="true">∕</span>
+       <span class="reg-product">${esc(bProduct)}</span>`
+    : `<span class="reg-product">${esc(bProduct)}</span>`;
+
   const cardsHtml = `<div class="reg-cards">
     <div class="reg-card reg-card-static" title="click a card to filter; click it again to clear">
       <span class="reg-card-n">${c.cycles ?? rows.length}</span><span class="reg-card-l">cycles · ${byProject.size} projects</span></div>
@@ -253,8 +298,8 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
 
   return `
 <div class="reg" data-reg>
-  <div class="reg-topbar">
-    <h2 class="reg-title">${esc(fm.title || 'Cycle registry')}</h2>
+  <div class="reg-topbar"${brandStyle}>
+    <h2 class="reg-title">${brandHtml}</h2>
     <div class="reg-topmeta">
       ${d.generated_at ? `<span class="reg-gen" title="This data is a SNAPSHOT, not live. Regenerate before trusting any number.">generated ${esc(String(d.generated_at).replace('T', ' ').replace(/\+.*$/, ''))}</span>` : ''}
       ${preamble ? `<button type="button" class="reg-btn reg-info" data-reg-help aria-expanded="false" title="How to read this dashboard">ⓘ help</button>` : ''}
