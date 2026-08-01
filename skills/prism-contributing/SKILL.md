@@ -101,6 +101,11 @@ is a stale-output bug waiting to happen.
 
 ## 3. Layout design rules (learned the hard way)
 
+> **Building a hand-laid SVG diagram — topology, architecture map, before/after?**
+> See the sibling skill **`prism-diagrams`**. This section covers *data discipline*; that one
+> covers *rendering mechanics*: fixed-canvas sizing, measuring text instead of estimating it,
+> the attach-before-measure trap, and a layout gate you can sabotage.
+
 **No fallback data.** If a layout's data file fails to load, render an error and
 nothing else. A real-looking chart backed by invented numbers is worse than no chart,
 because it is citable and nobody re-checks a chart that agrees with them.
