@@ -147,6 +147,38 @@ host. Leaning: specify the *contract*, ship no server.
   *addressable* is per-document work, justified by editing need rather than done wholesale.
 <!-- /@section: out-of-scope -->
 
+<!-- @section: publication-readiness -->
+## Publication readiness — BLOCKER before this repo goes public
+
+The repo is **private today** (verified `gh repo view` → `isPrivate: true`), but it is licensed,
+CONTRIBUTING-gated and structured for publication. Two things must be settled before that flip.
+
+**1. The canonical example is a real internal dossier.** `examples/cycle-215.md` says so in its own
+`example_note`: it is an anchored copy of a production infrastructure cycle from a private
+workspace. It was chosen as the shared input so both renderer branches could be compared against
+identical realistic content — which was the right instinct for the comparison and the wrong artifact
+to keep.
+
+It has since been rendered into HTML, JSON and XML derivatives, copied into a second branch's
+examples dir, and wired into CI (*"validate and render EVERY examples dir"*). **8 tracked files,
+~95 occurrences** of workspace-internal identifiers: a client directory name, host and container
+names, an auth service, a secret store, a hosting provider, absolute home paths, and strategic notes
+naming a single point of failure.
+
+**Fix: replace the fixture, do not redact it.** A find-and-replace over five derived files leaves a
+plausible-looking document whose *shape* is still someone's real infrastructure. Author a synthetic
+dossier of comparable size and structure, regenerate all derivatives from it, and delete the
+originals. The comparison value is in the shape, which a synthetic fixture reproduces exactly.
+
+**2. History, not just HEAD.** The derivatives were committed over multiple sessions. Removing them
+from HEAD leaves them in the log. Decide before flipping visibility: rewrite history, or start the
+public repo from a fresh initial commit.
+
+**Gate:** a scan for workspace identifiers across **all tracked files at every reachable commit**
+returns zero — with the scan canaried against a string known to be present, so a zero means "clean"
+and not "my pattern is broken."
+<!-- /@section: publication-readiness -->
+
 <!-- @section: notes -->
 ## Notes
 
