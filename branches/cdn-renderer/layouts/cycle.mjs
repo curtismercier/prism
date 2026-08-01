@@ -32,18 +32,80 @@ function renderMd(md) {
   return marked.parse(md, { gfm: true, breaks: false });
 }
 
+const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'section';
+
+// Derive sections from `## ` headings for documents that carry no @section anchors.
+// This is a VIEWER affordance, not a spec behaviour: the PRISM parser stays
+// anchor-only, so conformance is unchanged. Fenced code is tracked so a `## ` inside
+// a shell block cannot open a phantom section.
+function deriveSections(md) {
+  const sections = new Map();
+  const titles = new Map();
+  const pre = [];
+  let cur = null;
+  let fence = false;
+  for (const line of md.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) fence = !fence;
+    const m = fence ? null : /^##\s+(.+?)\s*$/.exec(line);
+    if (m) {
+      const title = m[1].replace(/\s*#+\s*$/, '').trim();
+      const base = slugify(title);
+      let name = base;
+      let n = 2;
+      while (sections.has(name)) name = `${base}-${n++}`;
+      cur = name;
+      sections.set(name, []);
+      titles.set(name, title);
+    } else if (cur) {
+      sections.get(cur).push(line);
+    } else {
+      pre.push(line);
+    }
+  }
+  for (const [k, v] of sections) sections.set(k, v.join('\n').trim());
+  return { sections, titles, preamble: pre.join('\n').trim() };
+}
+
 export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
+  // A document with no @section anchors parses to zero sections and one giant
+  // preamble — the Markdown wall PRISM exists to fix. Fall back to headings so it
+  // still gets a TOC, but mark it: a derived anchor is NOT a stable address (it
+  // breaks when someone rewords a heading, and cannot be edited surgically).
+  // Rendering derived and real identically would hide which documents actually
+  // have addressing — the same defect as a badge that conflates two opposite states.
+  let derived = false;
+  let titles = new Map();
+  let effPreamble = preamble;
+  if (sections.size === 0 && preamble) {
+    const split = deriveSections(preamble);
+    if (split.sections.size > 0) {
+      sections = split.sections;
+      titles = split.titles;
+      effPreamble = split.preamble;
+      derived = true;
+    }
+  }
+
   // Filter out nested anchor names (dot-notation, e.g. 'phases.phase-1') —
   // those render inside their parent section's content.
   const topLevelNames = Array.from(sections.keys()).filter(n => !n.includes('.'));
 
   // Order: standard sections first (in canonical order), then any custom ones not in standard.
+  //
+  // DERIVED sections are exempt: they keep document order. Canonical ordering is a
+  // promise the author made by writing @section anchors; a document that never opted
+  // into the vocabulary must not be resequenced by it. Without this, a heading slugged
+  // to `phases` silently jumped above the document's own opening section.
   const ordered = [];
-  for (const name of STANDARD_ORDER) {
-    if (topLevelNames.includes(name)) ordered.push(name);
-  }
-  for (const name of topLevelNames) {
-    if (!STANDARD_ORDER.includes(name)) ordered.push(name);
+  if (derived) {
+    ordered.push(...topLevelNames);
+  } else {
+    for (const name of STANDARD_ORDER) {
+      if (topLevelNames.includes(name)) ordered.push(name);
+    }
+    for (const name of topLevelNames) {
+      if (!STANDARD_ORDER.includes(name)) ordered.push(name);
+    }
   }
 
   // Fall back through the fields an artifact ACTUALLY has before inventing a number.
@@ -79,22 +141,26 @@ export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
 
   const purposeBlock = fm.purpose ? `<div class="purpose"><div class="purpose-label">Purpose</div>${renderMd(fm.purpose)}</div>` : '';
 
-  // Sidebar TOC
-  const toc = `<nav class="toc" aria-label="Sections">
-    ${ordered.map(name => `<a href="#section-${escape(name)}" class="toc-item">${escape(name)}</a>`).join('')}
+  // Sidebar TOC. When sections were derived from headings rather than read from
+  // @section anchors, the nav is labelled so a reader can tell addressable
+  // documents from merely-navigable ones at a glance.
+  const toc = ordered.length === 0 ? '' : `<nav class="toc${derived ? ' toc-derived' : ''}" aria-label="Sections">
+    ${derived ? '<span class="toc-note" title="Derived from ## headings — not stable anchors. Add @section anchors for addressable, surgically-editable sections.">derived</span>' : ''}
+    ${ordered.map(name => `<a href="#section-${escape(name)}" class="toc-item">${escape(titles.get(name) || name)}</a>`).join('')}
   </nav>`;
 
   // Sections
   const sectionBlocks = ordered.map(name => {
     const content = sections.get(name);
     const hAnchor = `section-${name}`;
-    return `<section id="${escape(hAnchor)}" data-section="${escape(name)}">
-      <header class="section-header"><span class="section-tag">${escape(name)}</span></header>
+    const label = titles.get(name) || name;
+    return `<section id="${escape(hAnchor)}" data-section="${escape(name)}"${derived ? ' data-derived="true"' : ''}>
+      <header class="section-header"><span class="section-tag">${escape(label)}</span></header>
       <div class="section-body">${renderMd(content)}</div>
     </section>`;
   }).join('\n');
 
-  const preambleBlock = preamble ? `<div class="preamble">${renderMd(preamble)}</div>` : '';
+  const preambleBlock = effPreamble ? `<div class="preamble">${renderMd(effPreamble)}</div>` : '';
   const trailerBlock = trailer ? `<div class="trailer">${renderMd(trailer)}</div>` : '';
 
   return `<article class="prism prism-cycle" data-type="cycle">

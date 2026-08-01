@@ -12,6 +12,14 @@ spec v0.1.
 
 ### Added
 
+- **Heading-derived sections (cycle layout)** — a document with no `@section` anchors now gets a
+  navigable TOC derived from its `## ` headings instead of rendering as one undifferentiated
+  preamble. Fence-aware, so `## ` inside a code block cannot open a phantom section. Derived output
+  is visually marked and keeps document order rather than canonical `STANDARD_ORDER`: a derived id
+  is not a stable address, and a document that never opted into the section vocabulary must not be
+  resequenced by it. **The parser is unchanged — section extraction remains anchor-only, so spec
+  conformance is unaffected.**
+
 - **`pipeline` layout (cdn-renderer)** — renders a linear timeline for pipelined
   producer/consumer systems: one row per work unit, producer and consumer bars on a
   shared time axis, and stalls drawn as literal gaps. Scenarios sharing a `group`
