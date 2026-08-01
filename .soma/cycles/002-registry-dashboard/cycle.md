@@ -7,6 +7,7 @@ created: 2026-08-01
 updated: 2026-08-01
 author: s01-8b4389 (Soma) + Curtis Mercier
 session: s01-8b4389
+edited_by: [s01-8b4389@prism, s01-593a6d@meetsoma]
 license: CC BY 4.0
 spans_repos: [Gravicity/personal/prism]
 depends_on: [./001-renderer-spike/cycle.md]
@@ -74,6 +75,30 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 > `.reg-card` ×7 (6 clickable filters) · `data-reg-sort` name|age · flat table
 > present · URL hash state · `data-reg-project` ×4 / `data-reg-scope` /
 > `data-reg-bucket` · **`e`: 0 edit controls, correctly still queued.**
+
+### Phase b/c/d refinements — s01-593a6d (found in use, by Curtis)
+
+All four surfaced by USING the dashboard, not by review. Each was invisible to the
+code and visible on the page.
+
+| # | defect | fix | commit |
+|---|---|---|---|
+| 1 | Table read `open` while the drill-in panel read `closed`, 2h after the edit. The JSON is a SNAPSHOT; the drill-in nests a live artifact on the real file — so **one view disagreed with itself**. Filtering only searched what was fetched at page load, so a cycle written since was invisible without a manual reload. | Re-poll on interaction (rate-limited 15s), re-render only when `generated_at` moves. Server regenerates in the BACKGROUND and sets `X-Registry-Refreshing` — a synchronous rebuild blocked ~9s and the browser aborted it, so the refresh failed in exactly the case it exists for. | `d7e2bce` |
+| 2 | Inline stat chips used their own palette. A/S/C already matched; `O` was off against the pill base and `x` was a solid red of its own invention **with no dark rule at all** — invisible only because 0 cycles are unparseable today. | Chips take the pill palette. | `d7e2bce` |
+| 3 | **The big summary numbers rendered `rgb(0,0,0)` on `rgb(22,22,29)` — ~1.1:1 contrast.** active/seeded/closed passed no tone class and `.reg-card-n` had no dark base; only `warn` ever set a colour, which is why the two warning cards were the only readable ones. | Each number carries its status pill's foreground. Measured after: 9.70 / 10.22 / 10.70 / 14.51:1. | `1c8fd54` |
+| 4 | Clicking the `closed` card filtered the table while the toolbar still read "any status" — **two controls for one filter, disagreeing.** | Deleted the redundant state rather than syncing it: the dropdown OWNS bucket filtering; active/seeded/closed cards are a second way to set it. stale/no-git/broken stay orthogonal. Legacy `#card=closed` links are translated — otherwise they would open with the filter silently dropped. | `7bc9376` |
+
+**The pattern across all four:** a surface that looked right and was wrong, where the
+check that would have caught it either did not exist or could not see the defect. #3
+is the sharpest — a 1.1:1 contrast ratio sat in the shipped dashboard until someone
+looked at it, and a vision-model review of the same screenshot confidently reported
+the colours were consistent. Every real catch came from `getComputedStyle` and the
+layout's own filter summary, never from reading the CSS or trusting a rendered
+impression.
+
+**Argues for the tincture CDN/import plan:** these are hardcoded hexes in two CSS
+blocks that must stay manually in sync with the pill rules. Token ownership plus an
+automated contrast gate is what would have caught #2 and #3 before they shipped.
 
 ### Phase a — shipped
 
