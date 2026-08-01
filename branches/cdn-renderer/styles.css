@@ -408,21 +408,28 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-proj-head:hover .reg-stats, .reg-arc-head:hover .reg-stats { opacity: 1; }
 .reg-stat { font-size: 10px; font-weight: 600; padding: .04rem .3rem; border-radius: 3px;
   font-variant-numeric: tabular-nums; letter-spacing: .02em; min-width: 1.6rem; text-align: center; }
-.reg-stat-A { background: #e3f0ff; color: #14508c; }
-.reg-stat-S { background: #fff4e0; color: #8a5a12; }
-.reg-stat-C { background: #e3f7e8; color: #1c6b34; }
-.reg-stat-O { background: #ecedf2; color: #5b6070; }
-.reg-stat-x { background: #c0392b; color: #fff; }
+/* Stat chips MUST use the same palette as the status pills they summarise --
+   a chip and a pill describing the same status in different colours makes the
+   header row disagree with the table under it. A/S/C already matched; `O` was
+   off against the pill base, and `x` was a solid red of its own invention with
+   no dark-mode rule at all -- invisible today only because 0 cycles are
+   unparseable. (s01-593a6d, verified via getComputedStyle, not by reading CSS.) */
+.reg-stat-A { background: #e3f0ff; color: #14508c; }   /* = .reg-b-active  */
+.reg-stat-S { background: #fff4e0; color: #8a5a12; }   /* = .reg-b-seeded  */
+.reg-stat-C { background: #e3f7e8; color: #1c6b34; }   /* = .reg-b-shipped */
+.reg-stat-O { background: #e8eaf0; color: #445; }      /* = .reg-pill base */
+.reg-stat-x { background: #ffe3e3; color: #a11; }      /* = .reg-b-broken  */
 .reg-stat-added { font-size: 10.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
   padding-left: .25rem; }
 .reg-stat-fresh { font-size: 10.5px; color: #5f8a5f; font-variant-numeric: tabular-nums;
   background: #eef6ee; padding: .05rem .3rem; border-radius: 4px; }
 
 @media (prefers-color-scheme: dark) {
-  .reg-stat-A { background: #16304d; color: #8ec2ff; }
-  .reg-stat-S { background: #3d2f14; color: #e8bd6b; }
-  .reg-stat-C { background: #14331f; color: #7ddb9c; }
-  .reg-stat-O { background: #26262f; color: #9a9aa8; }
+  .reg-stat-A { background: #16304d; color: #8ec2ff; }   /* = .reg-b-active  */
+  .reg-stat-S { background: #3d2f14; color: #e8bd6b; }   /* = .reg-b-seeded  */
+  .reg-stat-C { background: #14331f; color: #7ddb9c; }   /* = .reg-b-shipped */
+  .reg-stat-O { background: #26262f; color: #bbc; }      /* = .reg-pill base */
+  .reg-stat-x { background: #3d1616; color: #ff9b9b; }   /* = .reg-b-broken  */
   .reg-stat-added { color: #7a7a88; }
   .reg-stat-fresh { background: #16261a; color: #8fc79a; }
 }
