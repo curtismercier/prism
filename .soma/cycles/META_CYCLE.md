@@ -21,6 +21,7 @@ updated: 2026-05-12
 | **001** | [Renderer spike — branching-cycle](./001-renderer-spike/cycle.md) | in-progress | branching-cycle | Phase 1.A or 1.B implementation (interleavable) |
 | ├ 1.A | [Branch A — build-step renderer](./001-renderer-spike/branch-a/README.md) | queued | branch | Implement HTML renderer |
 | └ 1.B | [Branch B — runtime browser renderer](./001-renderer-spike/branch-b/README.md) | queued | branch | Implement `<soma-artifact>` element |
+| **002** | [Registry layout — from list to dashboard](./002-registry-dashboard/cycle.md) | in-progress | cycle | Phase b — stat cards that double as filters |
 
 ---
 

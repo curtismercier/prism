@@ -137,6 +137,17 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 }
 .toc-item:hover { color: var(--prism-accent); }
 
+/* Sections derived from `## ` headings rather than read from @section anchors.
+   Deliberately distinguishable: a derived TOC navigates, but the ids are not
+   stable addresses and cannot be edited surgically. Looking identical to a real
+   one would hide which documents actually carry addressing. */
+.toc-derived { border-left-style: dashed; }
+.toc-note {
+  font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--prism-muted); opacity: 0.65; padding-bottom: 0.35rem; cursor: help;
+}
+.toc-derived .toc-item { opacity: 0.82; }
+
 /* ── Main column ────────────────────────────────────────────────────── */
 .cycle-main section {
   margin: 0 0 2.5rem 0; scroll-margin-top: 1rem;
