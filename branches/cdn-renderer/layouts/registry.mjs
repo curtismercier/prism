@@ -33,6 +33,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
+// Flat-table mode lives in its own module — split by concern before this file
+// crossed the ~700-line mark. The query forward mirrors render.mjs: a static
+// `import './registry-flat.mjs'` would NOT inherit our ?v=, so dev edits to the
+// child would serve stale from the module cache while this file busts correctly.
+const V = new URL(import.meta.url).search;
+const { buildFlatTable, attachFlat } = await import(new URL('./registry-flat.mjs' + V, import.meta.url).href);
+
 const BUCKET_CLASS = {
   Broken: 'reg-b-broken', Active: 'reg-b-active', Seeded: 'reg-b-seeded',
   Shipped: 'reg-b-shipped', Closed: 'reg-b-shipped', Done: 'reg-b-shipped',
@@ -313,6 +320,10 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   ${cardsHtml}
 
   <div class="reg-controls">
+    <div class="reg-viewtog" role="group" aria-label="view mode">
+      <button type="button" class="reg-btn reg-vt-on" data-reg-view="grouped" aria-pressed="true" title="project → arc → phase tree">grouped</button>
+      <button type="button" class="reg-btn" data-reg-view="flat" aria-pressed="false" title="one row per cycle — click a column header to sort">flat</button>
+    </div>
     <input type="search" data-reg-q placeholder="filter by slug, arc, title, status, tag…" class="reg-input">
     <select data-reg-project class="reg-select"><option value="">any project</option>
       ${projects.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select>
@@ -341,6 +352,8 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
 
   <div class="reg-tree">${body}</div>
 
+  ${buildFlatTable(rows, { esc, abs, blob, pill })}
+
   <div class="reg-detail" data-reg-detail hidden>
     <div class="reg-detail-bar">
       <strong data-reg-detail-title></strong>
@@ -367,6 +380,35 @@ export function attachRegistry(root) {
   const brokenOnly = wrap.querySelector('[data-reg-broken]');
   const collapseBtn = wrap.querySelector('[data-reg-collapse]');
   let activeCard = '';
+  let view = 'grouped';
+  const tree = wrap.querySelector('.reg-tree');
+  const legend = wrap.querySelector('.reg-legend');
+  const flatBox = wrap.querySelector('[data-reg-flat]');
+  const flat = attachFlat(wrap, () => writeHash());
+
+  // The toggle only shows/hides — both views stay in the DOM and both stay
+  // filtered (see apply()), so switching is instant and loses no state.
+  function setView(v) {
+    view = v === 'flat' ? 'flat' : 'grouped';
+    const isFlat = view === 'flat';
+    tree.hidden = isFlat;
+    if (legend) legend.hidden = isFlat;
+    if (flatBox) flatBox.hidden = !isFlat;
+    sortSel.hidden = isFlat;        // arc-sort + collapse speak about groups;
+    collapseBtn.hidden = isFlat;    // in flat mode they'd be dead controls
+    for (const b of wrap.querySelectorAll('[data-reg-view]')) {
+      const on = b.dataset.regView === view;
+      b.classList.toggle('reg-vt-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    }
+  }
+
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-reg-view]');
+    if (!btn) return;
+    setView(btn.dataset.regView);
+    apply();
+  });
 
   const setOpen = (el, open) => {
     el.classList.toggle('reg-closed', !open);
@@ -423,6 +465,8 @@ export function attachRegistry(root) {
     if (h.has('sort')) sortSel.value = h.get('sort');
     if (h.has('card')) activeCard = h.get('card');
     if (h.get('broken') === '1') brokenOnly.checked = true;
+    if (h.get('view') === 'flat') view = 'flat';
+    if (h.has('fs')) flat.state = h.get('fs');
   }
   function writeHash() {
     const p = new URLSearchParams();
@@ -433,6 +477,8 @@ export function attachRegistry(root) {
     if (sortSel.value && sortSel.value !== 'name') p.set('sort', sortSel.value);
     if (activeCard) p.set('card', activeCard);
     if (brokenOnly.checked) p.set('broken', '1');
+    if (view === 'flat') p.set('view', 'flat');
+    if (flat.state) p.set('fs', flat.state);
     const s = p.toString();
     history.replaceState(null, '', s ? `#${s}` : location.pathname + location.search);
   }
@@ -482,7 +528,10 @@ export function attachRegistry(root) {
         && (!cardTest || cardTest(d))
         && (!bOnly || d.broken === '1');
       row.hidden = !ok;
-      if (ok) n++;
+      // Tree and flat rows both live in the DOM and both get filtered (so the
+      // view toggle is instant and loses nothing), but the count must speak for
+      // the view being looked at — never the sum of both copies.
+      if (ok && ((view === 'flat') === Boolean(row.closest('[data-reg-flat]')))) n++;
     }
     writeHash();
     // A group with nothing visible inside it is noise — hide the container too, so a
@@ -596,6 +645,7 @@ export function attachRegistry(root) {
   // the view it describes rather than flashing the default and then correcting.
   readHash();
   syncCards();
+  setView(view);
   if (sortSel.value && sortSel.value !== 'name') sortArcs();
   apply();
 }
