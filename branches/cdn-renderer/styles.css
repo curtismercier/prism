@@ -275,10 +275,27 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 }
 .reg-card-warn .reg-card-n { color: #b45309; }
 .reg-card-bad  .reg-card-n { color: #b91c1c; }
+
+/* Status cards carry the SAME foreground as the pill for that status, so the
+   summary at the top and the table under it read as one palette.
+   Before this, active/seeded/closed passed no tone at all and .reg-card-n had
+   no dark rule -- the numbers rendered rgb(0,0,0) on a rgb(22,22,29) card,
+   about 1.1:1 contrast. Only `warn` and `bad` were ever given a colour, which
+   is why the two warning cards were the only readable ones in dark mode.
+   (s01-593a6d, measured via getComputedStyle.) */
+.reg-card-active .reg-card-n { color: #14508c; }   /* = .reg-b-active  fg */
+.reg-card-seeded .reg-card-n { color: #8a5a12; }   /* = .reg-b-seeded  fg */
+.reg-card-closed .reg-card-n { color: #1c6b34; }   /* = .reg-b-shipped fg */
 @media (prefers-color-scheme: dark) {
   .reg-card { background: #16161d; }
+  /* Base first: the untoned cards (total, and any status with a 0 count) were
+     inheriting black on #16161d and disappearing entirely. */
+  .reg-card-n { color: #e6e6ef; }
   .reg-card-warn .reg-card-n { color: #fbbf24; }
   .reg-card-bad  .reg-card-n { color: #f87171; }
+  .reg-card-active .reg-card-n { color: #8ec2ff; }   /* = .reg-b-active  fg */
+  .reg-card-seeded .reg-card-n { color: #e8bd6b; }   /* = .reg-b-seeded  fg */
+  .reg-card-closed .reg-card-n { color: #7ddb9c; }   /* = .reg-b-shipped fg */
 }
 
 /* Group completion — closed / parseable. Distinct from the A/S/C chips: those are a

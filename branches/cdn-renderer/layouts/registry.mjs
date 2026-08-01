@@ -309,9 +309,9 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   const cardsHtml = `<div class="reg-cards">
     <div class="reg-card reg-card-static" title="click a card to filter; click it again to clear">
       <span class="reg-card-n">${c.cycles ?? rows.length}</span><span class="reg-card-l">cycles · ${byProject.size} projects</span></div>
-    ${card('active', nActive, 'active', 'status resolves to Active')}
-    ${card('seeded', nSeeded, 'seeded', 'planned but not started')}
-    ${card('closed', nClosed, 'closed', 'shipped / done / closed / superseded')}
+    ${card('active', nActive, 'active', 'status resolves to Active', 'reg-card-active')}
+    ${card('seeded', nSeeded, 'seeded', 'planned but not started', 'reg-card-seeded')}
+    ${card('closed', nClosed, 'closed', 'shipped / done / closed / superseded', 'reg-card-closed')}
     ${card('stale', nStale, 'stale >60d', 'claims Active but nothing has touched it in 60+ days — either the status is a lie or the work is abandoned', nStale ? 'reg-card-warn' : '')}
     ${card('nogit', nNoGit, 'no git date', `${nNoGit} of ${rows.length} rows have NO git history, so they are INVISIBLE to drift and to git-based staleness. Not a defect in the cycle — a blind spot in the measurement.`, nNoGit ? 'reg-card-warn' : '')}
     ${card('broken', broken, 'unparseable', 'frontmatter does not parse — renders blank everywhere else', broken ? 'reg-card-bad' : '')}
