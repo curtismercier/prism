@@ -117,6 +117,17 @@ function statsHtml(st) {
 let HREF_BASE = null;
 const abs = (h) => { try { return h ? new URL(h, HREF_BASE || document.baseURI).href : ''; } catch { return h || ''; } };
 
+// The registry JSON is a SNAPSHOT, while the drill-in panel nests a live
+// <soma-artifact> on the real cycle.md. A stale snapshot therefore makes ONE
+// VIEW DISAGREE WITH ITSELF -- the table read `open` while the detail panel
+// read `closed`, two hours after the edit (Curtis, s01-593a6d). The page was
+// only ever fetched at load, so filtering could never surface a cycle written
+// since. Track what we loaded so an interaction can notice it has gone stale.
+let DATA_SRC = null;
+let DATA_GENERATED = null;
+let DATA_FETCHED_AT = 0;
+const REFRESH_MIN_MS = 15000;      // never poll harder than this, whatever the user does
+
 function leafRow(r, isPhase) {
   return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
@@ -154,6 +165,9 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   }
 
   HREF_BASE = src;                     // resolve every row href against the DATA file
+  DATA_SRC = src;
+  DATA_GENERATED = d.generated_at || null;
+  DATA_FETCHED_AT = Date.now();
   const rows = d.cycles || [];
   const c = d.counts || {};
   const broken = rows.filter((r) => r.error).length;
@@ -623,9 +637,48 @@ export function attachRegistry(root) {
     }
   }
 
+  // ---- auto-refresh on interaction ------------------------------------------
+  // Filtering used to search only what was fetched at page load, so a cycle
+  // written since was invisible until a manual reload. On interaction, check
+  // whether the snapshot has been regenerated and re-render if so.
+  //
+  // Re-rendering is safe BECAUSE the view already round-trips through the URL
+  // hash: writeHash() persists filters, readHash() restores them on render. So
+  // the user keeps their filter, sort and open/closed arcs across the refresh.
+  //
+  // Never blocks typing: the check is async, rate-limited, and the old data
+  // stays interactive until new data actually differs.
+  let refreshing = false;
+  let retryTimer = null;
+  async function maybeRefresh(force = false) {
+    if (refreshing || !DATA_SRC) return;
+    if (!force && Date.now() - DATA_FETCHED_AT < REFRESH_MIN_MS) return;
+    refreshing = true;
+    try {
+      const res = await fetch(DATA_SRC, { cache: 'no-store' });
+      if (!res.ok) return;                    // silent: stale data still works
+      const fresh = await res.json();
+      DATA_FETCHED_AT = Date.now();
+
+      // The server regenerates in the BACKGROUND and serves the old file
+      // meanwhile, so "same generated_at" does not mean "up to date" when this
+      // header is set. Retry once rather than concluding nothing changed.
+      if (res.headers.get('X-Registry-Refreshing') === '1') {
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => maybeRefresh(true), 12000);
+      }
+
+      if (!fresh.generated_at || fresh.generated_at === DATA_GENERATED) return;
+      writeHash();                            // persist the view BEFORE re-render
+      const host = wrap.closest('soma-artifact');
+      if (host && typeof host.render === 'function') host.render();
+    } catch { /* offline / server down -- keep showing what we have */ }
+    finally { refreshing = false; }
+  }
+
   [q, bucketSel, projSel, scopeSel, brokenOnly].filter(Boolean).forEach((el) => {
-    el.addEventListener('input', apply);
-    el.addEventListener('change', apply);
+    el.addEventListener('input', () => { apply(); maybeRefresh(); });
+    el.addEventListener('change', () => { apply(); maybeRefresh(); });
   });
   sortSel.addEventListener('change', () => { sortArcs(); writeHash(); });
 
