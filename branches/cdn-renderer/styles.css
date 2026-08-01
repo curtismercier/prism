@@ -247,9 +247,69 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-gen { margin-left: .75rem; opacity: .55; font-size: 12px; }
 .reg-pre { margin: .6rem 0 0; color: #445; }
 
+/* ── Stat cards ── doubling as quick filters, so there is no separate filter chrome. */
+.reg-cards {
+  display: flex; gap: .5rem; flex-wrap: wrap; margin: 0 0 .75rem;
+}
+.reg-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  padding: .5rem .7rem; min-width: 5.5rem;
+  border: 1px solid var(--prism-border-soft); border-radius: 8px;
+  background: var(--prism-bg, #fff); cursor: pointer;
+  font-family: inherit; text-align: left;
+  transition: border-color .15s, background .15s, transform .05s;
+}
+.reg-card:hover { border-color: var(--prism-accent); }
+.reg-card:active { transform: translateY(1px); }
+.reg-card-static { cursor: default; opacity: .85; }
+.reg-card-static:hover { border-color: var(--prism-border-soft); }
+.reg-card-n { font-size: 1.15rem; font-weight: 600; line-height: 1.1; }
+.reg-card-l {
+  font-size: .65rem; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--prism-muted);
+}
+/* Active card is unmistakable: it IS the current filter, and a filter you cannot
+   see is how a reader concludes the data is wrong. */
+.reg-card-on {
+  border-color: var(--prism-accent); box-shadow: inset 0 0 0 1px var(--prism-accent);
+}
+.reg-card-warn .reg-card-n { color: #b45309; }
+.reg-card-bad  .reg-card-n { color: #b91c1c; }
+@media (prefers-color-scheme: dark) {
+  .reg-card { background: #16161d; }
+  .reg-card-warn .reg-card-n { color: #fbbf24; }
+  .reg-card-bad  .reg-card-n { color: #f87171; }
+}
+
+/* Group completion — closed / parseable. Distinct from the A/S/C chips: those are a
+   census, this is a ratio. */
+.reg-stat-pct {
+  font-variant-numeric: tabular-nums; font-size: .7rem;
+  color: var(--prism-muted); margin-left: .35rem;
+}
+
+/* Sticky owns the pin now, not .reg-controls — cards and filters must travel as ONE
+   unit or the numbers scroll away from the controls that filter by them. */
+.reg-sticky {
+  position: sticky; top: 0; z-index: 5;
+  background: #fbfbfd; padding-top: .5rem;
+  margin: .9rem 0 .4rem;
+  transition: box-shadow .15s;
+}
+.reg-sticky.is-stuck {
+  box-shadow: 0 6px 16px -12px rgba(0,0,0,.55);
+  border-bottom: 1px solid var(--prism-border-soft);
+}
+/* Compact while pinned: a full-height card row that follows you down 500 rows is a
+   banner, not a dashboard. Numbers stay legible; the chrome shrinks. */
+.reg-sticky.is-stuck .reg-cards { gap: .35rem; margin-bottom: .4rem; }
+.reg-sticky.is-stuck .reg-card { padding: .25rem .55rem; min-width: 0; flex-direction: row;
+  align-items: baseline; gap: .35rem; }
+.reg-sticky.is-stuck .reg-card-n { font-size: .85rem; }
+.reg-sticky.is-stuck .reg-card-l { font-size: .58rem; }
+
 .reg-controls { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
-  margin: .9rem 0 .4rem; padding: .6rem .7rem; background: #f4f5f8; border-radius: 8px;
-  position: sticky; top: 0; z-index: 5; }
+  margin: 0 0 .4rem; padding: .6rem .7rem; background: #f4f5f8; border-radius: 8px; }
 .reg-input { flex: 1 1 15rem; padding: .4rem .6rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
 .reg-select, .reg-btn { padding: .4rem .5rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
 .reg-btn { cursor: pointer; }
@@ -372,3 +432,45 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    disappear, entrenching the very axis we are removing. */
 .reg-kindfolder { background: #f3e8ff; color: #6b3fa0; font-style: italic; }
 @media (prefers-color-scheme: dark) { .reg-kindfolder { background: #2a1d3d; color: #c9a6f0; } }
+
+/* Empty state — names the active filters instead of just saying zero. */
+.reg-empty { color: #b45309; }
+.reg-clearbtn {
+  font: inherit; font-size: .7rem; cursor: pointer;
+  background: none; border: 1px solid currentColor; border-radius: 4px;
+  padding: .05rem .4rem; color: inherit;
+}
+@media (prefers-color-scheme: dark) {
+  .reg-empty { color: #fbbf24; }
+  .reg-sticky { background: #0f0f14; }
+  .reg-sticky.is-stuck { box-shadow: 0 6px 16px -12px rgba(0,0,0,.9); }
+}
+
+/* ── Dashboard top bar ─────────────────────────────────────────────────
+   The narrative lives behind ⓘ help. Documentation occupying the first screen
+   of a dashboard gets scrolled past, not read — and it pushed the actual data
+   below the fold. */
+.reg-topbar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--prism-border-soft);
+}
+.reg-topbar .reg-title { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
+.reg-topmeta { display: flex; align-items: center; gap: .6rem; }
+.reg-gen {
+  font-family: var(--prism-mono); font-size: .68rem; color: var(--prism-muted);
+  cursor: help;
+}
+.reg-info { font-size: .72rem; }
+.reg-info-on { border-color: var(--prism-accent); color: var(--prism-accent); }
+.reg-pre {
+  margin: 0 0 1rem; padding: .85rem 1rem;
+  border: 1px solid var(--prism-border-soft); border-left: 3px solid var(--prism-accent);
+  border-radius: 6px; font-size: .82rem; line-height: 1.55;
+}
+.reg-pre p:first-child { margin-top: 0; }
+.reg-pre p:last-child { margin-bottom: 0; }
+
+/* Legend entries carry their explanation as a tooltip rather than a trailing
+   sentence — same information, one line instead of three. */
+.reg-legend [title] { cursor: help; border-bottom: 1px dotted var(--prism-border-soft); }
