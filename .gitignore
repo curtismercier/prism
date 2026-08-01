@@ -63,3 +63,6 @@ branches/build-renderer/coverage/
 
 # Private resume notes (not for publication)
 _resume.md
+
+# Agent memory — never tracked in a publishable repo (s01-593a6d)
+.soma/
