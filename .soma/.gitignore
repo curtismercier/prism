@@ -1,0 +1,12 @@
+# Session data (personal, not shared)
+memory/preloads/
+memory/sessions/
+state.json
+.protocol-state.json
+
+# Debug logs
+debug/
+
+# Secrets
+secrets/
+*.env
