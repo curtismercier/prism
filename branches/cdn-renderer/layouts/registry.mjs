@@ -770,5 +770,17 @@ export function attachRegistry(root) {
   syncCards();
   setView(view);
   if (sortSel.value && sortSel.value !== 'name') sortArcs();
+
+  // DEFAULT VIEW: collapsed, grouped by project (Curtis, s01-593a6d).
+  // 500+ rows expanded is the exact wall this layout exists to fix — collapsed by
+  // project makes the estate's SHAPE (who owns how much) the first thing you see.
+  // Only when the URL carries no hash: a shared link still opens on the view it
+  // describes, which is the whole point of putting view state in the fragment.
   apply();
+
+  if (!location.hash) {
+    allClosed = true;
+    wrap.querySelectorAll('[data-arc],[data-proj]').forEach((el) => setOpen(el, false));
+    if (collapseBtn) collapseBtn.textContent = 'expand all';
+  }
 }

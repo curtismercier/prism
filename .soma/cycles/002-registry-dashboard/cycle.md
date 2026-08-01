@@ -67,7 +67,7 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ✅ shipped s01-8b4389 |
 | d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ✅ shipped s01-8b4389 |
 | e | In-place editing — frontmatter fields and section bodies | ⬜ queued |
-| f | **Filtering audit + default view** | ⬜ **queued s01-593a6d** — see §Phase f |
+| f | **Filtering audit + default view** | 🟡 **default view SHIPPED s01-593a6d; audit queued** — see §Phase f |
 
 > **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
 > marked — the cycle read `queued` for features that had been live for hours, which
@@ -126,6 +126,12 @@ nothing here is real". **Fix: keep the marker only where it is ACTIONABLE** — 
 about to edit a section surgically (where a derived id genuinely will not hold), not as ambient
 decoration. Backfilling anchors wholesale stays out of scope per §out-of-scope; anchors arrive
 **on touch**, folded into `cycle-system/06`'s migration skill — same rule as statuses.
+
+✅ **Default view SHIPPED s01-593a6d.** Group by PROJECT, all groups COLLAPSED, first load only.
+Verified both branches: no hash → 50/50 groups closed, 0 tree rows exposed, 12 project groups;
+`#status=Active` → dropdown restored and groups left expanded, so a shared link still opens on the
+view it describes. **Ordering was the bug** — collapsing before `apply()` left one group open because
+`apply()` touches group visibility after; the collapse runs last now.
 
 **Default view (Curtis, s01-593a6d): group by PROJECT, all groups COLLAPSED, on first load.**
 539 rows expanded is the wall this layout exists to fix — the trigger's own words. Collapsed-by-project
