@@ -64,5 +64,13 @@ branches/build-renderer/coverage/
 # Private resume notes (not for publication)
 _resume.md
 
-# Agent memory — never tracked in a publishable repo (s01-593a6d)
-.soma/
+# Agent memory + scaffolded AMPS — never tracked in a publishable repo (s01-593a6d).
+# NOT a blanket .soma/ ignore: cycles/ and body/ are work the project AUTHORED and
+# must stay tracked. Shape follows delegate.md M30 (soma-tree-commit-hygiene).
+.soma/memory/
+.soma/state/
+.soma/extensions/
+.soma/amps/protocols/
+.soma/amps/muscles/
+.soma/amps/automations/
+.soma/settings.json

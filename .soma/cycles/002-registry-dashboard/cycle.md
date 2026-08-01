@@ -2,7 +2,7 @@
 type: cycle
 cycle: 2
 title: Registry layout — from list to dashboard
-status: in-progress
+status: active
 created: 2026-08-01
 updated: 2026-08-01
 author: s01-8b4389 (Soma) + Curtis Mercier
@@ -67,6 +67,7 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ✅ shipped s01-8b4389 |
 | d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ✅ shipped s01-8b4389 |
 | e | In-place editing — frontmatter fields and section bodies | ⬜ queued |
+| f | **Filtering audit + default view** | ⬜ **queued s01-593a6d** — see §Phase f |
 
 > **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
 > marked — the cycle read `queued` for features that had been live for hours, which
@@ -87,6 +88,38 @@ code and visible on the page.
 | 2 | Inline stat chips used their own palette. A/S/C already matched; `O` was off against the pill base and `x` was a solid red of its own invention **with no dark rule at all** — invisible only because 0 cycles are unparseable today. | Chips take the pill palette. | `d7e2bce` |
 | 3 | **The big summary numbers rendered `rgb(0,0,0)` on `rgb(22,22,29)` — ~1.1:1 contrast.** active/seeded/closed passed no tone class and `.reg-card-n` had no dark base; only `warn` ever set a colour, which is why the two warning cards were the only readable ones. | Each number carries its status pill's foreground. Measured after: 9.70 / 10.22 / 10.70 / 14.51:1. | `1c8fd54` |
 | 4 | Clicking the `closed` card filtered the table while the toolbar still read "any status" — **two controls for one filter, disagreeing.** | Deleted the redundant state rather than syncing it: the dropdown OWNS bucket filtering; active/seeded/closed cards are a second way to set it. stale/no-git/broken stay orthogonal. Legacy `#card=closed` links are translated — otherwise they would open with the filter silently dropped. | `7bc9376` |
+
+### Round 2 — s01-593a6d, three more, all against LOCKED decisions never implemented
+
+| # | defect | fix |
+|---|---|---|
+| 5 | **Cards never recomputed.** §decisions-locked says *"cards recompute from the filtered set so they compose"* — counts were computed once at render from `rows` and baked into the HTML. Filter to Active and the seeded card still read 82. **Locked, never built.** | `recountCards()` with FACET semantics: each card counts rows passing every OTHER filter but not its own dimension. Counting with its own filter applied would zero every card but the one clicked. Verified: project=meetsoma → 78/80/280 becomes 28/22/59. |
+| 6 | **Card clicks never re-polled.** The s01-593a6d auto-refresh was wired to the search box and dropdowns only, so a session that only clicks cards reads a snapshot from page load. Measured stale: `generated_at` 11:44:54 vs newest `cycle.md` 11:46:33. | `maybeRefresh()` added to the card handler. |
+| 7 | **"Filtering is broken — clicking Active shows shipped."** It is NOT. With bucket=Active: 78 visible rows, **zero** showing `shipped`. The one element showing it is an ARC HEADER (`_meta/cycle-system`, status `active — 01 shipped · 02 batches closed`) — correctly bucketed Active, its status PROSE mentions shipped phases. | No code change. **Narrative-in-`status:` makes a correct UI look broken** — now a user-visible argument for the `status_note` migration, not a tidiness one. |
+
+⚠ **Also cost a false regression report:** "the section nav broke" was a browser tab open since before a `?v=` bump. An open tab renders the old ES module indefinitely — `no-store` prevents re-fetching stale bytes, it cannot refresh a page never reloaded. **"Looks broken" → hard-reload first.** (Same false-diagnosis class as s01-bbca8a.)
+
+<!-- @section: phase-f -->
+### Phase f — filtering audit + default view (queued s01-593a6d)
+
+**Audit the filtering end to end.** Three defects surfaced by USE in one session, two of them
+against decisions this document had already locked. That ratio says the filter path has never been
+systematically exercised.
+
+- every card × every dropdown × search × view-toggle (tree/flat), asserting **shown-count == the
+  facet count** for each combination
+- the compose cases: card + project + scope + search simultaneously
+- **tree/flat double-count** — both copies live in the DOM; every counter must filter to the current
+  view or every number doubles. Already a live footgun in `recountCards` and the `n` total.
+- URL-hash round-trip for every filter, including legacy `#card=<bucket>` links
+- **falsification:** a filter combination with genuinely zero results must render the
+  explain-yourself empty state, not a bare `0 shown`
+
+**Default view (Curtis, s01-593a6d): group by PROJECT, all groups COLLAPSED, on first load.**
+539 rows expanded is the wall this layout exists to fix — the trigger's own words. Collapsed-by-project
+is navigable at a glance and makes the estate's shape (which project owns how much) the first thing
+you see. Applies only when the URL carries no hash; a shared link still opens on the view it describes.
+<!-- /@section: phase-f -->
 
 **The pattern across all four:** a surface that looked right and was wrong, where the
 check that would have caught it either did not exist or could not see the defect. #3
