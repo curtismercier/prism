@@ -127,7 +127,19 @@ about to edit a section surgically (where a derived id genuinely will not hold),
 decoration. Backfilling anchors wholesale stays out of scope per §out-of-scope; anchors arrive
 **on touch**, folded into `cycle-system/06`'s migration skill — same rule as statuses.
 
-✅ **Default view SHIPPED s01-593a6d.** Group by PROJECT, all groups COLLAPSED, first load only.
+✅ **Default view SHIPPED s01-593a6d.** Group by PROJECT, all groups COLLAPSED, **projects ordered by
+activity (median row age, most-recent first)**, first load only.
+
+**Project order uses MEDIAN age, not min.** Measured: `personal/tincture-css` is min 0 / median 93 —
+a single recently-touched file would rank a dormant project above `meetsoma` (median 1). Min answers
+*did anything ever happen here*; median answers *is this project live*, which is the question a
+collapsed view is asking. Result: meetsoma 1d · somaverse 1d · prism 2d · bonsai 4d · yoshi 5d ·
+studio 42d · nova 47d · client-a 58d · services 84d · tincture 93d.
+
+**Three bugs en route, all silent-success shaped:** (a) used the GLOBAL `rows` instead of the
+project's `allRows`, giving every project age 0 and degenerating the sort to alphabetical while
+looking correct; (b) `min` instead of median, above; (c) keyed project order off `sortSel`, whose
+default is `name` — the feature undid itself. `sortSel` is labelled *"arcs A→Z"*; it governs ARCS.
 Verified both branches: no hash → 50/50 groups closed, 0 tree rows exposed, 12 project groups;
 `#status=Active` → dropdown restored and groups left expanded, so a shared link still opens on the
 view it describes. **Ordering was the bug** — collapsing before `apply()` left one group open because
