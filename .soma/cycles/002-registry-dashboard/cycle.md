@@ -62,10 +62,18 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | Phase | Scope | Status |
 |-------|-------|--------|
 | a | Heading-derived sections — viewer fallback for anchor-less documents | ✅ shipped |
-| b | Stat cards, doubling as quick filters | ⬜ queued |
-| c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ⬜ queued |
-| d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ⬜ queued |
+| b | Stat cards, doubling as quick filters | ✅ shipped s01-8b4389 |
+| c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ✅ shipped s01-8b4389 |
+| d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ✅ shipped s01-8b4389 |
 | e | In-place editing — frontmatter fields and section bodies | ⬜ queued |
+
+> **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
+> marked — the cycle read `queued` for features that had been live for hours, which
+> is the "status is a lie" defect this corpus's own tooling exists to catch.
+> Re-verified in the live DOM before flipping, not from the commit log:
+> `.reg-card` ×7 (6 clickable filters) · `data-reg-sort` name|age · flat table
+> present · URL hash state · `data-reg-project` ×4 / `data-reg-scope` /
+> `data-reg-bucket` · **`e`: 0 edit controls, correctly still queued.**
 
 ### Phase a — shipped
 
@@ -109,6 +117,17 @@ and census counts orient but do not prompt; they earn a small corner, not the to
 
 **No new emitter field without justification.** Every card and column should be a projection of
 data the consumer already sends. A view that needs new data is usually a view inventing data.
+
+**Data freshness is the layout's problem, not the reader's (s01-593a6d).** The registry JSON is a
+SNAPSHOT while the drill-in nests a live artifact on the real file — so a stale snapshot makes ONE
+VIEW DISAGREE WITH ITSELF (the table read `open` while the detail panel read `closed`, two hours
+after the edit). Filtering only ever searched what was fetched at page load, so a cycle written
+since was invisible without a manual reload. Interaction now re-polls, rate-limited, and re-renders
+only when `generated_at` moves.
+
+This stays inside "the layout does not scan a filesystem": it re-fetches the same consumer-supplied
+JSON, it does not go looking for files. It is safe to re-render **because view state already
+round-trips through the URL fragment** — the decision above paid for this one.
 <!-- /@section: decisions-locked -->
 
 <!-- @section: decisions-to-surface -->
