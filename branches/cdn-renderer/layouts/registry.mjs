@@ -231,7 +231,17 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
       </div>`;
     }).join('');
 
-    return `<section class="reg-proj" data-proj data-name="${esc(proj)}">
+    // data-age = the project's MEDIAN row age, not its minimum. Measured s01-593a6d:
+    // `personal/tincture-css` has min 0 / median 93 -- one recently-touched file would
+    // rank a dormant project above `meetsoma` (median 1). Min answers "did anything
+    // ever happen here"; median answers "is this project live", which is the question
+    // a collapsed-by-default view is asking. -1 = no git dates at all, sorts LAST.
+    // NOTE: allRows, not `rows` -- `rows` is the GLOBAL set and gave every project the
+    // same age (0), silently degenerating the sort into alphabetical.
+    const projAges = allRows.map((r) => r.age_days).filter((a) => Number.isFinite(a)).sort((a, b) => a - b);
+    const projAge = projAges.length ? projAges[Math.floor(projAges.length / 2)] : -1;
+
+    return `<section class="reg-proj" data-proj data-name="${esc(proj)}" data-age="${projAge}">
       <h3 class="reg-proj-head" data-proj-toggle tabindex="0" role="button" aria-expanded="true">
         <span class="reg-caret">▾</span>
         <span class="reg-proj-name">${esc(proj)}</span>
@@ -703,6 +713,30 @@ export function attachRegistry(root) {
       });
       kids.forEach((k) => proj.appendChild(k));
     }
+    sortProjects();
+  }
+
+  // Projects order by LAST TOUCHED by default (Curtis, s01-593a6d). With every group
+  // collapsed, the first thing you see is which projects are live -- alphabetical put
+  // `clients/arzadon-handoff` on top regardless of whether anyone had opened it in
+  // months. Unknown age (-1) sorts LAST, same rule sortArcs uses.
+  function sortProjects() {
+    const host = wrap.querySelector('[data-reg-tree]') || wrap;
+    const projs = [...host.querySelectorAll('[data-proj]')];
+    if (projs.length < 2) return;
+    const parent = projs[0].parentElement;
+    if (!projs.every((p) => p.parentElement === parent)) return;   // don't reparent across containers
+    // Projects ALWAYS order by activity. `sortSel` is labelled "arcs A-Z / arcs by
+    // most-recent activity" -- it governs ARCS. Keying projects off it made the default
+    // (`name`) sort projects alphabetically, silently undoing this whole feature.
+    projs.sort((a, b) => {
+      const ax = Number(a.dataset.age ?? -1), bx = Number(b.dataset.age ?? -1);
+      if (ax < 0 && bx < 0) return String(a.dataset.name||'').localeCompare(String(b.dataset.name||''));
+      if (ax < 0) return 1;
+      if (bx < 0) return -1;
+      return ax - bx;                                              // most recently touched first
+    });
+    projs.forEach((p) => parent.appendChild(p));
   }
 
   // ---- auto-refresh on interaction ------------------------------------------
@@ -769,7 +803,7 @@ export function attachRegistry(root) {
   readHash();
   syncCards();
   setView(view);
-  if (sortSel.value && sortSel.value !== 'name') sortArcs();
+  if (sortSel.value && sortSel.value !== 'name') sortArcs(); else sortProjects();
 
   // DEFAULT VIEW: collapsed, grouped by project (Curtis, s01-593a6d).
   // 500+ rows expanded is the exact wall this layout exists to fix — collapsed by
