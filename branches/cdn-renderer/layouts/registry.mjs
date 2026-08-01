@@ -88,7 +88,18 @@ function statsHtml(st) {
     ? `<span class="reg-stat-added" title="most recent created: date in this group">+${esc(st.newestCreated)}</span>` : '';
   const fresh = st.minAge != null
     ? `<span class="reg-stat-fresh" title="most recent activity (git) in this group">${st.minAge}d</span>` : '';
-  return `<span class="reg-stats">${chips}${added}${fresh}</span>`;
+  // Group completion from data already shipped -- no emitter change, no body parsing.
+  // Deliberately NOT a per-document task bar: only ~20% of documents carry checkboxes,
+  // so a per-row percentage would render 0% for a document that simply has no tasks --
+  // and "nothing to do" and "nothing done" are opposite claims.
+  // Denominator excludes unparseable rows: a row we could not read is not a row we
+  // know to be incomplete.
+  const measurable = st.total - st.broken;
+  const done = merged.get('C') || 0;
+  const pct = measurable > 0
+    ? `<span class="reg-stat-pct" title="${done} of ${measurable} parseable cycles in this group are closed/shipped${st.broken ? ` (${st.broken} unparseable excluded)` : ''}">${done}/${measurable} · ${Math.round(100 * done / measurable)}%</span>`
+    : '';
+  return `<span class="reg-stats">${chips}${pct}${added}${fresh}</span>`;
 }
 
 // Hrefs in the data are relative to the JSON FILE. A nested <soma-artifact> resolves
@@ -103,6 +114,8 @@ function leafRow(r, isPhase) {
   return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
       data-bucket="${esc(r.bucket || '')}" data-broken="${r.error ? '1' : '0'}"
+      data-project="${esc(r.project || '')}" data-scope="${esc(r.tree_kind || '')}"
+      data-git="${r.git ? '1' : '0'}"
       data-age="${r.age_days ?? -1}" data-name="${esc(r.phase || r.arc || r.slug)}"
       data-label="${esc(r.phase || r.slug)}">
     <span class="reg-name">
@@ -187,6 +200,8 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
         <div class="reg-arc-body">
           ${entry ? `<div class="reg-entrylink" data-row data-href="${esc(abs(entry.href))}"
               data-blob="${blob(entry)}" data-bucket="${esc(entry.bucket || '')}"
+              data-project="${esc(entry.project || '')}" data-scope="${esc(entry.tree_kind || '')}"
+              data-git="${entry.git ? '1' : '0'}"
               data-broken="0" data-age="${entry.age_days ?? -1}" data-label="${esc(entry.slug)}">
               ↳ open the arc (<code>cycle.md</code>)${entry.title ? ` — <span class="reg-title">${esc(entry.title)}</span>` : ''}
             </div>` : ''}
@@ -208,19 +223,56 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   }).join('');
 
   const buckets = [...new Set(rows.map((r) => r.bucket).filter(Boolean))].sort();
+  const projects = [...new Set(rows.map((r) => r.project).filter(Boolean))].sort();
+  const scopes = [...new Set(rows.map((r) => r.tree_kind).filter(Boolean))].sort();
+
+  // ── Stat cards ─────────────────────────────────────────────────────────────
+  // Cards are ACTIONABLE first: each one should mean "go look at something", not
+  // "here is a number". They double as filters (see CARD_TESTS in attach), so the
+  // dashboard gains a filter UI without gaining any filter chrome.
+  const nStale  = rows.filter((r) => r.bucket === 'Active' && (r.age_days ?? 0) > 60).length;
+  const nNoGit  = rows.filter((r) => !r.git).length;
+  const nActive = rows.filter((r) => r.bucket === 'Active').length;
+  const nSeeded = rows.filter((r) => r.bucket === 'Seeded').length;
+  const nClosed = rows.filter((r) => r.bucket === 'Closed').length;
+
+  const card = (id, n, label, title, tone = '') =>
+    `<button type="button" class="reg-card ${tone}" data-card="${id}" aria-pressed="false" title="${esc(title)}">
+       <span class="reg-card-n">${n}</span><span class="reg-card-l">${esc(label)}</span></button>`;
+
+  const cardsHtml = `<div class="reg-cards">
+    <div class="reg-card reg-card-static" title="click a card to filter; click it again to clear">
+      <span class="reg-card-n">${c.cycles ?? rows.length}</span><span class="reg-card-l">cycles · ${byProject.size} projects</span></div>
+    ${card('active', nActive, 'active', 'status resolves to Active')}
+    ${card('seeded', nSeeded, 'seeded', 'planned but not started')}
+    ${card('closed', nClosed, 'closed', 'shipped / done / closed / superseded')}
+    ${card('stale', nStale, 'stale >60d', 'claims Active but nothing has touched it in 60+ days — either the status is a lie or the work is abandoned', nStale ? 'reg-card-warn' : '')}
+    ${card('nogit', nNoGit, 'no git date', `${nNoGit} of ${rows.length} rows have NO git history, so they are INVISIBLE to drift and to git-based staleness. Not a defect in the cycle — a blind spot in the measurement.`, nNoGit ? 'reg-card-warn' : '')}
+    ${card('broken', broken, 'unparseable', 'frontmatter does not parse — renders blank everywhere else', broken ? 'reg-card-bad' : '')}
+  </div>`;
 
   return `
 <div class="reg" data-reg>
-  <div class="reg-counts">
-    <span class="reg-k">${c.cycles ?? rows.length}</span> cycles ·
-    <span class="reg-k">${byProject.size}</span> projects ·
-    <span class="reg-k ${broken ? 'reg-bad' : ''}">${broken}</span> unparseable
-    ${d.generated_at ? `<span class="reg-gen">generated ${esc(d.generated_at)}</span>` : ''}
+  <div class="reg-topbar">
+    <h2 class="reg-title">${esc(fm.title || 'Cycle registry')}</h2>
+    <div class="reg-topmeta">
+      ${d.generated_at ? `<span class="reg-gen" title="This data is a SNAPSHOT, not live. Regenerate before trusting any number.">generated ${esc(String(d.generated_at).replace('T', ' ').replace(/\+.*$/, ''))}</span>` : ''}
+      ${preamble ? `<button type="button" class="reg-btn reg-info" data-reg-help aria-expanded="false" title="How to read this dashboard">ⓘ help</button>` : ''}
+    </div>
   </div>
-  ${preamble ? `<div class="reg-pre">${preamble}</div>` : ''}
+
+  ${preamble ? `<div class="reg-pre" data-reg-helppanel hidden>${preamble}</div>` : ''}
+
+  <div data-reg-sentinel aria-hidden="true"></div>
+  <div class="reg-sticky" data-reg-sticky>
+  ${cardsHtml}
 
   <div class="reg-controls">
     <input type="search" data-reg-q placeholder="filter by slug, arc, title, status, tag…" class="reg-input">
+    <select data-reg-project class="reg-select"><option value="">any project</option>
+      ${projects.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select>
+    <select data-reg-scope class="reg-select"><option value="">any scope</option>
+      ${scopes.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}</select>
     <select data-reg-bucket class="reg-select"><option value="">any status</option>
       ${buckets.map((b) => `<option value="${esc(b)}">${esc(b)}</option>`).join('')}</select>
     <select data-reg-sort class="reg-select">
@@ -231,12 +283,15 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
     <button type="button" data-reg-collapse class="reg-btn">collapse all</button>
     <span class="reg-shown" data-reg-shown></span>
   </div>
+  </div>
 
   <div class="reg-legend">
-    <span class="reg-nm">phase / cycle</span> · status ·
-    <span class="reg-d">created</span> <span class="reg-d">claims</span>
-    <span class="reg-d">touched</span> <span class="reg-age">age</span>
-    <em>— “claims” is the frontmatter’s own <code>updated:</code>; “touched” is the last git commit.</em>
+    <span class="reg-nm" title="The phase slug, or the cycle slug when the row is not part of an arc.">phase / cycle</span> ·
+    <span title="Normalised bucket — Active / Seeded / Closed / Other. The raw frontmatter status is free text (hundreds of distinct values), so the bucket is what is filterable.">status</span> ·
+    <span class="reg-d" title="Frontmatter created: date.">created</span>
+    <span class="reg-d" title="The frontmatter's own updated: field — a CLAIM, written by whoever last edited the file.">claims</span>
+    <span class="reg-d" title="Last git commit touching the file — GROUND TRUTH. When it disagrees with 'claims', the disagreement is a finding, not a rendering bug.">touched</span>
+    <span class="reg-age" title="Days since last activity, ranked on git. Falls back to the claim only when there is no git date — a blank is NOT 'never touched'.">age</span>
   </div>
 
   <div class="reg-tree">${body}</div>
@@ -261,9 +316,12 @@ export function attachRegistry(root) {
 
   const q = wrap.querySelector('[data-reg-q]');
   const bucketSel = wrap.querySelector('[data-reg-bucket]');
+  const projSel = wrap.querySelector('[data-reg-project]');
+  const scopeSel = wrap.querySelector('[data-reg-scope]');
   const sortSel = wrap.querySelector('[data-reg-sort]');
   const brokenOnly = wrap.querySelector('[data-reg-broken]');
   const collapseBtn = wrap.querySelector('[data-reg-collapse]');
+  let activeCard = '';
 
   const setOpen = (el, open) => {
     el.classList.toggle('reg-closed', !open);
@@ -308,18 +366,80 @@ export function attachRegistry(root) {
     setOpen(box, box.classList.contains('reg-closed'));
   });
 
+  // ── View state lives in the URL fragment ────────────────────────────────
+  // Shareable, survives reload, and the back button works -- for the price of two
+  // small functions and no state library at all.
+  function readHash() {
+    const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    if (h.has('q')) q.value = h.get('q');
+    if (h.has('status')) bucketSel.value = h.get('status');
+    if (h.has('project') && projSel) projSel.value = h.get('project');
+    if (h.has('scope') && scopeSel) scopeSel.value = h.get('scope');
+    if (h.has('sort')) sortSel.value = h.get('sort');
+    if (h.has('card')) activeCard = h.get('card');
+    if (h.get('broken') === '1') brokenOnly.checked = true;
+  }
+  function writeHash() {
+    const p = new URLSearchParams();
+    if (q.value.trim()) p.set('q', q.value.trim());
+    if (bucketSel.value) p.set('status', bucketSel.value);
+    if (projSel && projSel.value) p.set('project', projSel.value);
+    if (scopeSel && scopeSel.value) p.set('scope', scopeSel.value);
+    if (sortSel.value && sortSel.value !== 'name') p.set('sort', sortSel.value);
+    if (activeCard) p.set('card', activeCard);
+    if (brokenOnly.checked) p.set('broken', '1');
+    const s = p.toString();
+    history.replaceState(null, '', s ? `#${s}` : location.pathname + location.search);
+  }
+
+  // A card is a saved query, not a separate mechanism. Each returns true/false for a
+  // row's dataset -- so cards and dropdowns compose instead of fighting.
+  const CARD_TESTS = {
+    active:  (d) => d.bucket === 'Active',
+    seeded:  (d) => d.bucket === 'Seeded',
+    closed:  (d) => d.bucket === 'Closed',
+    stale:   (d) => d.bucket === 'Active' && Number(d.age) > 60,
+    nogit:   (d) => d.git === '0',
+    broken:  (d) => d.broken === '1',
+  };
+
+  function syncCards() {
+    for (const el of wrap.querySelectorAll('[data-card]')) {
+      el.classList.toggle('reg-card-on', el.dataset.card === activeCard);
+      el.setAttribute('aria-pressed', String(el.dataset.card === activeCard));
+    }
+  }
+
+  wrap.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-card]');
+    if (!card) return;
+    // Toggle: clicking the active card clears it, so a card can never become a filter
+    // you cannot get back out of.
+    activeCard = (activeCard === card.dataset.card) ? '' : card.dataset.card;
+    syncCards();
+    apply();
+  });
+
   function apply() {
     const term = (q.value || '').trim().toLowerCase();
     const bucket = bucketSel.value, bOnly = brokenOnly.checked;
+    const proj = projSel ? projSel.value : '';
+    const scope = scopeSel ? scopeSel.value : '';
+    const cardTest = CARD_TESTS[activeCard];
     let n = 0;
 
     for (const row of wrap.querySelectorAll('[data-row]')) {
-      const ok = (!term || (row.dataset.blob || '').includes(term))
-        && (!bucket || row.dataset.bucket === bucket)
-        && (!bOnly || row.dataset.broken === '1');
+      const d = row.dataset;
+      const ok = (!term || (d.blob || '').includes(term))
+        && (!bucket || d.bucket === bucket)
+        && (!proj || d.project === proj)
+        && (!scope || d.scope === scope)
+        && (!cardTest || cardTest(d))
+        && (!bOnly || d.broken === '1');
       row.hidden = !ok;
       if (ok) n++;
     }
+    writeHash();
     // A group with nothing visible inside it is noise — hide the container too, so a
     // filter narrows the TREE rather than leaving empty scaffolding behind.
     for (const arc of wrap.querySelectorAll('[data-arc]')) {
@@ -329,8 +449,66 @@ export function attachRegistry(root) {
       const anyRow = [...proj.querySelectorAll('[data-row]')].some((r) => !r.hidden);
       proj.hidden = !anyRow;
     }
-    shown.textContent = `${n} shown`;
+    // An empty result must EXPLAIN itself. Filters compose, so a card left active from
+    // earlier silently intersects with a new dropdown to zero -- and a bare "0 shown"
+    // reads as broken data rather than as a narrow query. Name every active filter and
+    // offer the way out.
+    const active = [];
+    if (term) active.push(`search “${term}”`);
+    if (proj) active.push(`project ${proj}`);
+    if (scope) active.push(`scope ${scope}`);
+    if (bucket) active.push(`status ${bucket}`);
+    if (activeCard) active.push(`card “${activeCard}”`);
+    if (bOnly) active.push('broken only');
+
+    if (n === 0 && active.length) {
+      shown.innerHTML = `<span class="reg-empty">0 shown — no cycle matches ${esc(active.join(' + '))}. `
+        + `<button type="button" data-reg-clear class="reg-clearbtn">clear filters</button></span>`;
+    } else {
+      shown.textContent = active.length ? `${n} shown · ${active.length} filter${active.length === 1 ? '' : 's'}` : `${n} shown`;
+    }
   }
+
+  // Sticky header: cards + filters travel together, so the numbers stay reachable
+  // while scrolling 500 rows. A sentinel above the bar is what detects "stuck" --
+  // CSS alone cannot style a sticky element differently once it pins. When stuck the
+  // cards compact, because a full-height card row that follows you down the page is
+  // a banner, not a dashboard.
+  const sentinel = wrap.querySelector('[data-reg-sentinel]');
+  const stickyBar = wrap.querySelector('[data-reg-sticky]');
+  if (sentinel && stickyBar && 'IntersectionObserver' in window) {
+    new IntersectionObserver(
+      ([e]) => stickyBar.classList.toggle('is-stuck', !e.isIntersecting),
+      { threshold: 0 },
+    ).observe(sentinel);
+  }
+
+  // Help panel: the narrative belongs behind a button, not above the data. It is
+  // documentation, and documentation that occupies the first screen of a dashboard
+  // gets scrolled past rather than read.
+  const helpBtn = wrap.querySelector('[data-reg-help]');
+  const helpPanel = wrap.querySelector('[data-reg-helppanel]');
+  if (helpBtn && helpPanel) {
+    helpBtn.addEventListener('click', () => {
+      const open = helpPanel.hidden;
+      helpPanel.hidden = !open;
+      helpBtn.setAttribute('aria-expanded', String(open));
+      helpBtn.classList.toggle('reg-info-on', open);
+    });
+  }
+
+  // Delegated so it survives the innerHTML rewrite above.
+  wrap.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-reg-clear]')) return;
+    q.value = '';
+    bucketSel.value = '';
+    if (projSel) projSel.value = '';
+    if (scopeSel) scopeSel.value = '';
+    brokenOnly.checked = false;
+    activeCard = '';
+    syncCards();
+    apply();
+  });
 
   function sortArcs() {
     const mode = sortSel.value;
@@ -351,11 +529,11 @@ export function attachRegistry(root) {
     }
   }
 
-  [q, bucketSel, brokenOnly].forEach((el) => {
+  [q, bucketSel, projSel, scopeSel, brokenOnly].filter(Boolean).forEach((el) => {
     el.addEventListener('input', apply);
     el.addEventListener('change', apply);
   });
-  sortSel.addEventListener('change', sortArcs);
+  sortSel.addEventListener('change', () => { sortArcs(); writeHash(); });
 
   let allClosed = false;
   collapseBtn.addEventListener('click', () => {
@@ -369,5 +547,10 @@ export function attachRegistry(root) {
     detailBody.innerHTML = '';
   });
 
+  // Restore the view from the URL BEFORE the first apply, so a shared link opens on
+  // the view it describes rather than flashing the default and then correcting.
+  readHash();
+  syncCards();
+  if (sortSel.value && sortSel.value !== 'name') sortArcs();
   apply();
 }
