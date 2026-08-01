@@ -477,7 +477,15 @@ export function attachRegistry(root) {
     if (h.has('project') && projSel) projSel.value = h.get('project');
     if (h.has('scope') && scopeSel) scopeSel.value = h.get('scope');
     if (h.has('sort')) sortSel.value = h.get('sort');
-    if (h.has('card')) activeCard = h.get('card');
+    if (h.has('card')) {
+      const c = h.get('card');
+      // Back-compat: links shared before s01-593a6d encode bucket filters as
+      // `card=closed`. Those ids no longer have a CARD_TESTS entry, so without
+      // this the old link would open with its filter SILENTLY DROPPED -- the
+      // page would look fine and show the wrong rows. Translate to the dropdown.
+      if (CARD_BUCKET[c]) bucketSel.value = CARD_BUCKET[c];
+      else activeCard = c;
+    }
     if (h.get('broken') === '1') brokenOnly.checked = true;
     if (h.get('view') === 'flat') view = 'flat';
     if (h.has('fs')) flat.state = h.get('fs');
@@ -499,10 +507,16 @@ export function attachRegistry(root) {
 
   // A card is a saved query, not a separate mechanism. Each returns true/false for a
   // row's dataset -- so cards and dropdowns compose instead of fighting.
+  // Three cards test EXACTLY what the status dropdown tests. Keeping both as
+  // independent state is why they drifted: clicking `closed` filtered the table
+  // while the dropdown still read "any status", so two controls described one
+  // filter and disagreed. The fix is to delete the redundant state, not to sync
+  // it -- the dropdown OWNS bucket filtering, and those cards are a second way to
+  // set it. The other three are genuinely orthogonal (age / missing git / broken
+  // frontmatter) and stay card-only. (Curtis, s01-593a6d)
+  const CARD_BUCKET = { active: 'Active', seeded: 'Seeded', closed: 'Closed' };
+
   const CARD_TESTS = {
-    active:  (d) => d.bucket === 'Active',
-    seeded:  (d) => d.bucket === 'Seeded',
-    closed:  (d) => d.bucket === 'Closed',
     stale:   (d) => d.bucket === 'Active' && Number(d.age) > 60,
     nogit:   (d) => d.git === '0',
     broken:  (d) => d.broken === '1',
@@ -510,17 +524,28 @@ export function attachRegistry(root) {
 
   function syncCards() {
     for (const el of wrap.querySelectorAll('[data-card]')) {
-      el.classList.toggle('reg-card-on', el.dataset.card === activeCard);
-      el.setAttribute('aria-pressed', String(el.dataset.card === activeCard));
+      const id = el.dataset.card;
+      const on = CARD_BUCKET[id]
+        ? bucketSel.value === CARD_BUCKET[id]   // derived from the dropdown
+        : id === activeCard;                    // orthogonal cards keep their own state
+      el.classList.toggle('reg-card-on', on);
+      el.setAttribute('aria-pressed', String(on));
     }
   }
 
   wrap.addEventListener('click', (e) => {
     const card = e.target.closest('[data-card]');
     if (!card) return;
+    const id = card.dataset.card;
     // Toggle: clicking the active card clears it, so a card can never become a filter
     // you cannot get back out of.
-    activeCard = (activeCard === card.dataset.card) ? '' : card.dataset.card;
+    if (CARD_BUCKET[id]) {
+      // Drive the dropdown -- it is the single source of truth for bucket, so the
+      // toolbar now reads "Closed" instead of contradicting the card.
+      bucketSel.value = (bucketSel.value === CARD_BUCKET[id]) ? '' : CARD_BUCKET[id];
+    } else {
+      activeCard = (activeCard === id) ? '' : id;
+    }
     syncCards();
     apply();
   });
@@ -677,8 +702,10 @@ export function attachRegistry(root) {
   }
 
   [q, bucketSel, projSel, scopeSel, brokenOnly].filter(Boolean).forEach((el) => {
-    el.addEventListener('input', () => { apply(); maybeRefresh(); });
-    el.addEventListener('change', () => { apply(); maybeRefresh(); });
+    // syncCards() on every change so the reverse direction holds too: picking
+    // "Closed" in the toolbar lights the closed card.
+    el.addEventListener('input', () => { syncCards(); apply(); maybeRefresh(); });
+    el.addEventListener('change', () => { syncCards(); apply(); maybeRefresh(); });
   });
   sortSel.addEventListener('change', () => { sortArcs(); writeHash(); });
 
