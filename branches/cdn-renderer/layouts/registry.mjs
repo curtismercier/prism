@@ -465,6 +465,66 @@ export function attachRegistry(root) {
     apply();
   });
 
+  // ── Tree open/closed state ────────────────────────────────────────
+  // REGRESSION THIS FIXES (s01-ac5017, and it was self-inflicted). Collapse-by-default
+  // is guarded by `if (!location.hash)` -- a proxy for "first visit". Before cd6e25a,
+  // writeHash() never ran (apply() threw before reaching it), so the hash was ALWAYS
+  // empty and that branch ALWAYS fired. Fixing the filters made the hash real, which
+  // silently switched collapse-by-default off: measured 78/78 closed with no hash,
+  // 0/77 closed with `#project=meetsoma`. A dormant branch whose condition had only
+  // ever been true because of a different bug.
+  //
+  // The proxy was wrong even before that. What we actually need is per-group state
+  // that survives a refresh: collapsed with ONE group open must come back the same.
+  //
+  // sessionStorage, NOT the hash, and the split is deliberate: the hash is for
+  // SHAREABLE state (which rows you are looking at), tree geometry is for THIS TAB.
+  // 78 group ids would also make the URL unshareable, which defeats the hash's whole
+  // purpose. Refresh is same-tab, so sessionStorage is exactly the right lifetime.
+  const TREE_KEY = 'reg-tree-open-v1';
+  // Groups carry no id of their own -- `data-arc`/`data-proj` are bare markers. The
+  // stable identifiers are one attribute over: data-name on projects, data-blob on arcs.
+  const groupId = (el) =>
+    (el.hasAttribute('data-proj') ? 'p:' : 'a:') +
+    (el.getAttribute('data-name') || el.getAttribute('data-blob') || '');
+
+  function saveTree() {
+    try {
+      const open = [...wrap.querySelectorAll('[data-arc],[data-proj]')]
+        .filter((el) => !el.classList.contains('reg-closed'))
+        .map(groupId).filter((id) => id.length > 2);
+      // Store the ARRAY even when empty. "no key" (never visited) and "key holding []"
+      // (user closed everything) must stay distinguishable, or a deliberate
+      // collapse-all is indistinguishable from a first visit and gets re-applied.
+      sessionStorage.setItem(TREE_KEY, JSON.stringify(open));
+    } catch { /* private mode / quota -- degrade to the old default, never throw */ }
+  }
+
+  // The button's label was assigned in three separate places and they disagreed:
+  // after a restore it read "expand all" while a group was visibly open, so the one
+  // control that describes tree state was lying about it. Derive it from the DOM in
+  // ONE place instead — three assignments of one fact is three chances to diverge.
+  function syncCollapseLabel() {
+    if (!collapseBtn) return;
+    const anyOpen = [...wrap.querySelectorAll('[data-arc],[data-proj]')]
+      .some((el) => !el.classList.contains('reg-closed'));
+    allClosed = !anyOpen;
+    collapseBtn.textContent = anyOpen ? 'collapse all' : 'expand all';
+  }
+
+  /** @returns true if stored state was found and applied. */
+  function restoreTree() {
+    let stored;
+    try { stored = sessionStorage.getItem(TREE_KEY); } catch { return false; }
+    if (stored == null) return false;
+    let ids;
+    try { ids = new Set(JSON.parse(stored)); } catch { return false; }
+    for (const el of wrap.querySelectorAll('[data-arc],[data-proj]')) {
+      setOpen(el, ids.has(groupId(el)));
+    }
+    return true;
+  }
+
   const setOpen = (el, open) => {
     el.classList.toggle('reg-closed', !open);
     const head = el.querySelector('[data-arc-toggle],[data-proj-toggle]');
@@ -480,6 +540,8 @@ export function attachRegistry(root) {
     if (head) {
       const box = head.closest('[data-arc],[data-proj]');
       setOpen(box, box.classList.contains('reg-closed'));
+      saveTree();
+      syncCollapseLabel();
       return;
     }
     // An artifact link is a real navigation to its own window — let the browser have
@@ -510,6 +572,8 @@ export function attachRegistry(root) {
     e.preventDefault();
     const box = head.closest('[data-arc],[data-proj]');
     setOpen(box, box.classList.contains('reg-closed'));
+    saveTree();
+    syncCollapseLabel();
   });
 
   // ── View state lives in the URL fragment ────────────────────────────────
@@ -842,7 +906,8 @@ export function attachRegistry(root) {
   collapseBtn.addEventListener('click', () => {
     allClosed = !allClosed;
     wrap.querySelectorAll('[data-arc],[data-proj]').forEach((el) => setOpen(el, !allClosed));
-    collapseBtn.textContent = allClosed ? 'expand all' : 'collapse all';
+    saveTree();
+    syncCollapseLabel();
   });
 
   wrap.querySelector('[data-reg-close]').addEventListener('click', () => {
@@ -864,9 +929,14 @@ export function attachRegistry(root) {
   // describes, which is the whole point of putting view state in the fragment.
   apply();
 
-  if (!location.hash) {
-    allClosed = true;
+  // Restore the tree BEFORE falling back to the default. `!location.hash` is no longer
+  // the test -- stored state is. A refresh with filters active kept the filters and
+  // threw the tree away, which is the regression this replaces.
+  if (!restoreTree()) {
+    // First visit in this tab: collapsed, grouped by project. 500+ rows expanded is
+    // the exact wall this layout exists to fix.
     wrap.querySelectorAll('[data-arc],[data-proj]').forEach((el) => setOpen(el, false));
-    if (collapseBtn) collapseBtn.textContent = 'expand all';
+    saveTree();
   }
+  syncCollapseLabel();
 }
