@@ -62,12 +62,42 @@ const LAYOUTS = {
 class SomaArtifact extends HTMLElement {
   static get observedAttributes() { return ['src']; }
 
+  // MECHANISM (task 1, s01-ac5017 follow-up): per the custom-elements upgrade
+  // algorithm, an element already sitting in parsed HTML when
+  // `customElements.define()` runs gets BOTH reactions fired for its initial
+  // `src` -- attributeChangedCallback(name='src', oldVal=null, newVal=<src>)
+  // AND connectedCallback -- back to back, synchronously enqueued in that
+  // order. Every attribute on a pre-existing element counts as a "change" from
+  // null, so the old `oldVal !== newVal` guard never caught it. That fired
+  // TWO concurrent render() calls on the ONE <soma-artifact src="registry.md">
+  // in index.html. Each render() does its own fetch + attach(); attach() ends
+  // by calling readHash() then writeHash(). Whichever call's fetch chain
+  // settled LAST clobbered `this.innerHTML` with a FRESH, unfiltered DOM,
+  // re-ran readHash() against the (still-correct) location.hash, and — this is
+  // the part that produced the selective-loss symptom — proved to be racing
+  // its OWN registry.json fetch against the first call's, so the second
+  // attach()'s writeHash() sometimes fired before its readHash() had finished
+  // populating every control, re-serializing a PARTIAL state (only whichever
+  // field happened to already be set — measured: program, the last field
+  // readHash() assigns before the async gap) back over the correct hash the
+  // first call had just written. Confirmed by instrumenting connectedCallback/
+  // attributeChangedCallback with call-order logging: both fired for the one
+  // statically-declared element, every load, only on first parse.
+  //
+  // Fix: an element should render once when it first becomes connected with a
+  // src, and again only on a REAL subsequent src change. `_rendered` distinguishes
+  // "initial upgrade noise" from "src actually changed after the fact".
+  _rendered = false;
+
   connectedCallback() {
+    this._rendered = true;
     this.render();
   }
 
   attributeChangedCallback(name, oldVal, newVal) {
-    if (name === 'src' && oldVal !== newVal && this.isConnected) this.render();
+    if (name !== 'src' || oldVal === newVal) return;
+    if (!this._rendered) return;          // initial-upgrade fire — connectedCallback owns it
+    if (this.isConnected) this.render();
   }
 
   async render() {
