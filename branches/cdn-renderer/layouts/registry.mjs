@@ -466,18 +466,7 @@ export function attachRegistry(root) {
   });
 
   // ── Tree open/closed state ────────────────────────────────────────
-  // REGRESSION THIS FIXES (s01-ac5017, and it was self-inflicted). Collapse-by-default
-  // is guarded by `if (!location.hash)` -- a proxy for "first visit". Before cd6e25a,
-  // writeHash() never ran (apply() threw before reaching it), so the hash was ALWAYS
-  // empty and that branch ALWAYS fired. Fixing the filters made the hash real, which
-  // silently switched collapse-by-default off: measured 78/78 closed with no hash,
-  // 0/77 closed with `#project=meetsoma`. A dormant branch whose condition had only
-  // ever been true because of a different bug.
-  //
-  // The proxy was wrong even before that. What we actually need is per-group state
-  // that survives a refresh: collapsed with ONE group open must come back the same.
-  //
-  // sessionStorage, NOT the hash, and the split is deliberate: the hash is for
+  // Tree geometry lives in sessionStorage, NOT the hash — the split is deliberate: the hash is for
   // SHAREABLE state (which rows you are looking at), tree geometry is for THIS TAB.
   // 78 group ids would also make the URL unshareable, which defeats the hash's whole
   // purpose. Refresh is same-tab, so sessionStorage is exactly the right lifetime.
