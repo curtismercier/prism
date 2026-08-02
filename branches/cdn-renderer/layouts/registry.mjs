@@ -270,6 +270,7 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
         <span class="reg-caret">▾</span>
         <span class="reg-proj-name">${esc(proj)}</span>
         <span class="reg-proj-n">${nCycles}</span>
+        <span class="reg-proj-arcs" title="arcs in this project (a cycle claimed via frontmatter arc: counts toward the arc it declares)">${arcs.size} arc${arcs.size === 1 ? '' : 's'}</span>
         ${statsHtml(projStats)}
         ${nBroken ? `<span class="reg-badge-broken">${nBroken} broken</span>` : ''}
       </h3>
@@ -345,7 +346,7 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
 
   const cardsHtml = `<div class="reg-cards">
     <div class="reg-card reg-card-static" title="click a card to filter; click it again to clear">
-      <span class="reg-card-n">${c.cycles ?? rows.length}</span><span class="reg-card-l">cycles · ${byProject.size} projects</span></div>
+      <span class="reg-card-n">${c.cycles ?? rows.length}</span><span class="reg-card-l">cycles · ${c.arcs ?? '?'} arcs · ${byProject.size} projects${c.programs ? ` · ${c.programs} program${c.programs>1?'s':''}` : ''}</span></div>
     ${card('active', nActive, 'active', 'status resolves to Active', 'reg-card-active')}
     ${card('seeded', nSeeded, 'seeded', 'planned but not started', 'reg-card-seeded')}
     ${card('closed', nClosed, 'closed', 'shipped / done / closed / superseded', 'reg-card-closed')}
@@ -519,6 +520,7 @@ export function attachRegistry(root) {
     if (h.has('q')) q.value = h.get('q');
     if (h.has('status')) bucketSel.value = h.get('status');
     if (h.has('project') && projSel) projSel.value = h.get('project');
+    if (h.has('program') && progSel) progSel.value = h.get('program');
     if (h.has('scope') && scopeSel) scopeSel.value = h.get('scope');
     if (h.has('sort')) sortSel.value = h.get('sort');
     if (h.has('card')) {
@@ -539,6 +541,10 @@ export function attachRegistry(root) {
     if (q.value.trim()) p.set('q', q.value.trim());
     if (bucketSel.value) p.set('status', bucketSel.value);
     if (projSel && projSel.value) p.set('project', projSel.value);
+    // Every filter control must round-trip here or it is the one dimension a shared
+    // link silently drops. `program` shipped in 13fe015 without its two lines and was
+    // invisible because apply() was throwing before writeHash() ran at all. (s01-ac5017)
+    if (progSel && progSel.value) p.set('program', progSel.value);
     if (scopeSel && scopeSel.value) p.set('scope', scopeSel.value);
     if (sortSel.value && sortSel.value !== 'name') p.set('sort', sortSel.value);
     if (activeCard) p.set('card', activeCard);
@@ -641,6 +647,15 @@ export function attachRegistry(root) {
     const term = (q.value || '').trim().toLowerCase();
     const bucket = bucketSel.value, bOnly = brokenOnly.checked;
     const proj = projSel ? projSel.value : '';
+    // 🔴 `prog` was declared ONLY in recountCards() when the program filter landed
+    // (13fe015). apply() referenced it undeclared, so every apply() threw a
+    // ReferenceError mid-loop. `&&` short-circuits, so rows that FAILED an earlier
+    // clause were hidden normally and the throw only fired on the first row that
+    // reached this one -- which is why the same bug read as "selects are inert",
+    // "cards lie" and "search works" in three different sessions depending on DOM
+    // order. writeHash() sits after the loop, so it never ran either: that is the
+    // whole of "filters don't survive a refresh". (s01-ac5017)
+    const prog = progSel ? progSel.value : '';
     const scope = scopeSel ? scopeSel.value : '';
     const cardTest = CARD_TESTS[activeCard];
     let n = 0;
