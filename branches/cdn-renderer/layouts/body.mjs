@@ -135,8 +135,32 @@ const fileRow = (r) => {
   </div>`;
 };
 
-export function renderBody(fm, _body, srcUrl, data) {
+// CONTRACT (fixed s01-8ba64e after somaverse-ui-artist caught it in the served page):
+// render.mjs calls `layout(parsed)` — ONE argument — and the layout fetches its own
+// `data:` sidecar. The first version of this took four positional args
+// (fm, _body, srcUrl, data) and expected the caller to pass the JSON. It passed a
+// node unit test where I handed it the object myself, and every stat card rendered
+// `undefined` / `NaN%` in the browser because `body.json` was never requested at all.
+// Verifying the function is not verifying the executing path.
+export async function renderBody({ frontmatter: fm, srcUrl }) {
   BASE = srcUrl || '';
+  // Resolve `data:` against the SOURCE .md, not the document — the .md lives in
+  // `_browser/` while the page is a directory above, so `./body.json` relative to
+  // the document silently resolves to the wrong path.
+  const src = fm?.data ? new URL(fm.data, srcUrl || document.baseURI).href : null;
+  if (!src) return `<div class="prism-error">Body layout needs <code>data:</code> in frontmatter</div>`;
+  let data;
+  try {
+    const res = await fetch(src, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    data = await res.json();
+  } catch (err) {
+    // Fail VISIBLY. A body dashboard that renders empty cards when its data is
+    // missing reads as "the body is empty", which is the opposite of the truth.
+    return `<div class="prism-error"><strong>Body data failed to load</strong><br>
+      <small><code>${esc(src)}</code> — ${esc(err.message)}</small><br>
+      <small>regenerate with <code>soma-body-registry.py</code></small></div>`;
+  }
   const c = data?.counts || {};
   const slots = data?.slots || [];
   const files = data?.files || [];
