@@ -137,15 +137,24 @@ const REFRESH_MIN_MS = 15000;      // never poll harder than this, whatever the 
 // rendered dashboard through the detail pane would try to project a page that is
 // already a page. `data-artifact` also stops the row handler from firing underneath.
 const ART_GLYPH = { view: '▦', note: '✎', img: '🖼', data: '{}' };
+// A .md sibling is PROJECTABLE: PRISM can render it through its own layout the same way
+// it renders the cycle.md beside it. Anything else is a finished page or a binary and
+// keeps its own window. Decided on the EXTENSION, not on `kind`, because `kind` describes
+// what the artifact is FOR (view/note/img/data) and this question is only ever "can the
+// renderer parse it".
+const isProjectable = (href) => /\.mdx?(?:[?#]|$)/i.test(String(href || ''));
 const artifactChips = (r) => {
   const list = r.artifacts || [];
   if (!list.length) return '';
   const more = (r.artifact_count || list.length) - list.length;
-  return `<span class="reg-arts">` + list.map((a) =>
-    `<a class="reg-art reg-art-${esc(a.kind)}" data-artifact
-        href="${esc(abs(a.href))}" target="_blank" rel="noopener"
-        title="${esc(a.name)} — opens in a new window">${ART_GLYPH[a.kind] || '•'} ${esc(
-          a.name.length > 26 ? a.name.slice(0, 24) + '…' : a.name)}</a>`).join('') +
+  return `<span class="reg-arts">` + list.map((a) => {
+    const proj = isProjectable(a.href);
+    return `<a class="reg-art reg-art-${esc(a.kind)}${proj ? ' reg-art-proj' : ''}" data-artifact
+        ${proj ? `data-projectable data-art-name="${esc(a.name)}" data-art-of="${esc(r.slug || '')}"` : ''}
+        href="${esc(abs(a.href))}"${proj ? '' : ' target="_blank" rel="noopener"'}
+        title="${esc(a.name)} — ${proj ? 'renders here, like a cycle' : 'opens in a new window'}">${ART_GLYPH[a.kind] || '•'} ${esc(
+          a.name.length > 26 ? a.name.slice(0, 24) + '…' : a.name)}</a>`;
+  }).join('') +
     (more > 0 ? `<span class="reg-art reg-art-more" title="${more} more not listed">+${more}</span>` : '') +
     `</span>`;
 };
@@ -164,6 +173,7 @@ function leafRow(r, isPhase) {
       <span class="reg-nm">${esc(r.phase || r.slug)}</span>
       ${r.title ? `<span class="reg-title">${esc(r.title)}</span>` : ''}
       ${r.error ? `<span class="reg-err">${esc(r.error)}</span>` : ''}
+      ${!r.error && r.status_note ? `<span class="reg-status-note" title="status_note -- prose split out of status:">${esc(r.status_note)}</span>` : ''}
       ${artifactChips(r)}
     </span>
     ${pill(r)}${dates(r)}
@@ -533,10 +543,30 @@ export function attachRegistry(root) {
       syncCollapseLabel();
       return;
     }
-    // An artifact link is a real navigation to its own window — let the browser have
-    // it, and do NOT also open the detail pane underneath (the click would otherwise
-    // match [data-row] on the way up and do both).
-    if (e.target.closest('[data-artifact]')) return;
+    // Artifacts split by whether PRISM can PROJECT them.
+    //
+    // A .md sibling is the same species as the cycle.md next to it -- frontmatter plus
+    // prose -- so routing it to its own window hands the reader raw markdown when the
+    // detail pane could render it through its own layout. Those now open INLINE, exactly
+    // like a cycle row, and are marked so the reader can tell which they are looking at.
+    //
+    // Everything else (a rendered dashboard, a PNG, a JSON blob) is already a finished
+    // page or is not markdown at all: projecting it would try to project a page that is
+    // already a page. Those keep the real target=_blank navigation.
+    const artLink = e.target.closest('[data-artifact]');
+    if (artLink) {
+      if (!artLink.hasAttribute('data-projectable')) return;   // let the browser have it
+      e.preventDefault();                                       // ⌘/middle-click still opens a tab
+      // The tag is the only difference from a cycle: same projection, different label,
+      // so "what am I reading" never has to be inferred from the content.
+      detailTitle.innerHTML = `<span class="reg-detail-kind">artifact</span> `
+        + esc(artLink.dataset.artName || 'artifact')
+        + (artLink.dataset.artOf ? ` <span class="reg-detail-of">of ${esc(artLink.dataset.artOf)}</span>` : '');
+      detailBody.innerHTML = `<soma-artifact src="${esc(artLink.getAttribute('href'))}"></soma-artifact>`;
+      detail.hidden = false;
+      detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const row = e.target.closest('[data-row]');
     if (!row) return;
     const href = row.dataset.href;

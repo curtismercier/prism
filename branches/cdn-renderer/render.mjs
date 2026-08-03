@@ -36,12 +36,14 @@ const [
   { renderDefault },
   { renderPipeline, attachPipelineLive },
   { renderRegistry, attachRegistry },
+  { renderBody, attachBody },
 ] = await Promise.all([
   load('./parsers/md.mjs'),
   load('./layouts/cycle.mjs'),
   load('./layouts/default.mjs'),
   load('./layouts/pipeline.mjs'),
   load('./layouts/registry.mjs'),
+  load('./layouts/body.mjs'),
 ]);
 
 // A layout is either a render function, or { render, attach }. `attach` runs
@@ -56,6 +58,11 @@ const LAYOUTS = {
   // A sortable index over MANY artifacts. Click-through nests a <soma-artifact>,
   // so the index inherits every layout above it without knowing any of them.
   registry: { render: renderRegistry, attach: attachRegistry },
+  // The agent's OWN body — a ledger with a cache physics, not a hierarchy.
+  // Distinct layout rather than a `registry` variant because its spine is slot
+  // ORDER (= cache order) and `registry`'s is project/arc/phase; collapsing them
+  // would make the ladder sortable, which destroys the only axis that explains cost.
+  body: { render: renderBody, attach: attachBody },
   // future: decision, task, briefing, methodology, spec...
 };
 

@@ -2,7 +2,7 @@
 type: cycle
 cycle: 1
 title: PRISM renderer spike — branching-cycle to compare two implementation flavors
-status: in-progress
+status: active
 created: 2026-05-12
 updated: 2026-05-12
 author: s01-643d67 (Soma) + Curtis Mercier

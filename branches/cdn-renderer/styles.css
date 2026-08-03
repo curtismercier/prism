@@ -361,10 +361,19 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-row { display: flex; align-items: baseline; gap: .9rem; padding: .3rem .35rem;
   border-radius: 5px; cursor: pointer; }
 .reg-row:hover { background: #f6f8ff; }
+/* `.reg-row { display: flex }` above has the same specificity as the UA default
+   `[hidden] { display: none }`, and author rules beat UA rules regardless of source
+   order -- so `apply()` correctly setting `row.hidden = true` never actually hid
+   anything. The `N shown` counter (computed from the same boolean, before this CSS
+   ever runs) was correct the whole time; the row list just didn't honour it. Found
+   s01-b2947f/s01-8ba64e, 2026-08-02, chasing why a 1-row filter still showed 100+. */
+.reg-row[hidden] { display: none; }
 .reg-row-phase .reg-nm { font-variant-numeric: tabular-nums; }
 .reg-name { flex: 1 1 auto; min-width: 0; }
 .reg-nm { font-weight: 400; color: #46506a; font-size: 12.5px; }
 .reg-title { color: #8a8fa0; font-size: 12px; margin-left: .4rem; }
+.reg-status-note { display: block; color: #6a6a8a; font-size: 11.5px; font-style: italic;
+  margin-top: .1rem; }
 .reg-meta { display: inline-flex; gap: 1.1rem; flex: 0 0 auto; padding-left: 1.1rem;
   border-left: 1px solid #ececf4; margin-left: .6rem; }
 .reg-d, .reg-age { font-size: 11.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
@@ -403,7 +412,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-proj { border-top-color: #26262f; }
   .reg-proj-n { background: #26262f; color: #9a9aa8; }
   .reg-arc-name { color: #cdd; } .reg-arc-body { border-left-color: #2a2a34; }
-  .reg-title, .reg-d, .reg-age, .reg-arc-n, .reg-legend { color: #7a7a88; }
+  .reg-title, .reg-d, .reg-age, .reg-arc-n, .reg-legend, .reg-status-note { color: #7a7a88; }
   .reg-pill { background: #26262f; color: #bbc; }
   .reg-b-active { background: #16304d; color: #8ec2ff; }
   .reg-b-seeded { background: #3d2f14; color: #e8bd6b; }
@@ -581,4 +590,162 @@ a.reg-brand:hover .reg-brand-name { color: var(--prism-accent); }
   .reg-art-view { border-color: #2b5170; background: #12232f; color: #7fc0ef; }
   .reg-art-view:hover { background: #17334a; border-color: #3d7ba8; color: #b6ddf8; }
   .reg-art-more { color: #6a6a78; }
+}
+
+/* A .md artifact renders INLINE, through its own PRISM layout, exactly like a cycle row.
+   The chip therefore has to look clickable-in-place rather than leaving-the-page: the
+   dotted underline is the whole tell, and it is deliberately quiet -- these sit in dense
+   rows and a loud state would read as an error badge. Non-.md artifacts keep the plain
+   chip and their target=_blank. */
+.reg-art-proj { border-style: solid; text-decoration: underline dotted 1px;
+  text-underline-offset: 2px; }
+.reg-art-proj:hover { text-decoration: underline solid 1px; }
+
+/* Detail-pane label. A cycle shows its bare title; an artifact shows the SAME projection
+   with a kind tag and its parent, so "am I reading the cycle or a document beside it"
+   is never inferred from the content. Subtle on purpose -- it disambiguates, it does not
+   announce. */
+.reg-detail-kind { display: inline-block; padding: .05rem .4rem; margin-right: .1rem;
+  border: 1px solid #dcdce4; border-radius: 5px; background: #f4f4f8;
+  font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: #7a7f90; vertical-align: 2px; }
+.reg-detail-of { font-size: 12px; font-weight: 400; color: #8a8fa0; }
+@media (prefers-color-scheme: dark) {
+  .reg-detail-kind { border-color: #33343f; background: #1c1c24; color: #8a8f9e; }
+  .reg-detail-of { color: #6f7484; }
+}
+
+/* arc count beside a project's cycle count (s01-2b577f) */
+.reg-proj-arcs { font-size: 11px; color: #8a8fa0; margin-left: .45rem;
+  padding: .05rem .4rem; border: 1px solid #dcdce4; border-radius: 5px; }
+@media (prefers-color-scheme: dark) {
+  .reg-proj-arcs { color: #7a7a88; border-color: #33343f; }
+}
+
+/* ═══ layout: body — Soma's own body, as a ledger with a cache physics ═══════
+   s01-8ba64e. Companion to layouts/body.mjs. The one non-negotiable rule here is
+   `.bd-row[hidden]` — an author `display:` on .bd-row outranks the user-agent
+   [hidden] rule regardless of specificity, so the attribute gets set correctly
+   and the browser's own hiding never fires. That exact bug shipped in the cycle
+   registry and made "1 shown" display 100+ rows. Do not remove it. */
+.bd-wrap { font-size: 13px; }
+.bd-head h1 { margin: 0 0 .1rem; font-size: 20px; }
+.bd-sub { margin: 0 0 1rem; font-size: 11px; color: #8a8fa0; }
+.bd-h2 { display: flex; align-items: center; gap: .6rem; font-size: 13px;
+  margin: 1.6rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid #e6e6ee; }
+.bd-h2 span { font-weight: 400; color: #8a8fa0; }
+.bd-filter { margin-left: auto; font: inherit; font-size: 12px; padding: .2rem .5rem;
+  border: 1px solid #dcdce4; border-radius: 6px; background: #fff; }
+.bd-shown { font-size: 11px; color: #8a8fa0; }
+
+/* three populations — the distinction a file listing cannot show */
+.bd-pops { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .6rem; margin: .8rem 0 1.2rem; }
+.bd-pop { padding: .55rem .7rem; border: 1px solid #dcdce4; border-radius: 8px;
+  background: #fafafd; }
+.bd-pop b { display: block; font-size: 21px; line-height: 1.1; }
+.bd-pop span { font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  text-transform: uppercase; color: #55596a; }
+.bd-pop em { display: block; margin-top: .2rem; font-size: 10.5px; font-style: normal;
+  color: #8a8fa0; }
+.bd-pop-res { border-color: #b6d8f5; background: #eaf4fd; }
+.bd-pop-res b { color: #1c5a8a; }
+.bd-pop-sum { border-color: #f0d9a8; background: #fdf7ea; }
+.bd-pop-sum b { color: #8a6a1c; }
+.bd-pop-tot b { color: #23252f; }
+
+/* the ladder — order is cache order; never sortable */
+.bd-ladder { border: 1px solid #e6e6ee; border-radius: 8px; overflow: hidden; }
+.bd-ladder-head, .bd-slot { display: grid;
+  grid-template-columns: 190px minmax(140px, 1fr) 56px minmax(200px, 1.4fr);
+  gap: .6rem; align-items: center; padding: .3rem .6rem; }
+.bd-ladder-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
+  color: #8a8fa0; background: #f7f7fb; border-bottom: 1px solid #e6e6ee; }
+.bd-slot { border-bottom: 1px solid #f2f2f7; }
+.bd-slot:last-of-type { border-bottom: 0; }
+.bd-slot code { font-size: 12px; }
+.bd-line { color: #b0b4c0; font-size: 10.5px; margin-left: .2rem; }
+.bd-h-src { font-size: 11px; color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.bd-h-n { font-size: 11px; color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-h-bar { display: flex; align-items: center; gap: .45rem; }
+.bd-bar { flex: 1; height: 7px; border-radius: 4px; background: #eeeef4; overflow: hidden; }
+.bd-bar i { display: block; height: 100%; background: #9aa0b4; }
+.bd-hot  .bd-bar i { background: #e06a5a; }
+.bd-warm .bd-bar i { background: #e0a34a; }
+.bd-cool .bd-bar i { background: #6aa8d8; }
+.bd-pct { font-size: 11px; width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-abs { font-size: 10px; color: #a0a4b0; width: 52px; text-align: right;
+  font-variant-numeric: tabular-nums; }
+.bd-mode { display: inline-block; margin-right: .35rem; padding: 0 .3rem; border-radius: 4px;
+  font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.bd-mode-full    { background: #eaf4fd; color: #1c5a8a; }
+.bd-mode-lazy    { background: #fdf7ea; color: #8a6a1c; }
+.bd-mode-runtime { background: #f0f0f5; color: #7a7f90; }
+.bd-ladder-foot { padding: .5rem .6rem; font-size: 10.5px; color: #8a8fa0;
+  background: #fafafd; border-top: 1px solid #e6e6ee; }
+
+/* file table */
+.bd-table { border: 1px solid #e6e6ee; border-radius: 8px; overflow: hidden; }
+.bd-row { display: grid;
+  grid-template-columns: 240px minmax(200px, 2fr) 56px 56px 110px;
+  gap: .6rem; align-items: baseline; padding: .3rem .6rem; cursor: pointer;
+  border-bottom: 1px solid #f2f2f7; }
+.bd-row[hidden] { display: none; }            /* ← load-bearing. See header. */
+.bd-row:hover { background: #f7f9fc; }
+.bd-thead { cursor: default; background: #f7f7fb; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .04em; color: #8a8fa0; }
+.bd-thead:hover { background: #f7f7fb; }
+.bd-thead [data-sort] { cursor: pointer; }
+.bd-thead [data-sort]:hover { color: #23252f; text-decoration: underline dotted 1px; }
+.bd-c-name code { font-size: 12px; }
+.bd-c-desc { font-size: 11px; color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.bd-c-n { font-size: 11px; color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-c-when { font-size: 10.5px; color: #8a8fa0; font-variant-numeric: tabular-nums; }
+.bd-row.bd-pop-res { box-shadow: inset 3px 0 0 #6aa8d8; }
+.bd-row.bd-pop-sum { box-shadow: inset 3px 0 0 #e0a34a; }
+.bd-broken { background: #fff2f0; box-shadow: inset 3px 0 0 #e0503a !important; }
+.bd-err { grid-column: 1 / -1; font-size: 11px; color: #b0301a; font-weight: 600; }
+.bd-tag { display: inline-block; margin-left: .3rem; padding: 0 .3rem; border-radius: 4px;
+  font-size: 9.5px; font-weight: 600; letter-spacing: .02em; vertical-align: 1px; }
+.bd-tag-slot  { background: #eaf4fd; color: #1c5a8a; }
+.bd-tag-lazy  { background: #fdf7ea; color: #8a6a1c; }
+.bd-tag-nofm  { background: #f3eaf7; color: #6a3a8a; }
+.bd-tag-drift { background: #fdecea; color: #a8402a; }
+
+.bd-detail { margin-top: 1.5rem; border-top: 3px solid #dde; padding-top: .75rem; }
+.bd-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+.bd-detail-kind { display: inline-block; padding: .05rem .4rem; border: 1px solid #dcdce4;
+  border-radius: 5px; background: #f4f4f8; font-size: 10px; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase; color: #7a7f90; vertical-align: 2px; }
+.bd-close { margin-left: auto; padding: .25rem .6rem; border: 1px solid #ccd; background: #fff;
+  border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: #556; }
+
+@media (prefers-color-scheme: dark) {
+  .bd-sub, .bd-h2 span, .bd-shown, .bd-pop em, .bd-ladder-foot, .bd-abs { color: #7a7a88; }
+  .bd-h2 { border-bottom-color: #2a2a33; }
+  .bd-filter { background: #1a1a22; border-color: #333; color: #ddd; }
+  .bd-pop { background: #16161d; border-color: #2a2a33; }
+  .bd-pop span { color: #9a9ead; }
+  .bd-pop-res { background: #12232f; border-color: #2b5170; }
+  .bd-pop-res b { color: #7fc0ef; }
+  .bd-pop-sum { background: #2a2314; border-color: #6a5424; }
+  .bd-pop-sum b { color: #e0b45c; }
+  .bd-pop-tot b { color: #e6e6ee; }
+  .bd-ladder, .bd-table { border-color: #2a2a33; }
+  .bd-ladder-head, .bd-thead, .bd-ladder-foot { background: #16161d; border-color: #2a2a33; }
+  .bd-slot { border-bottom-color: #1f1f27; }
+  .bd-row { border-bottom-color: #1f1f27; }
+  .bd-row:hover { background: #1c1c24; }
+  .bd-thead:hover { background: #16161d; }
+  .bd-bar { background: #24242e; }
+  .bd-h-src, .bd-c-desc { color: #9a9ead; }
+  .bd-h-n, .bd-c-n { color: #b0b4c0; }
+  .bd-mode-full    { background: #12232f; color: #7fc0ef; }
+  .bd-mode-lazy    { background: #2a2314; color: #e0b45c; }
+  .bd-mode-runtime { background: #22222b; color: #8a8f9e; }
+  .bd-broken { background: #2a1512; }
+  .bd-detail { border-top-color: #333; }
+  .bd-close { background: #1a1a22; border-color: #333; color: #bbc; }
 }
