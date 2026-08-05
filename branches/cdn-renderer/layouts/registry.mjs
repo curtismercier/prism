@@ -159,11 +159,19 @@ const artifactChips = (r) => {
     `</span>`;
 };
 
+// ONE definition of the user-facing project string (Curtis 2026-08-05: the releases tree is its
+// own shippable tier — body/cycles.md:219). Display, every data-project attribute, the facet list
+// AND the filter all read this. Display and filter comparing different strings is how the 4th
+// silent bug in this seam happened (s01-7ca9ab defect report, fixed s01-a134e9) — if you need a
+// raw project value, add a data-project-raw attribute; do NOT fork this definition.
+const displayProject = (r) =>
+  (r.tree_kind === 'releases' && r.project) ? `${r.project}/releases` : (r.project || '');
+
 function leafRow(r, isPhase) {
   return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
       data-bucket="${esc(r.bucket || '')}" data-broken="${r.error ? '1' : '0'}"
-      data-project="${esc(r.project || '')}" data-scope="${esc(r.tree_kind || '')}"
+      data-project="${esc(displayProject(r))}" data-scope="${esc(r.tree_kind || '')}"
       data-program="${esc(r.program || '')}"
       data-git="${r.git ? '1' : '0'}"
       data-age="${r.age_days ?? -1}" data-name="${esc(r.phase || r.arc || r.slug)}"
@@ -207,9 +215,14 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   const broken = rows.filter((r) => r.error).length;
 
   // project → arc → [rows]
+  // Curtis (2026-08-05): `meetsoma/releases` is its OWN project list — the shipped harness/agent
+  // work + soma.gravicity.ai — not merged under `meetsoma`. The old design comment called the
+  // cycles/releases split a "non-tier"; Curtis's intent (body/cycles.md:219) is that releases is
+  // the shippable step and deserves its own folder. Key the project on tree_kind so `meetsoma`
+  // (ongoing) and `meetsoma/releases` (shipped) render as two collapsible project folders.
   const byProject = new Map();
   for (const r of rows) {
-    const proj = r.project || '(unknown)';
+    const proj = displayProject(r) || '(unknown)';
     if (!byProject.has(proj)) byProject.set(proj, new Map());
     const arcs = byProject.get(proj);
     const arc = r.arc || '(root)';
@@ -255,7 +268,7 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
         <div class="reg-arc-body">
           ${entry ? `<div class="reg-entrylink" data-row data-href="${esc(abs(entry.href))}"
               data-blob="${blob(entry)}" data-bucket="${esc(entry.bucket || '')}"
-              data-project="${esc(entry.project || '')}" data-scope="${esc(entry.tree_kind || '')}"
+              data-project="${esc(displayProject(entry))}" data-scope="${esc(entry.tree_kind || '')}"
               data-git="${entry.git ? '1' : '0'}"
               data-broken="0" data-age="${entry.age_days ?? -1}" data-label="${esc(entry.slug)}">
               ↳ open the arc (<code>cycle.md</code>)${entry.title ? ` — <span class="reg-title">${esc(entry.title)}</span>` : ''}
@@ -289,7 +302,7 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   }).join('');
 
   const buckets = [...new Set(rows.map((r) => r.bucket).filter(Boolean))].sort();
-  const projects = [...new Set(rows.map((r) => r.project).filter(Boolean))].sort();
+  const projects = [...new Set(rows.map(displayProject).filter(Boolean))].sort();
   // Programs are DERIVED from the rows, never hand-listed — a curated denominator is
   // always the bug (this corpus learned that at 222/5 vs a real 484/18).
   const programs = [...new Set(rows.map((r) => r.program).filter(Boolean))].sort();
@@ -416,7 +429,7 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
 
   <div class="reg-tree">${body}</div>
 
-  ${buildFlatTable(rows, { esc, abs, blob, pill })}
+  ${buildFlatTable(rows, { esc, abs, blob, pill, displayProject })}
 
   <div class="reg-detail" data-reg-detail hidden>
     <div class="reg-detail-bar">

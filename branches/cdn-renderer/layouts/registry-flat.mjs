@@ -37,7 +37,7 @@ const COL_KEYS = COLS.map(([k]) => k);
 
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 
-export function buildFlatTable(rows, { esc, abs, blob, pill }) {
+export function buildFlatTable(rows, { esc, abs, blob, pill, displayProject }) {
   const head = COLS.map(([k, label, title]) =>
     `<th data-fsort="${k}" title="${esc(title)} — click to sort, click again to reverse"
         tabindex="0" role="button" aria-sort="none">${esc(label)}<span class="reg-farrow" aria-hidden="true"></span></th>`).join('');
@@ -45,17 +45,17 @@ export function buildFlatTable(rows, { esc, abs, blob, pill }) {
   const trs = rows.map((r) => `<tr class="reg-frow ${r.error ? 'reg-row-broken' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
       data-bucket="${esc(r.bucket || '')}" data-broken="${r.error ? '1' : '0'}"
-      data-project="${esc(r.project || '')}" data-scope="${esc(r.tree_kind || '')}"
+      data-project="${esc(displayProject(r))}" data-scope="${esc(r.tree_kind || '')}"
       data-git="${r.git ? '1' : '0'}" data-age="${r.age_days ?? -1}"
       data-label="${esc(r.phase || r.slug)}"
       data-fslug="${esc(r.slug || '')}" data-farc="${esc(r.arc || '')}"
-      data-fproject="${esc(r.project || '')}" data-fbucket="${esc(r.bucket || '')}"
+      data-fproject="${esc(displayProject(r))}" data-fbucket="${esc(r.bucket || '')}"
       data-fcreated="${isDate(r.created) ? esc(r.created) : ''}"
       data-fgit="${isDate(r.git) ? esc(r.git) : ''}"
       data-fage="${r.age_days ?? ''}">
     <td class="reg-fslug">${r.error ? '<span class="reg-badge-broken">UNPARSEABLE</span> ' : ''}<span class="reg-nm">${esc(r.slug)}</span>${r.title ? `<span class="reg-title">${esc(r.title)}</span>` : ''}</td>
     <td class="reg-farc">${esc(r.arc || '—')}</td>
-    <td class="reg-fproj">${esc(r.project || '—')}</td>
+    <td class="reg-fproj">${esc(displayProject(r) || '—')}</td>
     <td>${pill(r)}</td>
     <td class="reg-fd">${isDate(r.created) ? esc(r.created) : '—'}</td>
     <td class="reg-fd">${isDate(r.git) ? esc(r.git) : '—'}</td>
