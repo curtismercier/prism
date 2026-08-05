@@ -192,12 +192,12 @@ export async function renderBody({ frontmatter: fm, srcUrl }) {
       ${files.map(fileRow).join('')}
     </div>
 
-    <div class="bd-detail" hidden>
-      <div class="bd-detail-bar">
+    <div class="bd-detail reg-detail" hidden>
+      <div class="bd-detail-bar reg-detail-bar">
         <strong data-detail-title></strong>
-        <button class="bd-close" data-close>close</button>
+        <button class="bd-close reg-close" data-close>close</button>
       </div>
-      <div data-detail-body></div>
+      <div data-detail-body class="reg-detail-body"></div>
     </div>
   </div>`;
 }
@@ -253,7 +253,10 @@ export function attachBody(wrap) {
     dBody.innerHTML = href ? `<soma-artifact src="${esc(href)}"></soma-artifact>`
                            : `<div class="prism-error">no source path</div>`;
     detail.hidden = false;
-    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // 002 Phase e adoption (s01-c6692e, 2026-08-05): `.reg-detail` docks this panel
+    // (position:fixed, own scroll container) instead of the old inline-below-the-list
+    // placement -- there is nothing left to scroll the PAGE to. scrollIntoView deleted,
+    // not re-tuned, same reasoning as registry-detail.mjs's own note on this defect.
   };
   wrap.addEventListener('click', (e) => {
     if (e.target.closest('[data-close]')) { detail.hidden = true; return; }

@@ -780,7 +780,10 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 .bd-tag-nofm  { background: #f3eaf7; color: #6a3a8a; }
 .bd-tag-drift { background: #fdecea; color: #a8402a; }
 
-.bd-detail { margin-top: 1.5rem; border-top: 3px solid #dde; padding-top: .75rem; }
+/* 002 Phase e adoption (s01-c6692e, 2026-08-05): box-model now comes from `.reg-detail`
+   (docked, position:fixed) -- the old inline-block margin/border/padding here would
+   fight the docked panel's own spacing. `.bd-detail` stays as a query-selector hook only
+   (body.mjs:211), it owns no visual styling anymore. */
 .bd-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
 .bd-detail-kind { display: inline-block; padding: .05rem .4rem; border: 1px solid #dcdce4;
   border-radius: 5px; background: #f4f4f8; font-size: 10px; font-weight: 600;
