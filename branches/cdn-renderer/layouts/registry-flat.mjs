@@ -55,7 +55,7 @@ export function buildFlatTable(rows, { esc, abs, blob, pill }) {
       data-fage="${r.age_days ?? ''}">
     <td class="reg-fslug">${r.error ? '<span class="reg-badge-broken">UNPARSEABLE</span> ' : ''}<span class="reg-nm">${esc(r.slug)}</span>${r.title ? `<span class="reg-title">${esc(r.title)}</span>` : ''}</td>
     <td class="reg-farc">${esc(r.arc || '—')}</td>
-    <td class="reg-fproj">${esc(r.project || '—')}</td>
+    <td class="reg-fproj">${esc(r.tree_kind === 'releases' && r.project ? `${r.project}/releases` : (r.project || '—'))}</td>
     <td>${pill(r)}</td>
     <td class="reg-fd">${isDate(r.created) ? esc(r.created) : '—'}</td>
     <td class="reg-fd">${isDate(r.git) ? esc(r.git) : '—'}</td>
