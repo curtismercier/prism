@@ -338,3 +338,162 @@ The preview/editor + navigation are **renderer work** in `branches/cdn-renderer/
 the same file the audit refactor just touched. Coordinate: the registry audit (`child-e6b15c`, merged
 `589deb1d`) changed the DATA layer; this changes the PRESENTATION. Both land in the same layout, so
 sequence them.
+
+---
+
+## §Q4/Q5 SCOPE — validated against the code, 2026-08-05 (s01-7ca9ab@meetsoma)
+
+Curtis: *"you can scope q4 and q5 — validate and/or confirm your recommendations, and/or the child's."*
+Source proposal: `meetsoma/.soma/releases/audits/prism-registry-refactor-proposal-2026-08-05.md`.
+
+### What VALIDATED (child's claims, re-derived independently)
+
+| claim | verdict | evidence |
+|---|---|---|
+| `registry.mjs` is 967 ln vs its own ~600-ln split gate | ✅ | `wc -l` = **967**; the gate is this file, line 298: *"if `registry.mjs` passes ~600 lines, split it by concern"* — **it fired silently and was walked past** |
+| detail pane already built | ✅ | `.reg-detail` scaffold at `registry.mjs:427-441` (`data-reg-detail`, `-title`, `-body`) |
+| close/X already built | ✅ | `registry.mjs:430` — `<button data-reg-close class="reg-close">close ✕</button>` |
+| per-artifact layout reuse already built | ✅ **and better than described** | `:571,:587` render `<soma-artifact src=…>` — the selected artifact renders **through ITS OWN layout** (cycle/arc/map). It does not name `cycle.mjs`; it inherits *every* layout that exists now or later. ⚠ My first probe grepped for the string `cycle.mjs`, got **0**, and nearly filed a correct claim as wrong — *the filename was the wrong instrument; the mechanism was the right one.* |
+| cross-dashboard menu unbuilt | ✅ | 0 hits for any nav/surface-switch construct |
+| publication blocker is real | ✅ | §Publication readiness: `examples/cycle-215.md` is a real internal dossier, **already rendered into HTML/JSON/XML derivatives and copied into a second branch**; repo `isPrivate: true` today |
+
+### 🔑 The finding that reframes Phase e — the panel EXISTS, it is in the WRONG PLACE
+
+`registry.mjs:573` — `detail.scrollIntoView({ behavior: 'smooth', block: 'start' })`.
+
+**The detail pane is an inline block below the list that the page SCROLLS TO.** That is verbatim
+Curtis's complaint: *"instead of it scrolling down to show it under the huge list of
+projects/cycles."* ⇒ **Phase e is not "build a preview panel." It is "relocate the existing one"** —
+from an inline scroll-to block into a distinct surface (side/overlay pane) that does not move the
+list. Much smaller than it reads, and it means the *rendering* half is done.
+
+### 🔴 The scoping correction — a registry-private header CANNOT deliver g.3
+
+The proposal suggested splitting into `registry-header.mjs` + `registry-detail.mjs`. **Probed: each
+layout renders its own chrome** (`<h1>`/header constructs live in `body.mjs`, `default.mjs`,
+`pipeline.mjs`, `cycle.mjs` — and **no header at all in `registry.mjs`**). There is **no shared header
+component**, and the string "Cycle Registry" does not exist in the repo — the title comes from the
+rendered document, not the layout.
+
+⇒ A `registry-header.mjs` would give the breadcrumb to the **registry only**, while g.3's whole point
+is *"so the dashboards become a navigable family, not islands."* **The header must be SHARED or g.3 is
+not delivered.** Corrected split:
+
+| module | scope | delivers |
+|---|---|---|
+| **`shell-header.mjs`** | **SHARED across layouts** | g.1 breadcrumb + g.3 cross-dashboard menu |
+| `registry-detail.mjs` | registry-private | Phase e panel (relocate, don't rebuild) |
+
+### Q4 scope — sequenced, on a branch
+
+Branch **`refactor/registry-decompose`** created (not checked out); working tree snapshotted as tag
+**`backup/pre-registry-decomp-2026-08-05`** (`5d11e28`) — ⚠ prism had **uncommitted** `registry.mjs` +
+`registry-flat.mjs` edits (the `meetsoma/releases` tier change) belonging to another agent; they were
+preserved without being committed or disturbed. **Work in a `git worktree`** — do not check the branch
+out in place.
+
+1. Extract `registry-detail.mjs` (pane + its handlers) — mechanical, no behaviour change.
+2. Extract `shell-header.mjs` as a **shared** module; adopt in `registry.mjs` first, others after.
+3. Relocate the pane (Phase e presentation) — kill the `scrollIntoView`.
+4. Breadcrumb (g.1) + close/X already exists (g.2 ✅).
+5. **Gate: `registry.mjs` back under 600 ln** — the gate that silently failed becomes the acceptance test.
+
+⛔ **Editing (Phase e write) stays out of scope** — R1 ruled: read + copy-patch, writes route through a
+live soma session, **no PUT endpoint** in a repo about to go public.
+
+### Q5 scope — build the menu, and make it a PUBLICATION-GATED item
+
+The menu enlarges what must be sanitized: it binds registry ↔ 003 delegation-timeline ↔ 004
+soma-manager into one navigable family, and those surfaces render **real internal cycle data**.
+
+**Recommendation (mine, for Curtis):** build it, and **add it to §Publication readiness as blocker #3**
+rather than discovering the coupling at publish time. The repo is private today, so the menu costs
+nothing *now* — the cost is a sanitization obligation that must be written down while the connection
+is fresh.
+⚠ **Sanitization scope is already larger than one file:** `cycle-215.md` has HTML/JSON/XML derivatives
+**and a copy in a second branch**. A menu that links three dashboards means the audit must cover the
+data each renders, not just the example doc.
+
+**Still Curtis's** (his message cut off mid-Q5): build-now-and-gate vs defer-until-sanitized.
+
+---
+
+## ✅ Phase e/g — BUILT and HUMAN-VERIFIED (2026-08-05)
+
+**Branch `refactor/registry-decompose` @ `b7cfb38`** (worktree `personal/prism-wt-decompose`).
+`registry.mjs` **961 → 540** · `registry-tree.mjs` 399 · `registry-detail.mjs` 124 ·
+**`shell-header.mjs` 263 (SHARED)** · `tests/registry-decompose.test.mjs` 269.
+
+### Curtis's verdict, rendered live and clicked
+
+Previewed side-by-side against the running dashboard via the worktree-under-serve-root technique
+(see the arc's §Technique) — **no merge required to review it.**
+
+| ask | verdict |
+|---|---|
+| **Phase e** — preview opens as its own surface, not a scroll-down under the list | ✅ *"the preview opens and works, with a dragable resize split on page — though it's not exactly how i pictured it, it does work"* |
+| **Phase g.2** — close/X dismisses the panel | ✅ *"it closed the pane/preview yes — doesn't change page — that's fine"* |
+| overall | ✅ *"so yes it works"* |
+
+🎁 **The draggable resize split was NOT specified** — the child added it. Curtis's "not exactly how I
+pictured it" is a note, not a defect; it was accepted as-is.
+
+⚠ **What this verification does NOT cover:** g.1's breadcrumb-to-root and g.3's cross-dashboard menu
+were not exercised. The header currently *closes the pane* rather than navigating — which Curtis
+accepted for now, but it means **the breadcrumb's "return to root" semantics are still unproven** and
+g.3's menu has no data source until a manifest exists (see arc §g.3 — the emitter is out of that pass
+by design).
+
+### Known gap at review time, and it is NOT the branch's fault
+
+The preview showed **13 projects** where the live dashboard shows **14** — `meetsoma/releases` did not
+appear as its own folder. That is another agent's **uncommitted** `tree_kind` change, which the branch
+was cut before. It returns when their two hunks are re-applied
+(`registry-tree.mjs:160` and `registry.mjs:93` — mapped, not resolved, by the builder).
+
+### Merge order — unchanged
+
+1. **this branch** (moves the render code)
+2. the other agent's `tree_kind` hunks re-applied at the two mapped sites — **blocked on them
+   committing**; their work is uncommitted and protected only by tag
+   `backup/pre-registry-decomp-2026-08-05` (`5d11e28`)
+3. Q14's declared-links renderer half, built directly in `registry-tree.mjs`
+
+### 🔑 The complaint this branch did NOT fix
+
+Curtis's stated main concern was *"flakey to see the changes made to cycles."* **That was never the
+layout** — it was a lying `X-Registry-Refreshing` header in `soma-prism-serve.py`, measured and fixed
+the same day (arc §Freshness). Recorded here because the two were easy to conflate: *the UI work and
+the freshness complaint were independent, and shipping the UI would not have addressed the concern.*
+
+### ✅ MERGED 2026-08-05 — `5469941` (by s01-a134e9, after my defect report)
+
+**Sequencing executed exactly as prescribed**: the `tree_kind` orphan committed first (`7fadb17`),
+decomposition rebased onto it (`55cb306`), then merged (`5469941`). **The stash-object orphan is home.**
+
+**My filter defect report was CONFIRMED** — they verified live before fixing: selecting
+`meetsoma/releases` emptied the view, exactly as read from source. Fixed the way I argued for and
+**not** the way I argued against: **ONE exported `displayProject(r)`** (`registry-tree.mjs:140`)
+consumed by the grouped tree, the flat table, the facet list **and every `data-project` /
+`data-fproject` attribute** — so `:717`/`:756` compare like-to-like and were left untouched. *No
+suffix-aware patches anywhere.* **One derived value, every consumer** — the same shape as §g.3's
+derived menu and the flatness predicate.
+
+**Parent-verified independently** [ran: `git log`, `wc -l`, `grep displayProject`, ran the test file]:
+merge + rebase commits exist · split is live in the working tree (`registry.mjs` **540**,
+`registry-tree` 411, `registry-detail` 124, `shell-header` 263) · `displayProject` exported **once**
+and consumed in both modules · the **10 `shell-header` behaviour tests pass**, including both
+"branches nobody runs" (ABSENT hidden, EMPTY listed-and-marked).
+
+⚠ **What I could NOT reproduce:** their "21/21 green". The differential test extracts a pre-split
+baseline to **`/tmp/prism-old-registry-5469941/`**, which no longer exists, so that half errors on a
+missing module. Their run was green at merge time; I am recording that I verified the *behaviour*
+tests and the *artifacts*, **not** the differential.
+🔑 **A test whose baseline lives in `/tmp` cannot be re-run later** — it is a one-shot that reads as a
+standing gate. Durable artifacts never touch `/tmp`; that applies to fixtures too.
+
+**Their live check** (bridge evaluate on :8910): 1250 rows → `meetsoma/releases` = 152 → `meetsoma`
+= 140 → reset restores 1250, **14 project folders** — the count I predicted from the 13-vs-14 gap.
+
+⇒ **Q14's grouping affordance is UNBLOCKED** and targets `registry-tree.mjs` on live
+`exp/cycles-mechanic`.

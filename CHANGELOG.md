@@ -37,7 +37,52 @@ spec v0.1.
   vendor decision, layout design rules, and the contribution failure modes specific
   to agent contributors.
 
+### Changed
+
+- **`meetsoma/releases` renders as its own project tier**, not merged under `meetsoma` — it is the
+  shippable step and deserves its own folder (`body/cycles.md:219`). Keyed on `tree_kind` via a single
+  exported **`displayProject(r)`** consumed by the grouped tree, the flat table, the facet list **and
+  the `data-project` attributes**, so display and filtering compare like-to-like. ⚠ An earlier pass
+  changed only what the facet *offered*: selecting `meetsoma/releases` emitted a value no row carried
+  and **emptied the view**. Fixed before merge — **one derived value, every consumer**, rather than
+  teaching two comparison sites the suffix rule and leaving a third ignorant of it.
+
+- **`registry.mjs` split by concern, 961 → 540 lines.** It had passed its own falsifiable elegance
+  gate — *"if `registry.mjs` passes ~600 lines, split it by concern"* (cycle 002) — **silently, and
+  been walked past to 961.** Now four files: `registry.mjs` (data fetch, stat cards, filters,
+  URL-fragment state), `registry-tree.mjs` (project→arc→phase render, row vocabulary, open/closed
+  persistence), `registry-detail.mjs` (the preview pane), and `shell-header.mjs`. No module was
+  invented to hit the number — the honest concern boundaries land at 541, and the split follows the
+  precedent already in the directory (`registry-flat.mjs` was extracted from this same file at ~700).
+
+- **`shell-header.mjs` is SHARED, not registry-private.** The header is the seam the breadcrumb and
+  the cross-dashboard menu both land on, and **a registry-local header cannot federate anything** —
+  the menu's entire purpose is *"so the dashboards become a navigable family, not islands"*. It takes
+  a `meta` slot so each layout supplies its own right-hand chrome, which is what makes later adoption
+  by `pipeline.mjs` / `cycle.mjs` a small change rather than a rewrite.
+
+- **The registry preview pane opens as its own surface instead of scrolling the page.** The pane
+  already existed; the defect was placement — an inline block below the list reached via
+  `scrollIntoView`. Reported as *"instead of it scrolling down to show it under the huge list of
+  projects/cycles"*. **Phase e was a relocation, not a build.**
+
 ### Fixed
+
+- **The dashboard silently stopped polling for cycle changes** — the long-standing "flakey to see
+  edits" behaviour. The dev server's `refresh_if_stale()` returned `False` when a regeneration was
+  **already in flight**, and that value fed the `X-Registry-Refreshing` header directly; for the whole
+  ~8s regen window the server told the client *"you are up to date"*, so `registry.mjs`'s poll loop
+  concluded it was current and stopped. The fresh snapshot then landed with nobody listening.
+  Measured: header lied at t=8s, fresh data arrived at t=13s, client had stopped asking at t=8s.
+  🔑 **A busy-guard's return value is a fact about the guard; the caller was reading it as a fact
+  about the world.** *(Fix is in `soma-prism-serve.py`, which lives outside this repo — see cycle 005
+  on packaging the server and the client together, since neither half was wrong on its own reading.)*
+
+- **`REGISTRY.md` never self-healed.** The JSON snapshot regenerated on a staleness check; the
+  markdown projection had **no traversal at all** and sat four days stale through a 21-cycle
+  migration that invalidated it. Both artifacts now come from a single scan
+  (`soma-cycles-registry.py emit`), which halved a refresh from **21.7s to 9.8s** and — more
+  importantly — restores the invariant that **two projections from one scan cannot disagree.**
 
 - **cdn-renderer README claimed "scaffold only" long after the implementation
   shipped** and cycle 001 resolved. A stale status line in a README is believed on
