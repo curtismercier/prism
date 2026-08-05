@@ -1,6 +1,7 @@
 ---
 type: cycle
 cycle: 1
+arc: prism-dashboards   # PRISM family arc, s01-6d4d53
 title: PRISM renderer spike — branching-cycle to compare two implementation flavors
 status: active
 created: 2026-05-12

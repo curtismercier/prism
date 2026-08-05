@@ -1,6 +1,7 @@
 ---
 type: cycle
 cycle: 2
+arc: prism-dashboards   # PRISM family arc, s01-6d4d53
 title: Registry layout — from list to dashboard
 status: active
 created: 2026-08-01

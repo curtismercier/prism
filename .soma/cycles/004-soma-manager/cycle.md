@@ -1,6 +1,7 @@
 ---
 type: cycle
 cycle: 4
+arc: prism-dashboards   # PRISM family arc, s01-6d4d53
 title: Soma manager — one dashboard for every .soma's settings and body
 status: seeded
 created: 2026-08-05
