@@ -394,10 +394,37 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   background: #c0392b; color: #fff; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; }
 .reg-err { display: block; color: #a11; font-size: 11.5px; font-family: ui-monospace, monospace; }
 
-.reg-detail { margin-top: 1.5rem; border-top: 3px solid #dde; padding-top: .75rem; }
-.reg-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+/* ── The artifact preview pane (registry-detail.mjs) ──────────────────────
+   RELOCATED, not rebuilt. It used to be an inline block BELOW the list, reached
+   with scrollIntoView -- so opening a cycle moved the page out from under the
+   reader and lost their place in a 500-row tree (Curtis: "instead of it scrolling
+   down to show it under the huge list of projects/cycles").
+   `position: fixed` takes it out of the list's flow entirely: the list does not
+   move at all, which is the whole of the fix. There is nothing left to scroll to,
+   and the scrollIntoView is deleted rather than re-tuned. */
+.reg-detail {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 40;
+  width: min(760px, 52vw); display: flex; flex-direction: column;
+  background: var(--prism-bg); border-left: 3px solid var(--prism-accent);
+  box-shadow: -18px 0 40px -30px rgba(0,0,0,.75);
+  padding: .75rem 1rem 1rem;
+}
+.reg-detail[hidden] { display: none; }
+.reg-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--prism-border-soft); }
+/* The pane scrolls ITSELF. Scrolling the page instead is what put the reader
+   somewhere they did not ask to be. */
+.reg-detail-body { overflow: auto; flex: 1; overscroll-behavior: contain; }
 .reg-close { margin-left: auto; padding: .25rem .6rem; border: 1px solid #ccd;
   background: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: #556; }
+
+/* Narrow screens have no room beside the list, so the panel becomes a bottom
+   sheet -- still out of flow, still leaves the list where it was. */
+@media (max-width: 800px) {
+  .reg-detail { top: auto; left: 0; width: auto; height: 85vh;
+    border-left: 0; border-top: 3px solid var(--prism-accent);
+    box-shadow: 0 -18px 40px -30px rgba(0,0,0,.75); }
+}
 
 @media (prefers-color-scheme: dark) {
   .reg-k, .reg-proj-head { color: #fff; }
@@ -419,7 +446,6 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-b-shipped { background: #14331f; color: #7ddb9c; }
   .reg-b-broken { background: #3d1616; color: #ff9b9b; }
   .reg-row-broken { background: #2a1414; }
-  .reg-detail { border-top-color: #333; }
   .reg-close { background: #1a1a22; border-color: #333; color: #bbc; }
 }
 
@@ -479,17 +505,57 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-sticky.is-stuck { box-shadow: 0 6px 16px -12px rgba(0,0,0,.9); }
 }
 
-/* ── Dashboard top bar ─────────────────────────────────────────────────
-   The narrative lives behind ⓘ help. Documentation occupying the first screen
-   of a dashboard gets scrolled past, not read — and it pushed the actual data
-   below the fold. */
-.reg-topbar {
+/* ── SHARED shell header (shell-header.mjs) ────────────────────────────
+   Not registry-private: any layout may import the module, so the classes are
+   namespaced `shell-` rather than `reg-`. The narrative lives behind ⓘ help —
+   documentation occupying the first screen of a dashboard gets scrolled past,
+   not read, and it pushed the actual data below the fold. */
+.shell-topbar {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem;
   padding-bottom: .5rem; border-bottom: 1px solid var(--prism-border-soft);
 }
-.reg-topbar .reg-title { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
-.reg-topmeta { display: flex; align-items: center; gap: .6rem; }
+.shell-topbar .shell-title { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
+.shell-topmeta { display: flex; align-items: center; gap: .6rem; }
+
+/* The breadcrumb (g.1). Underlined only on hover: it must READ as chrome and
+   BEHAVE as a link, because a header that looks like a link everywhere makes the
+   whole banner feel clickable when only part of it is. */
+.shell-crumb { color: var(--prism-muted); text-decoration: none; font-weight: 400; letter-spacing: .01em; }
+.shell-crumb:hover { color: var(--prism-accent); text-decoration: underline; }
+
+/* The cross-dashboard menu (g.3). <details> so it opens with zero JS — one less
+   thing that can fail to attach, and keyboard support comes free. */
+.shell-menu { position: relative; }
+.shell-menu-btn {
+  list-style: none; cursor: pointer; user-select: none;
+  font-size: .72rem; color: var(--prism-muted);
+  padding: .18rem .5rem; border: 1px solid var(--prism-border); border-radius: 6px;
+}
+.shell-menu-btn::-webkit-details-marker { display: none; }
+.shell-menu[open] .shell-menu-btn { border-color: var(--prism-accent); color: var(--prism-accent); }
+.shell-nav {
+  position: absolute; right: 0; top: calc(100% + .3rem); z-index: 30;
+  display: flex; flex-direction: column; min-width: 15rem;
+  background: var(--prism-card); border: 1px solid var(--prism-border);
+  border-radius: 8px; padding: .3rem; box-shadow: 0 10px 28px -18px rgba(0,0,0,.6);
+}
+.shell-nav-item {
+  display: flex; align-items: baseline; gap: .4rem; justify-content: space-between;
+  padding: .32rem .5rem; border-radius: 5px; font-size: .8rem;
+  color: var(--prism-fg); text-decoration: none;
+}
+a.shell-nav-item:hover { background: var(--prism-accent-soft); }
+.shell-nav-item.is-current { color: var(--prism-muted); cursor: default; }
+/* EMPTY IS DIMMED, NEVER HIDDEN. A dashboard with no data still has to be
+   reachable — "nothing here yet" is navigational information, and hiding the
+   unused is self-reinforcing (never shown → never used → never shown). */
+.shell-nav-item.is-empty { opacity: .62; }
+.shell-nav-empty {
+  font-size: .62rem; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--prism-muted); border: 1px solid var(--prism-border-soft);
+  border-radius: 4px; padding: 0 .3rem;
+}
 .reg-gen {
   font-family: var(--prism-mono); font-size: .68rem; color: var(--prism-muted);
   cursor: help;
@@ -512,30 +578,30 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    BRAND ∕ PRODUCT. The brand is adjustable (emitter reads .env); the product
    names what this dashboard is. Weighted so the brand leads and the product
    reads as its subtitle on the same line. */
-.reg-brand { display: inline-flex; align-items: baseline; gap: .3rem; text-decoration: none; color: inherit; }
+.shell-brand { display: inline-flex; align-items: baseline; gap: .3rem; text-decoration: none; color: inherit; }
 /* The signature swap. The sigma inherits font-family, weight and size from the
    surrounding name -- only colour and glow differ, so the wordmark reads as ONE
    word with a coloured letter, not as a glyph glued to text.
    --prism-brand defaults to the accent; a host overrides it to its own colour. */
-.reg-brand-sigma {
+.shell-brand-sigma {
   color: var(--prism-brand-light, var(--prism-accent));
 }
 /* The wordmark carries FULL-strength text colour, not the inherited muted tone --
    name / symbol / name reads white-gold-white on dark and ink-gold-ink on light.
    It was inheriting the muted grey, which made the brand quieter than its own
    subtitle. */
-.reg-brand-name { font-weight: 650; letter-spacing: -0.01em; color: var(--prism-fg); }
-a.reg-brand:hover .reg-brand-name { color: var(--prism-accent); }
-.reg-brand-sep { color: var(--prism-border-soft); margin: 0 .15rem; font-weight: 300; }
-.reg-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
+.shell-brand-name { font-weight: 650; letter-spacing: -0.01em; color: var(--prism-fg); }
+a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
+.shell-brand-sep { color: var(--prism-border-soft); margin: 0 .15rem; font-weight: 300; }
+.shell-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
 
-/* Dark-surface brand value. MUST come after the base .reg-brand-sigma rule: equal
+/* Dark-surface brand value. MUST come after the base .shell-brand-sigma rule: equal
    specificity means source order decides, and the base rule sitting later silently
    won in dark mode -- the mark rendered its pale-surface colour on a dark page.
    A single hex cannot serve both surfaces (11.98:1 here, 1.54:1 on pale); the glow
    is dark-only because it reads as bleed on a light background. */
 @media (prefers-color-scheme: dark) {
-  .reg-brand-sigma {
+  .shell-brand-sigma {
     color: var(--prism-brand-dark, var(--prism-accent));
     filter: drop-shadow(0 0 12px var(--prism-brand-glow, transparent));
   }
