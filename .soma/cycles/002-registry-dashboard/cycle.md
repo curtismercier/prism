@@ -66,7 +66,8 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | b | Stat cards, doubling as quick filters | ✅ shipped s01-8b4389 |
 | c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ✅ shipped s01-8b4389 |
 | d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ✅ shipped s01-8b4389 |
-| e | In-place editing — frontmatter fields and section bodies | ⬜ queued |
+| e | In-place editing — frontmatter fields and section bodies. **Curtis 08-05: opens in a PREVIEW/EDITOR PANEL** (same window, separate surface), NOT a scroll-to under the huge list | ⬜ queued — UX shape now specified, see §Phase e UX |
+| g | **Navigation system (Curtis 08-05)** — breadcrumb header (click the logo / "cycle registry" to return), close/X on the preview/editor, and a cross-dashboard MENU to switch between PRISM surfaces (Cycle Registry → delegation timeline → others) | ⬜ new |
 | f | **Filtering audit + default view** | 🟡 **default view SHIPPED s01-593a6d; audit queued** — see §Phase f |
 
 > **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
@@ -297,3 +298,42 @@ on exactly the documents that get edited — which is also the correct rule for 
 (cards / table / edit) rather than letting one layout quietly become an application. It stands at
 373 lines entering phase b.
 <!-- /@section: notes -->
+
+---
+
+## §Phase e UX + Phase g — navigation (Curtis, 2026-08-05)
+
+### Phase e — the preview/editor panel shape (not just "edit in place")
+
+Curtis: *"instead of it scrolling down to show it under the huge list of projects/cycles — it could
+open up in a cycle preview/editor (like kinda in the same window but not)."*
+
+- Clicking a cycle/phase opens a **preview/editor panel** — a distinct surface within the same window
+  (the `<soma-artifact>` detail-pane mechanism already exists; this is its UX upgrade).
+- The panel shows the artifact; editing (phase e) happens there, not in the list.
+
+### Phase g — the navigation system
+
+Curtis: *"the top banner/header where it has the soma logo and 'cycle registry' could be treated a bit
+like a breadcrumb/link — so I could click back on cycle registry — there might also be a close or X
+button on the cycle preview/editor."*
+
+1. **Header = breadcrumb** — the logo + "cycle registry" are a clickable link back to the registry
+   root (not static chrome).
+2. **Close/X on the preview/editor** — dismiss the panel, return to the list.
+3. **Cross-dashboard menu** — a menu in the shared header to switch PRISM surfaces (Cycle Registry →
+   the delegation timeline (003) → others), so the dashboards become a navigable family, not islands.
+
+### Why this matters (the collaboration angle)
+
+Curtis: *"allowing me to navigate more freely and improve our overall collaborative and communication
+between soma and me/users."* **The dashboard is the communication surface** — navigation freedom IS
+communication quality. A breadcrumb + close + cross-dashboard menu turns a wall of cycles into a
+navigable workspace.
+
+### Decision to surface (next actor)
+
+The preview/editor + navigation are **renderer work** in `branches/cdn-renderer/layouts/registry.mjs` —
+the same file the audit refactor just touched. Coordinate: the registry audit (`child-e6b15c`, merged
+`589deb1d`) changed the DATA layer; this changes the PRESENTATION. Both land in the same layout, so
+sequence them.
