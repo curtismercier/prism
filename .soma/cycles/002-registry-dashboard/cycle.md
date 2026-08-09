@@ -5,10 +5,10 @@ arc: prism-dashboards   # PRISM family arc, s01-6d4d53
 title: Registry layout — from list to dashboard
 status: active
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-09
 author: s01-8b4389 (Soma) + Curtis Mercier
 session: s01-8b4389
-edited_by: [s01-8b4389@prism, s01-593a6d@meetsoma]
+edited_by: [s01-8b4389@prism, s01-593a6d@meetsoma, s01-285a12@meetsoma]
 license: CC BY 4.0
 spans_repos: [Gravicity/personal/prism]
 depends_on: [./001-renderer-spike/cycle.md]
@@ -70,6 +70,7 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | e | In-place editing — frontmatter fields and section bodies. **Curtis 08-05: opens in a PREVIEW/EDITOR PANEL** (same window, separate surface), NOT a scroll-to under the huge list | ⬜ queued — UX shape now specified, see §Phase e UX |
 | g | **Navigation system (Curtis 08-05)** — breadcrumb header (click the logo / "cycle registry" to return), close/X on the preview/editor, and a cross-dashboard MENU to switch between PRISM surfaces (Cycle Registry → delegation timeline → others) | ⬜ new |
 | f | **Filtering audit + default view** | 🟡 **default view SHIPPED s01-593a6d; audit queued** — see §Phase f |
+| **e-fit** | **The pane is a viewport inside a viewport** — make the docked panel resizable, make projected artifacts fit it, resolve relative paths against the artifact | ✅ **shipped s01-285a12 `04dd03c`** — see §Phase e-fit |
 
 > **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
 > marked — the cycle read `queued` for features that had been live for hours, which
@@ -497,3 +498,70 @@ standing gate. Durable artifacts never touch `/tmp`; that applies to fixtures to
 
 ⇒ **Q14's grouping affordance is UNBLOCKED** and targets `registry-tree.mjs` on live
 `exp/cycles-mechanic`.
+
+<!-- @section: phase-e-fit -->
+## §Phase e-fit — the pane is a viewport inside a viewport (s01-285a12, 2026-08-09)
+
+**Trigger, verbatim (Curtis):** *"the popup/preview of the cycle md — it's not adjustable and the
+markdown/preview doesn't fit in the size of the split/pane/popup"*, then *"that now broke the
+navigation for sections"*, then *"add a bit of padding on the right of the pane to match the left"*,
+then *"is there a format standard and existing cycles we need to update?"*
+
+### What was actually wrong
+
+Phase e relocated the pane correctly and stopped there. Nothing was re-verified INSIDE it.
+
+| finding | measured |
+|---|---|
+| every responsive rule keys on the **viewport**, and the pane is a second viewport | `matchMedia('(max-width:800px)').matches` → **false** at a 1208px viewport while the pane was **663px** |
+| so the collapse rule that existed could never fire | `shared-shell` in the pane: body client **613** vs scroll **938** — **325px** overflow, **92** elements past the right edge, grid demanding `200 + 40 + 665.578` in a **549px** box |
+| `@container` support in the 44KB sheet | **0 rules** |
+| relative `src`/`href` resolved against the **registry page**, not the artifact | from a cycle at `…/cycles/infra/004-…/`, `shots/x.png` → `…/cycles/shots/x.png`, two dirs up |
+| GFM parsed but unstyled (`marked` runs `gfm:true`) | over **744** `cycle.md`: task lists **133** (bullet *and* checkbox), fenced code **309**, strikethrough **76**, `<details>` **6**, images **0** |
+| the 15px scrollbar lives **inside** `.reg-detail-body` | right edge had 15px of chrome and 0px of breathing room; left had the pane's 16px |
+
+🔑 **Images are 0 because they could never have worked.** The format was not avoiding images by
+taste — the viewer could not resolve them. `render.mjs:165` already computed `parsed.srcUrl`; the
+cycle layout simply never destructured it.
+
+### Two wrong fixes, both caught by measuring rather than by review
+
+1. **Table containment scoped to `@container (max-width: 800px)`.** At a pane dragged to 1140px the
+   query stops matching, auto table-layout floors the table at min-content again, and an 8-column
+   cycle overflowed **45px** with content **14px past the pane edge**. The trigger is *"does this
+   table fit its box"* — a content property, which **no width threshold expresses**. Now pane-scoped.
+2. **`min-width: 0` on `.cycle-main` alone.** Track **609px**, main still **700px** — the article
+   shell carries page-era sizing (computed `max-width: 1280px`) and every block between re-inherits
+   an auto minimum. **Constraining one link in a chain of six leaves the other five free to push.**
+
+### Answering the format question: NO cycle needs to change
+
+Measured over 744 `cycle.md`: **253 have tables of ≥4 columns** (92 at 6 columns, 5 at ≥7). The
+PRISM format spec says **nothing** about column count or width — `refs/prism-format.md` has zero
+hits for `column`/`width`/`table`. A 6-column table in a work record is legitimate.
+
+⇒ **The renderer adapts to the content; the content does not shrink for the renderer.** Rewriting
+253 files to satisfy a viewer bug would have been the expensive wrong move, and it is the move the
+question was inviting.
+
+The one honest content-side note: at **≥7 columns** (5 cycles) `table-layout: fixed` gives each
+column ~40px and the result is readable in no pane of any width. Those are worth splitting **on
+their own merit**, not as a migration.
+
+### Verified after
+
+| | |
+|---|---|
+| single column @ 640px pane | main **700 → 609** (matches its track), overflow **0**, 0 elements past edge |
+| two column @ ~1040–1200px | overflow **0** |
+| TOC | `order: -1` — **above** the content, 12 section links reachable without scrolling |
+| relative link | `../19-page-xray-comparison/cycle.md` in a yoshi cycle now resolves **inside project-b**, not meetsoma |
+| task lists | 27 checkboxes render with no bullet; checked items dim to `rgb(166,166,166)` |
+
+### Left undone, deliberately
+
+- **Syntax highlighting** for the 309 cycles with fenced code — a real addition, not a bug, and it
+  costs a highlighter dependency in a repo being prepared for publication. Curtis's call.
+- **Mermaid** — same shape, larger dependency.
+- Phase **e** proper (editing) is still `⬜ queued`; this phase touched READ only, per the standing
+  ruling that no PUT/POST endpoint enters this repo while it is being prepared for publication.
