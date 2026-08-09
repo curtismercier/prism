@@ -164,10 +164,22 @@ feature rather than a nicety.
 3. **Beyond table rows** — list items and paragraphs can wrap across source lines, so they need a
    block-level `raw` from `marked.lexer`, not a line. Worth it, but it is a second phase and should
    not hold the row editor.
-4. 🆕 **A hazard the CAS must not be built on top of: `personal/prism/.soma` is DOUBLE-TRACKED** — it
-   is a nested git repo *and* 43 of its files are tracked by the parent `prism` repo. Its nested
-   repo's last `cycles` commit is `2026-08-05` (2 files dirty) while this cycle's own sibling edit
-   went to the **parent**. So "has this file changed?" has two different answers depending on which
-   repo you ask. ⇒ **Hash the file CONTENT. Never use git state or mtime as the conflict signal.**
-   (Separately: this double-tracking contradicts the estate convention in
-   `meetsoma/.soma/cycles/infra/003-soma-repo-topology` and is worth its own fix.)
+4. 🆕 **A hazard the CAS must not be built on top of: DOUBLE-TRACKED `.soma` trees.** A cycles tree
+   can be a nested git repo *and* have its files tracked by the parent repo — so **"has this file
+   changed?" has two different answers depending on which repo you ask**, and the two drift.
+
+   | project | nested `.soma` repo says | parent repo says |
+   |---|---|---|
+   | `personal/prism` | `2026-08-05`, 2 files dirty | `2026-08-09` (43 files tracked) |
+   | `meetsoma/nova-voice` | `2026-07-30` | `2026-08-09` (`83900f5`, mode `100644` — real files, not gitlinks) |
+
+   ⇒ **Hash the file CONTENT. Never use git state or mtime as the conflict signal.**
+
+   🔑 This is not theoretical: it produced a false finding *within an hour of being written*. The new
+   `soma-cycles-registry.py unrecorded` read only the nested repo and reported nova-voice as **53
+   commits of unrecorded work** — its cycles had in fact been committed to the parent that same day.
+   **A property of my instrument, reported as a property of the estate.** Fixed by taking the later
+   date across both repos; the live differential (2 findings → 0) is the proof.
+
+   (Separately: the double-tracking contradicts `meetsoma/.soma/cycles/infra/003-soma-repo-topology`,
+   is present in at least 2 projects, and is worth its own fix.)
