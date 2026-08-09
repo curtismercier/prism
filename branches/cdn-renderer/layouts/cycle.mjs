@@ -27,9 +27,40 @@ function escape(s) {
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
-function renderMd(md) {
+// Absolute, protocol-relative, root-relative, anchor-only, or a mailto:/data: —
+// all of these already say where they point. Only a bare relative path is ambiguous.
+const ALREADY_RESOLVED = /^([a-z][a-z0-9+.-]*:|\/\/|\/|#)/i;
+
+/**
+ * @param {string} md
+ * @param {string} [base] absolute URL of the artifact this markdown came FROM
+ *
+ * `base` is why this takes a second argument. A relative `![](shots/x.png)` or
+ * `[see](../lead-capture-hardening/cycle.md)` is resolved by the browser against
+ * the PAGE, and in the registry the page is the index -- not the cycle. Measured
+ * 2026-08-09 from a cycle at `/meetsoma/.soma/cycles/infra/004-soma-bodies-monorepo/`:
+ * `shots/x.png` resolved to `/meetsoma/.soma/cycles/shots/x.png`, two directories up.
+ *
+ * So EVERY relative link in EVERY previewed cycle pointed at the wrong place, and
+ * images could never have worked at all -- which is the likely reason 0 of 744
+ * cycle.md files contain one. The format was not avoiding images by taste; the
+ * viewer could not resolve them.
+ *
+ * Rewritten via DOMParser, not regex: `src=` also appears inside code blocks and
+ * attribute values, and a regex cannot tell those apart from a real element.
+ */
+function renderMd(md, base) {
   // Configure marked: tables on, line breaks off (markdown-natural), no mangle.
-  return marked.parse(md, { gfm: true, breaks: false });
+  const html = marked.parse(md, { gfm: true, breaks: false });
+  if (!base) return html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  for (const el of doc.querySelectorAll('img[src], a[href], source[srcset]')) {
+    const attr = el.tagName === 'IMG' ? 'src' : el.tagName === 'SOURCE' ? 'srcset' : 'href';
+    const v = el.getAttribute(attr);
+    if (!v || ALREADY_RESOLVED.test(v)) continue;
+    try { el.setAttribute(attr, new URL(v, base).href); } catch { /* leave it alone */ }
+  }
+  return doc.body.innerHTML;
 }
 
 const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'section';
@@ -66,7 +97,7 @@ function deriveSections(md) {
   return { sections, titles, preamble: pre.join('\n').trim() };
 }
 
-export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
+export function renderCycle({ frontmatter: fm, sections, preamble, trailer, srcUrl }) {
   // A document with no @section anchors parses to zero sections and one giant
   // preamble — the Markdown wall PRISM exists to fix. Fall back to headings so it
   // still gets a TOC, but mark it: a derived anchor is NOT a stable address (it
@@ -139,7 +170,7 @@ export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
     renderRefs(fm.parent, 'parent'),
   ].filter(Boolean).join(' · ');
 
-  const purposeBlock = fm.purpose ? `<div class="purpose"><div class="purpose-label">Purpose</div>${renderMd(fm.purpose)}</div>` : '';
+  const purposeBlock = fm.purpose ? `<div class="purpose"><div class="purpose-label">Purpose</div>${renderMd(fm.purpose, srcUrl)}</div>` : '';
 
   // Sidebar TOC. When sections were derived from headings rather than read from
   // @section anchors, the nav is labelled so a reader can tell addressable
@@ -156,12 +187,12 @@ export function renderCycle({ frontmatter: fm, sections, preamble, trailer }) {
     const label = titles.get(name) || name;
     return `<section id="${escape(hAnchor)}" data-section="${escape(name)}"${derived ? ' data-derived="true"' : ''}>
       <header class="section-header"><span class="section-tag">${escape(label)}</span></header>
-      <div class="section-body">${renderMd(content)}</div>
+      <div class="section-body">${renderMd(content, srcUrl)}</div>
     </section>`;
   }).join('\n');
 
-  const preambleBlock = effPreamble ? `<div class="preamble">${renderMd(effPreamble)}</div>` : '';
-  const trailerBlock = trailer ? `<div class="trailer">${renderMd(trailer)}</div>` : '';
+  const preambleBlock = effPreamble ? `<div class="preamble">${renderMd(effPreamble, srcUrl)}</div>` : '';
+  const trailerBlock = trailer ? `<div class="trailer">${renderMd(trailer, srcUrl)}</div>` : '';
 
   return `<article class="prism prism-cycle" data-type="cycle">
     <header class="cycle-header">

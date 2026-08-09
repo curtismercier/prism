@@ -31,6 +31,8 @@
 export function buildDetailPane() {
   return `
   <aside class="reg-detail" data-reg-detail hidden role="dialog" aria-label="artifact preview" aria-modal="false">
+    <div class="reg-resize" data-reg-resize role="separator" aria-orientation="vertical"
+         aria-label="resize preview pane" tabindex="0"></div>
     <div class="reg-detail-bar">
       <strong data-reg-detail-title></strong>
       <button type="button" data-reg-close class="reg-close">close ✕</button>
@@ -113,6 +115,8 @@ export function attachDetail(wrap, esc) {
 
   if (closeBtn) closeBtn.addEventListener('click', close);
 
+  attachResize(detail);
+
   // Escape closes. Additive: the ✕ Curtis asked for is unchanged and still the visible
   // affordance. Bound to `wrap`, never to `document` — this layout re-renders itself on
   // data refresh, and a document-level listener would accumulate one copy per render.
@@ -121,4 +125,63 @@ export function attachDetail(wrap, esc) {
   });
 
   return { open, close, isOpen };
+}
+
+/**
+ * Drag the docked edge to resize; the width persists across reloads.
+ *
+ * Phase e docked the pane and hardcoded `min(760px, 52vw)`. That is one width for
+ * every artifact in the estate -- a 60-line seed and a 440-line branching cycle with
+ * five-column tables get the same box (Curtis, 2026-08-09: "it's not adjustable").
+ *
+ * The width lives in a CSS custom property on the pane, NOT in an inline `width`:
+ * the bottom-sheet media query at <=800px overrides `width` wholesale, and an inline
+ * style would beat it and leave a 400px-wide sheet on a phone.
+ *
+ * Pointer events, not mouse: one code path covers trackpad, touch and pen, and
+ * `setPointerCapture` keeps the drag alive when the cursor outruns the 7px strip --
+ * without it a fast drag drops on the first frame that lands outside the handle.
+ */
+function attachResize(detail) {
+  const handle = detail.querySelector('[data-reg-resize]');
+  if (!handle) return;
+  const KEY = 'prism.reg-detail-w';
+  const MIN = 320;
+  // Leave the list reachable: a pane that can cover the whole window is a modal, and
+  // this one is deliberately not (`aria-modal="false"` -- you keep your place in the list).
+  const max = () => Math.max(MIN, Math.round(window.innerWidth * 0.92));
+  const clamp = (px) => Math.min(max(), Math.max(MIN, Math.round(px)));
+  const put = (px) => detail.style.setProperty('--reg-detail-w', clamp(px) + 'px');
+
+  const saved = Number(localStorage.getItem(KEY));
+  if (saved) put(saved);
+
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    detail.classList.add('reg-resizing');
+    const move = (ev) => put(window.innerWidth - ev.clientX);   // docked RIGHT: width grows leftward
+    const up = () => {
+      handle.removeEventListener('pointermove', move);
+      detail.classList.remove('reg-resizing');
+      const w = detail.style.getPropertyValue('--reg-detail-w');
+      if (w) localStorage.setItem(KEY, parseInt(w, 10));
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up, { once: true });
+    handle.addEventListener('pointercancel', up, { once: true });
+  });
+
+  // Keyboard parity. A drag handle reachable only by pointer is a control half the
+  // users cannot operate, and this one is in the tab order (tabindex=0) either way.
+  handle.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 100 : 20;
+    const cur = parseInt(detail.style.getPropertyValue('--reg-detail-w'), 10)
+      || Math.round(detail.getBoundingClientRect().width);
+    if (e.key === 'ArrowLeft')       put(cur + step);
+    else if (e.key === 'ArrowRight') put(cur - step);
+    else return;
+    e.preventDefault();
+    localStorage.setItem(KEY, parseInt(detail.style.getPropertyValue('--reg-detail-w'), 10));
+  });
 }
