@@ -49,6 +49,7 @@ const { buildFlatTable, attachFlat } = await load('./registry-flat.mjs');
 const { esc, abs, blob, pill, setHrefBase, buildTree, attachTree, displayProject } = await load('./registry-tree.mjs');
 const { buildDetailPane, attachDetail } = await load('./registry-detail.mjs');
 const { renderShellHeader, renderShellBackground, attachShellHeader, loadDashboards } = await load('./shell-header.mjs');
+const { buildRail, buildSearchHint, attachChrome } = await load('./registry-chrome.mjs');
 
 // The registry JSON is a SNAPSHOT, while the drill-in panel nests a live
 // <soma-artifact> on the real cycle.md. A stale snapshot therefore makes ONE
@@ -62,10 +63,7 @@ let DATA_SRC = null;
 let DATA_GENERATED = null;
 let DATA_FETCHED_AT = 0;
 const REFRESH_MIN_MS = 15000;      // never poll harder than this, whatever the user does
-// ROW 7: maybeRefresh() re-invokes render+attach on a live poll -- a raw
-// `document.addEventListener` in attachRegistry would accumulate one listener per
-// refresh cycle over a long-lived session. Track the last one and remove it first.
-let CMDK_HANDLER = null;
+
 
 export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   // Resolve `data:` against the SOURCE .md, not the document. Without this the same
@@ -142,34 +140,14 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
     source: navSource,
     // A dashboard names itself in ITS OWN frontmatter; nothing here enumerates the family.
     current: fm.dashboard_id || fm.id || '',
-    // ROW 7 ("cmd-K search hint styling at 12px"): the real search input lives in
-    // `.reg-controls` inside `.reg-sticky`, not the header -- `shell-header.mjs` says
-    // of itself it must stay registry-agnostic (see its own file header), so a hint
-    // pointing at `data-reg-q` is a REGISTRY concern and belongs in this call site's
-    // `meta` slot, not baked into the shared module. It focuses the existing input
-    // rather than duplicating it -- one search box, one keybinding, styled as a hint.
-    meta: `<button type="button" class="shell-search-hint" data-shell-search-hint title="jump to the search box">⌘K</button>
+    // Row 7's ⌘K badge and row 8's rail both live in registry-chrome.mjs -- registry
+    // chrome cannot go in shell-header.mjs, which must stay registry-agnostic.
+    meta: `${buildSearchHint()}
       ${d.generated_at ? `<span class="reg-gen" title="This data is a SNAPSHOT, not live. Regenerate before trusting any number.">generated ${esc(String(d.generated_at).replace('T', ' ').replace(/\+.*$/, ''))}</span>` : ''}
       ${preamble ? `<button type="button" class="reg-btn reg-info" data-reg-help aria-expanded="false" title="How to read this dashboard">ⓘ help</button>` : ''}`,
   });
 
-  // ROW 8 rail counts -- per-project totals for the filter rail. `projects` is
-  // already the deduped/sorted list every dropdown uses; this just tallies against
-  // it once rather than re-filtering `rows` per row at render time.
-  const railCounts = {};
-  for (const r of rows) {
-    const p = displayProject(r);
-    if (p) railCounts[p] = (railCounts[p] || 0) + 1;
-  }
-  const railHtml = `<aside class="reg-rail" data-reg-rail aria-label="filter by project">
-    <div class="reg-rail-head">projects</div>
-    <button type="button" class="reg-rail-row is-active" data-reg-rail-row data-reg-rail-project="" aria-pressed="true">
-      <span class="reg-rail-label">all projects</span><span class="reg-rail-count">${rows.length}</span>
-    </button>
-    ${projects.map((p) => `<button type="button" class="reg-rail-row" data-reg-rail-row data-reg-rail-project="${esc(p)}" aria-pressed="false" title="${esc(p)}">
-      <span class="reg-rail-label">${esc(p)}</span><span class="reg-rail-count">${railCounts[p] || 0}</span>
-    </button>`).join('')}
-  </aside>`;
+  const railHtml = buildRail({ rows, projects, displayProject, esc });
 
   return `
   ${renderShellBackground()}
@@ -241,6 +219,13 @@ export function attachRegistry(root) {
   const sortSel = wrap.querySelector('[data-reg-sort]');
   const brokenOnly = wrap.querySelector('[data-reg-broken]');
   const collapseBtn = wrap.querySelector('[data-reg-collapse]');
+
+  // Rail + ⌘K. registry-chrome.mjs owns both, and owns the ONLY `document`-level binding in
+  // this layout. Attached HERE, immediately after its two dependencies resolve, rather than
+  // beside the other listeners further down: `syncCards()` calls the returned `syncRail`, so
+  // initialising it late leaves a temporal-dead-zone footgun for whoever next adds a call.
+  const { syncRail } = attachChrome(wrap, { projSel, searchInput: q });
+
   let activeCard = '';
   let view = 'grouped';
   const treeBox = wrap.querySelector('.reg-tree');
@@ -350,19 +335,6 @@ export function attachRegistry(root) {
     syncRail();
   }
 
-  // ROW 8: same reflect-the-dropdown pattern as syncCards -- `projSel` stays the
-  // single source of truth (the rail drives it via `change`, never filters directly),
-  // so a shared link or a dropdown pick lights the matching rail row too.
-  function syncRail() {
-    if (!projSel) return;
-    const val = projSel.value || '';
-    for (const el of wrap.querySelectorAll('[data-reg-rail-row]')) {
-      const on = (el.dataset.regRailProject || '') === val;
-      el.classList.toggle('is-active', on);
-      el.setAttribute('aria-pressed', String(on));
-    }
-  }
-
   wrap.addEventListener('click', (e) => {
     const card = e.target.closest('[data-card]');
     if (!card) return;
@@ -382,32 +354,7 @@ export function attachRegistry(root) {
                       // clicks cards never re-polls and reads a snapshot from page load.
   });
 
-  // ROW 8: the rail is a THIN wrapper around the existing project dropdown, not a
-  // second filter mechanism -- it sets `projSel.value` and dispatches the SAME
-  // `change` event the dropdown fires, so it inherits URL-hash sync, facet recount
-  // and the empty-state message for free, and cannot drift from the dropdown the
-  // way the cards once did (see CARD_BUCKET's comment above, s01-593a6d).
-  wrap.addEventListener('click', (e) => {
-    const row = e.target.closest('[data-reg-rail-row]');
-    if (!row || !projSel) return;
-    projSel.value = row.dataset.regRailProject || '';
-    projSel.dispatchEvent(new Event('change'));
-  });
 
-  // ROW 7: ⌘K / Ctrl+K focuses the existing search input -- a hint pointing at real
-  // functionality, not a second search box. The header's badge (shell-search-hint)
-  // does the same thing on click; both paths converge on one input.
-  const focusSearch = () => { q.focus(); q.select(); };
-  const searchHint = wrap.querySelector('[data-shell-search-hint]');
-  if (searchHint) searchHint.addEventListener('click', focusSearch);
-  if (CMDK_HANDLER) document.removeEventListener('keydown', CMDK_HANDLER);
-  CMDK_HANDLER = (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && wrap.isConnected) {
-      e.preventDefault();
-      focusSearch();
-    }
-  };
-  document.addEventListener('keydown', CMDK_HANDLER);
 
   // FACET COUNTS. §decisions-locked says "cards recompute from the filtered set so they
   // compose" — that was locked and never implemented: counts were computed once at render
