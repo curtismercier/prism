@@ -49,7 +49,10 @@
   /* ── text ── */
   --prism-fg:           #e4eaf4;
   --prism-muted:        #9dafc4;
-  --prism-soft:         #647080;
+  --prism-soft:         #7b8798;   /* S10 G5: was #647080 = 3.81:1 on this canvas. It carries the
+                                      row dates, the arc counts, the legend and the "N shown" --
+                                      the tier a reader consults, not the tier they ignore.
+                                      5.20:1 now. */
 
   /* ── spacing scale (nvidia density) ── */
   --prism-sp-1:2px;  --prism-sp-2:4px;  --prism-sp-3:6px;  --prism-sp-4:8px;
