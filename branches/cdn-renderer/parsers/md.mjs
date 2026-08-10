@@ -4,7 +4,17 @@
 //
 // No external deps. ~50 LOC of parsing.
 
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n?/;
+// TOLERANT ON PURPOSE. This used to be /^---\n([\s\S]*?)\n---\n?/ and any of three ordinary
+// things made it match NOTHING -- which yields no frontmatter, so no `type`, so a silent fall to
+// renderDefault. This file's own header names that failure: "Malformed frontmatter renders BLANK,
+// and blank reads as fine."
+//   \uFEFF?   a UTF-8 BOM, which several editors write and nothing displays
+//   [ \t]*    trailing whitespace after either --- , invisible in every editor
+//   \r?\n     CRLF, from Windows or a pasted file
+// The SERVER half (soma-cycles-registry.py) already tolerated all three, so a file could list in
+// the registry and render blank in the drill-in. Two parsers, one corpus: they must agree on what
+// counts as frontmatter.
+const FRONTMATTER_RE = /^\uFEFF?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
 const SECTION_OPEN_RE = /<!--\s*@section:\s*([a-z0-9.-]+)\s*-->/g;
 const SECTION_CLOSE = (name) => new RegExp(`<!--\\s*/@section:\\s*${name.replace('.', '\\.')}\\s*-->`);
 
@@ -15,23 +25,41 @@ const SECTION_CLOSE = (name) => new RegExp(`<!--\\s*/@section:\\s*${name.replace
  */
 function parseFrontmatter(yamlText) {
   const out = {};
-  const lines = yamlText.split('\n');
+  const lines = yamlText.split(/\r?\n/);   // \r survives a CRLF file and corrupts every value
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
     if (!line.trim() || line.startsWith('#')) { i++; continue; }
 
-    // Pipe-multiline: `key: |`
-    const pipe = line.match(/^(\w[\w-]*):\s*\|\s*$/);
-    if (pipe) {
-      const key = pipe[1];
-      const block = [];
+    // BLOCK SCALARS: `key: |` (literal) and `key: >` (folded), each with an optional -/+ chomp.
+    //
+    // Only `|` was handled. `>-` is the DEFAULT shape for `description:` across this estate --
+    // measured 218 of 1,211 frontmatter files (18%) use a folded or literal scalar. Unhandled, the
+    // `key: value` branch below matched it and set the value to the literal string ">-", which is
+    // worse than dropping it: a wrong value that looks parsed, rendered as the card's description.
+    const blockScalar = line.match(/^(\w[\w-]*):\s*([|>])([-+]?)\s*$/);
+    if (blockScalar) {
+      const [, key, style, chomp] = blockScalar;
+      const buf = [];
       i++;
-      while (i < lines.length && (lines[i].startsWith('  ') || lines[i].trim() === '')) {
-        block.push(lines[i].replace(/^  /, ''));
+      // A continuation line is indented; a blank line belongs to the block. Anything at column 0
+      // ends it -- that is what keeps the NEXT key from being swallowed.
+      while (i < lines.length && (/^[ \t]+\S/.test(lines[i]) || lines[i].trim() === '')) {
+        buf.push(lines[i].replace(/^[ \t]{1,4}/, ''));
         i++;
       }
-      out[key] = block.join('\n').trim();
+      while (buf.length && !buf[buf.length - 1].trim()) buf.pop();   // drop trailing blanks
+      let text;
+      if (style === '|') {
+        text = buf.join('\n');
+      } else {
+        // Folded: lines join with a space; a blank line is a paragraph break.
+        text = buf.reduce((acc, ln) => {
+          if (!ln.trim()) return acc.replace(/\s+$/, '') + '\n\n';
+          return acc && !acc.endsWith('\n') ? `${acc} ${ln.trim()}` : acc + ln.trim();
+        }, '');
+      }
+      out[key] = chomp === '+' ? text : text.replace(/\s+$/, '');
       continue;
     }
 
