@@ -54,6 +54,13 @@ const LAYOUTS = {
   // An `arc` is cycle-shaped (through-line, phase table, gates) — same projection.
   // Without this it silently fell to renderDefault, which looks fine and is wrong.
   arc: renderCycle,
+  // A `phase` is a cycle scoped to one step of an arc — same shape, same projection.
+  // It fell to renderDefault for the same reason `arc` once did, and with the same
+  // symptom: the body renders, so it looks fine, and only the missing TOC gives it
+  // away. Measured s01-6f59eb in a real browser: cycle 8 anchors, arc 12, phase 0.
+  // 🔑 The bug reported against `arc` was never in `arc` — `arc` renders a full TOC.
+  //    It was this line's absence, one type over.
+  phase: renderCycle,
   pipeline: { render: renderPipeline, attach: attachPipelineLive },
   // A sortable index over MANY artifacts. Click-through nests a <soma-artifact>,
   // so the index inherits every layout above it without knowing any of them.
