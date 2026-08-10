@@ -140,8 +140,26 @@ const artifactChips = (r) => {
 export const displayProject = (r) =>
   (r.tree_kind === 'releases' && r.project) ? `${r.project}/releases` : (r.project || '');
 
-function leafRow(r, isPhase) {
-  return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''}"
+// S9 — card anatomy (S5 §4.2: eyebrow -> title -> description -> hairline -> footer),
+// adapted to a NESTED LIST ROW rather than a nvidia-style grid card. Full grid-card
+// chrome (opaque bg, 24px gaps, 213px height) was tried against this data and refused
+// -- see S9 report "the invalidating answer": the tree's whole reason to exist is
+// avoiding a wall of 500+ rows, and grid-card height would rebuild that wall INSIDE
+// every expanded arc. What survives is the ANATOMY (the four-part hierarchy + hairline)
+// at list density, not the grid geometry.
+//   eyebrow  = id row: broken badge + entry mark + slug (small, muted) ... status pill
+//   title    = frontmatter title:, promoted to the prominent read (only 45% of rows
+//              have one -- when absent, nothing duplicates the eyebrow's slug)
+//   descrip. = status_note or the parse error, when present
+//   footer   = hairline-separated: artifact chips (left) + the 4 dates (right)
+// `isEntry`: the arc's OWN cycle.md, rendered via this same anatomy instead of the
+// bespoke inline link it used to be (see buildTree) -- it is a leaf identically shaped
+// to any phase row, so a second markup path for it was accidental complexity, not a
+// different card. It previously rendered NO pill/dates/artifacts at all; this is a
+// scope-visible upgrade, called out in the S9 report rather than left silent.
+function leafRow(r, isPhase, opts = {}) {
+  const isEntry = !!opts.isEntry;
+  return `<div class="reg-row ${r.error ? 'reg-row-broken' : ''} ${isPhase ? 'reg-row-phase' : ''} ${isEntry ? 'reg-row-entry' : ''}"
       data-row data-href="${esc(abs(r.href))}" data-blob="${blob(r)}"
       data-bucket="${esc(r.bucket || '')}" data-broken="${r.error ? '1' : '0'}"
       data-project="${esc(displayProject(r))}" data-scope="${esc(r.tree_kind || '')}"
@@ -149,15 +167,23 @@ function leafRow(r, isPhase) {
       data-git="${r.git ? '1' : '0'}"
       data-age="${r.age_days ?? -1}" data-name="${esc(r.phase || r.arc || r.slug)}"
       data-label="${esc(r.phase || r.slug)}">
-    <span class="reg-name">
-      ${r.error ? '<span class="reg-badge-broken">UNPARSEABLE</span> ' : ''}
-      <span class="reg-nm">${esc(r.phase || r.slug)}</span>
-      ${r.title ? `<span class="reg-title">${esc(r.title)}</span>` : ''}
+    <div class="reg-row-eyebrow">
+      <span class="reg-row-id">
+        ${r.error ? '<span class="reg-badge-broken">UNPARSEABLE</span> ' : ''}
+        ${isEntry ? '<span class="reg-entry-mark" aria-hidden="true">\u21b3</span> ' : ''}
+        <span class="reg-nm">${esc(r.phase || r.slug)}</span>
+      </span>
+      ${pill(r)}
+    </div>
+    ${(r.title || r.error || (!r.error && r.status_note)) ? `<div class="reg-row-body">
+      ${r.title ? `<span class="reg-row-desc">${esc(r.title)}</span>` : ''}
       ${r.error ? `<span class="reg-err">${esc(r.error)}</span>` : ''}
       ${!r.error && r.status_note ? `<span class="reg-status-note" title="status_note -- prose split out of status:">${esc(r.status_note)}</span>` : ''}
+    </div>` : ''}
+    <div class="reg-row-footer">
       ${artifactChips(r)}
-    </span>
-    ${pill(r)}${dates(r)}
+      ${dates(r)}
+    </div>
   </div>`;
 }
 
@@ -213,13 +239,7 @@ export function buildTree(rows) {
           ${statsHtml(statsOf(phases))}
         </div>
         <div class="reg-arc-body">
-          ${entry ? `<div class="reg-entrylink" data-row data-href="${esc(abs(entry.href))}"
-              data-blob="${blob(entry)}" data-bucket="${esc(entry.bucket || '')}"
-              data-project="${esc(displayProject(entry))}" data-scope="${esc(entry.tree_kind || '')}"
-              data-git="${entry.git ? '1' : '0'}"
-              data-broken="0" data-age="${entry.age_days ?? -1}" data-label="${esc(entry.slug)}">
-              ↳ open the arc (<code>cycle.md</code>)${entry.title ? ` — <span class="reg-title">${esc(entry.title)}</span>` : ''}
-            </div>` : ''}
+          ${entry ? leafRow(entry, false, { isEntry: true }) : ''}
           ${phases.map((p) => leafRow(p, true)).join('')}
         </div>
       </div>`;

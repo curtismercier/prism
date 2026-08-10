@@ -325,7 +325,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: var(--prism-sp-1);
   padding: var(--prism-sp-4) var(--prism-sp-5); min-width: 5.5rem;
-  border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm);
+  border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-md);   /* S9: semantic promotion 6->12 per S5 §4.2 (S7's mechanical pass landed 8->6, flagged this as row 9's to decide) */
   background: var(--prism-surface); cursor: pointer;   /* S7 row 5: opaque surface, one step off canvas */
   font-family: inherit; text-align: left;
   transition: border-color var(--prism-hover), background var(--prism-hover), transform .05s;
@@ -464,10 +464,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-arc-n { font-size: var(--prism-text-11); color: #8a8fa0; }
 .reg-noentry { opacity: .65; font-style: italic; }
 .reg-arc-body { margin-left: var(--prism-sp-7); border-left: 2px solid #dcdce9; padding-left: var(--prism-sp-5); }
-.reg-entrylink { font-size: var(--prism-text-12); color: #5a6; padding: var(--prism-sp-2) var(--prism-sp-2); cursor: pointer; color: #4a6a8a; }
-.reg-entrylink:hover { background: #f0f6ff; }
 
-.reg-row { display: flex; align-items: baseline; gap: var(--prism-sp-6); padding: var(--prism-sp-2) var(--prism-sp-3);
+/* ── S9: card anatomy, adapted to a nested list row ────────────────────────
+   eyebrow -> title -> description -> hairline -> footer (S5 §4.2), at list density
+   rather than grid-card geometry -- see registry-tree.mjs leafRow() for why grid-card
+   height was refused. `.reg-row-body` and its children are OMITTED from the DOM
+   entirely when a row has neither title, error nor status_note (leafRow's own
+   condition), so a bare row collapses to eyebrow+footer -- two lines, not four. */
+.reg-row { display: flex; flex-direction: column; gap: var(--prism-sp-2); padding: var(--prism-sp-3);
   border-radius: var(--prism-r-sm); cursor: pointer; }
 .reg-row:hover { background: #f6f8ff; }
 /* `.reg-row { display: flex }` above has the same specificity as the UA default
@@ -478,17 +482,32 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    s01-b2947f/s01-8ba64e, 2026-08-02, chasing why a 1-row filter still showed 100+. */
 .reg-row[hidden] { display: none; }
 .reg-row-phase .reg-nm { font-variant-numeric: tabular-nums; }
-.reg-name { flex: 1 1 auto; min-width: 0; }
-.reg-nm { font-weight: 400; color: #46506a; font-size: var(--prism-text-12); }
-.reg-title { color: #8a8fa0; font-size: var(--prism-text-12); margin-left: var(--prism-sp-3); }
-.reg-status-note { display: block; color: #6a6a8a; font-size: var(--prism-text-11); font-style: italic;
-  margin-top: var(--prism-sp-1); }
-.reg-meta { display: inline-flex; gap: var(--prism-sp-6); flex: 0 0 auto; padding-left: var(--prism-sp-6);
-  border-left: 1px solid #ececf4; margin-left: var(--prism-sp-4); }
-.reg-d, .reg-age { font-size: var(--prism-text-11); color: #8b8b9c; font-variant-numeric: tabular-nums;
+
+/* eyebrow: id (badge + entry-mark + slug) left, status pill right */
+.reg-row-eyebrow { display: flex; align-items: center; gap: var(--prism-sp-3); }
+.reg-row-id { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: var(--prism-sp-2); }
+.reg-nm { font-weight: 400; color: var(--prism-muted); font-size: var(--prism-text-11); }
+.reg-entry-mark { color: var(--prism-accent); font-weight: 700; }
+.reg-row-entry { border-left: 2px solid var(--prism-accent-soft); }
+
+/* title (frontmatter title:, promoted) -> description (status_note / error) */
+.reg-row-body { display: flex; flex-direction: column; gap: var(--prism-sp-1); }
+.reg-row-desc { color: var(--prism-fg); font-size: var(--prism-text-13); font-weight: 600; }
+.reg-status-note { display: block; color: var(--prism-soft); font-size: var(--prism-text-11); font-style: italic; }
+
+/* footer: hairline-separated, artifact chips left / dates right */
+.reg-row-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--prism-sp-4);
+  padding-top: var(--prism-sp-2); border-top: 1px solid var(--prism-border-soft); }
+.reg-meta { display: inline-flex; gap: var(--prism-sp-6); flex: 0 0 auto; margin-left: auto; }
+.reg-d, .reg-age { font-size: var(--prism-text-11); color: var(--prism-soft); font-variant-numeric: tabular-nums;
   min-width: 5.6rem; text-align: right; letter-spacing: .01em; }
 .reg-age { min-width: 3rem; }
 .reg-drift { color: #b8860b; font-weight: 600; }
+
+/* .reg-title survives for registry-flat.mjs's table cell ONLY (S9: the flat table is
+   refused for card anatomy -- it stays a dense sortable table by design, see the S9
+   report's "the invalidating answer" -- so this rule is untouched, unpromoted). */
+.reg-title { color: #8a8fa0; font-size: var(--prism-text-12); margin-left: var(--prism-sp-3); }
 
 .reg-pill { display: inline-block; padding: var(--prism-sp-1) var(--prism-sp-4); border-radius: 999px;
   font-size: var(--prism-text-11); margin-right: var(--prism-sp-2); white-space: nowrap; background: #e8eaf0; color: #445; flex: 0 0 auto;
@@ -625,10 +644,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 
 @media (prefers-color-scheme: dark) {
   .reg-k, .reg-proj-head { color: #fff; }
-  .reg-nm { color: #a8b0c4; }
+  /* .reg-nm, .reg-d, .reg-age, .reg-status-note: S9 moved these to
+     var(--prism-muted)/var(--prism-soft) -- they now resolve correctly under EITHER
+     prefers-color-scheme OR a host :root override, so no media-query duplicate is
+     needed here (that duplication is exactly what left the host page's light-OS
+     case unhandled before -- see S7/S8's flagged hardcoded-hex residue). */
   .reg-arc-name { color: #dde3ee; }
   .reg-proj { border-top-color: #33333f; }
-  .reg-meta { border-left-color: #26262f; }
   .reg-counts, .reg-pre { color: #99a; }
   .reg-controls { background: #1a1a22; }
   .reg-input, .reg-select, .reg-btn { background: #14141b; border-color: #333; color: #dde; }
@@ -636,7 +658,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-proj { border-top-color: #26262f; }
   .reg-proj-n { background: #26262f; color: #9a9aa8; }
   .reg-arc-name { color: #cdd; } .reg-arc-body { border-left-color: #2a2a34; }
-  .reg-title, .reg-d, .reg-age, .reg-arc-n, .reg-legend, .reg-status-note { color: #7a7a88; }
+  .reg-title, .reg-arc-n, .reg-legend { color: #7a7a88; }
   .reg-pill { background: #26262f; color: #bbc; }
   .reg-b-active { background: #16304d; color: #8ec2ff; }
   .reg-b-seeded { background: #3d2f14; color: #e8bd6b; }
