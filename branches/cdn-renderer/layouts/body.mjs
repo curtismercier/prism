@@ -148,7 +148,16 @@ export async function renderBody({ frontmatter: fm, srcUrl }) {
   // `_browser/` while the page is a directory above, so `./body.json` relative to
   // the document silently resolves to the wrong path.
   const src = fm?.data ? new URL(fm.data, srcUrl || document.baseURI).href : null;
-  if (!src) return `<div class="prism-error">Body layout needs <code>data:</code> in frontmatter</div>`;
+  // DECLINE, don't error. `type: body` is overloaded: in PRISM it means "render the body
+  // ledger", but in soma's own frontmatter convention it means "this file is a body document".
+  // 37 files in this corpus declare `type: body` and NOT ONE carries a `data:` sidecar -- they
+  // are prose, not dashboards. Erroring on them put a red box on every soma body file.
+  //
+  // The signal that separates the two is exact: a ledger artifact HAS `data:`. So absence means
+  // "not mine" (return null -> render.mjs falls back to renderDefault), while a `data:` that is
+  // present and unfetchable stays a VISIBLE error below -- that case really is a broken
+  // dashboard, and rendering empty cards would read as "the body is empty".
+  if (!src) return null;
   let data;
   try {
     const res = await fetch(src, { cache: 'no-store' });

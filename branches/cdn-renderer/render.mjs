@@ -265,6 +265,14 @@ class SomaArtifact extends HTMLElement {
     let html;
     try {
       html = await layout(parsed);
+      // A LAYOUT MAY DECLINE. Returning null/undefined means "this artifact is not mine" and
+      // falls back to the default rendering, instead of the layout having to emit an error box
+      // for a document it simply does not own. Added because `type:` is overloaded across
+      // systems -- `type: body` is a PRISM ledger here and a soma body DOCUMENT there, and 37
+      // corpus files of the second kind were getting a red error box from the first kind.
+      // Distinct from throwing, which still reports loudly: decline is "not mine", throw is
+      // "mine and broken".
+      if (html == null) html = await renderDefault(parsed);
     } catch (err) {
       this.innerHTML = `<div class="prism-error">
         <strong>Layout <code>${type}</code> failed</strong><br>
