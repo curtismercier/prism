@@ -206,6 +206,10 @@ export function deriveDashboardsFromRows(rows) {
  */
 export function renderShellHeader({ brand = {}, product = '', dashboards = [], current = '', source = '', meta = '' } = {}) {
   const inner = lockup(brand.name, brand.symbol);
+  // A sentinel, bundled with the header rather than left for the caller to place.
+  // `attachShellHeader` observes it to toggle `.is-scrolled` -- same technique
+  // `data-reg-sentinel` already proves for `.reg-sticky` (registry.mjs) -- so any
+  // layout that adopts this header gets scroll-aware chrome with zero extra markup.
   // BREADCRUMB (g.1). The PRODUCT name is the home link — that is the "cycle registry"
   // Curtis pointed at. The BRAND keeps its own `url` when the host supplies one, because
   // that link goes somewhere else entirely (the brand's site); when it does not, the
@@ -217,12 +221,30 @@ export function renderShellHeader({ brand = {}, product = '', dashboards = [], c
        ${crumb}`
     : crumb;
 
-  return `<div class="shell-topbar"${brandStyle(brand)}>
+  return `<div data-shell-sentinel aria-hidden="true"></div>
+  <div class="shell-topbar"${brandStyle(brand)}>
     <h2 class="shell-title">${brandHtml}</h2>
     <div class="shell-topmeta">
       ${buildDashboardMenu(dashboards, { current, source })}
       ${meta}
     </div>
+  </div>`;
+}
+
+/**
+ * S5 row 6 -- the z0 background layer. Fixed, viewport-covering, deliberately NOT
+ * emitted from inside `.shell-topbar` itself: two radial-gradient orbs (§4.1/§4.2 of
+ * the design-language report) that must sit BEHIND every layout's content regardless
+ * of where the header is mounted, so it is its own small export rather than baked
+ * into `renderShellHeader`'s markup. Callers place it once, as a sibling of their
+ * content root (see registry.mjs) -- adopting it twice just stacks two identical,
+ * fully-transparent divs, so it is harmless but pointless to call per-layout-instance.
+ * Pure CSS: no canvas, no JS, matches the "cheap floor" S5 §2 costs at zero runtime.
+ */
+export function renderShellBackground() {
+  return `<div class="shell-bg" aria-hidden="true">
+    <div class="shell-orb shell-orb-warm"></div>
+    <div class="shell-orb shell-orb-cool"></div>
   </div>`;
 }
 
@@ -243,6 +265,18 @@ export function renderShellHeader({ brand = {}, product = '', dashboards = [], c
 export function attachShellHeader(root, { onHome } = {}) {
   const bar = root.querySelector('.shell-topbar');
   if (!bar) return;
+  // S5 row 7: transparent at scrollTop 0, gains a floor once the sentinel above the
+  // bar scrolls out of view. Same IntersectionObserver shape `.reg-sticky` already
+  // proves (registry.mjs) -- CSS alone cannot style a sticky element differently
+  // once it pins, and a raw `scroll` listener would be the one already-rejected
+  // pattern in this codebase (see `.reg-sticky`'s own comment).
+  const sentinel = root.querySelector('[data-shell-sentinel]');
+  if (sentinel && 'IntersectionObserver' in window) {
+    new IntersectionObserver(
+      ([e]) => bar.classList.toggle('is-scrolled', !e.isIntersecting),
+      { threshold: 0 },
+    ).observe(sentinel);
+  }
   for (const a of bar.querySelectorAll('a[data-shell-home]')) {
     a.setAttribute('href', location.pathname + location.search);
   }

@@ -39,6 +39,14 @@
   --prism-text-14: 14px; --prism-text-16: 16px; --prism-text-20: 20px;
 
   --prism-r-sm: 6px; --prism-r-md: 12px; --prism-r-lg: 16px;
+
+  /* ── S8 chrome tokens — S5 §4.1/row 6/row 7. The host page (`_browser/index.html`)
+     overrides all three with its own dark values; these standalone defaults keep the
+     paper-cream page from breaking (an undefined var() degrades silently -- S7's MLR --
+     so a value that DEGRADES GRACEFULLY beats leaving the name unset). ── */
+  --prism-bg-deep: var(--prism-bg);         /* z0 canvas base behind the orbs */
+  --prism-accent-warm: var(--prism-accent); /* warm-tier orb -- standalone has no cool/warm split, so both orbs read one hue until a host overrides this */
+  --prism-header-h: 48px;                   /* sticky header height */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,6 +62,7 @@
     --prism-glow:         0 0 30px rgba(236,121,80,0.10);
     --prism-border:       #3a3a3a;
     --prism-border-soft:  #2a2a2a;
+    --prism-bg-deep:      #101010;   /* deeper than --prism-bg -- the orbs read against this, not body */
   }
 }
 
@@ -297,7 +306,12 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    wall-of-cycles defect the model exists to fix (Curtis, s01-bbca8a): sorting is
    a lens ON a structure, not a substitute for having one. Broken rows stay LOUD. */
 
-.reg { font: var(--prism-text-14)/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+/* S8 row 6: `.shell-bg` sits at z-index 0 (a POSITIONED sibling, since fixed+z:0 still
+   paints above normal-flow content per stacking rules -- z-index only orders POSITIONED
+   elements). `.reg` must be explicitly positioned too or its normal-flow content would
+   paint BEHIND the z:0 background, backwards from what "z0" means in the grammar. */
+.reg { font: var(--prism-text-14)/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  position: relative; z-index: 1; }
 .reg-counts { font-size: var(--prism-text-13); color: #667; }
 .reg-k { font-weight: 700; color: #223; font-variant-numeric: tabular-nums; }
 .reg-bad { color: #c0392b; }
@@ -392,6 +406,42 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-btn:hover { background: #eef; }
 .reg-chk { font-size: var(--prism-text-13); color: #556; display: flex; align-items: center; gap: var(--prism-sp-2); }
 .reg-shown { margin-left: auto; font-size: var(--prism-text-12); color: #778; font-variant-numeric: tabular-nums; }
+/* ── S8 row 8: filter rail ─────────────────────────────────────────────
+   FINDING: S5's gap table cites ":109,:128" for "200px sticky sidebar exists" -- those
+   lines are `.cycle-body`/`.toc`, the DOCUMENT table-of-contents (cycle.mjs), not
+   anything in the registry. The registry has no rail today; its filters are the
+   dropdown row in `.reg-controls`. This builds one, using `.toc`'s sticky-sidebar
+   shape as the template S5 was gesturing at, and wires clicks through the EXISTING
+   `data-reg-project` dropdown (`registry.mjs` `syncRail`/click handler) rather than a
+   second filter mechanism -- see that file's comment for why. */
+.reg-body {
+  display: grid; grid-template-columns: 240px 1fr; gap: var(--prism-sp-8); align-items: start;
+}
+.reg-rail {
+  position: sticky; top: calc(var(--prism-header-h) + var(--prism-sp-4)); align-self: start;
+  display: flex; flex-direction: column; gap: var(--prism-sp-1);
+  max-height: calc(100vh - var(--prism-header-h) - var(--prism-sp-8));
+  overflow-y: auto;
+}
+.reg-rail-head {
+  font-size: var(--prism-text-14); font-weight: 700; color: var(--prism-fg);
+  text-transform: uppercase; letter-spacing: .04em; padding: var(--prism-sp-3) var(--prism-sp-5);
+}
+.reg-rail-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--prism-sp-3);
+  min-height: 38px; padding: var(--prism-sp-4) var(--prism-sp-5); box-sizing: border-box;
+  font: inherit; font-size: var(--prism-text-14); text-align: left; color: inherit;
+  background: none; border: none; border-radius: var(--prism-r-sm); cursor: pointer;
+  transition: background-color var(--prism-hover), color var(--prism-hover);
+}
+.reg-rail-row:hover { background: var(--prism-accent-soft); }
+.reg-rail-row.is-active { background: var(--prism-accent-soft); color: var(--prism-accent); font-weight: 600; }
+.reg-rail-count { color: var(--prism-muted); font-variant-numeric: tabular-nums; font-size: var(--prism-text-12); }
+@media (max-width: 900px) {
+  .reg-body { grid-template-columns: 1fr; }
+  .reg-rail { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; }
+}
+
 .reg-legend { font-size: var(--prism-text-11); color: #99a; margin: 0 0 var(--prism-sp-5) var(--prism-sp-2); }
 .reg-legend em { opacity: .8; }
 
@@ -652,18 +702,69 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-sticky.is-stuck { box-shadow: 0 6px 16px -12px rgba(0,0,0,.9); }
 }
 
+/* ── S8 row 6: z0 background layer (shell-header.mjs renderShellBackground) ──────
+   Fixed + z-index:0 makes this a POSITIONED element, so it paints ABOVE static
+   in-flow content unless that content is ALSO given an explicit z-index -- see
+   `.reg`'s comment. Two radial-gradient divs only; S5 §2 calls this "pure CSS, zero
+   runtime cost" for the reference implementation, and the same is true here: no
+   canvas, no rAF, nothing for prefers-reduced-motion to disable (there is no motion). */
+.shell-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: var(--prism-bg-deep);
+}
+.shell-orb {
+  position: absolute; border-radius: 50%;
+}
+.shell-orb-warm {
+  width: 60vw; height: 60vw; top: -20vw; right: -15vw;
+  background: radial-gradient(circle, var(--prism-accent-warm) 0%, transparent 70%);
+  opacity: .05;
+}
+.shell-orb-cool {
+  width: 50vw; height: 50vw; bottom: -15vw; left: -15vw;
+  background: radial-gradient(circle, var(--prism-accent) 0%, transparent 70%);
+  opacity: .04;
+}
+
 /* ── SHARED shell header (shell-header.mjs) ────────────────────────────
    Not registry-private: any layout may import the module, so the classes are
    namespaced `shell-` rather than `reg-`. The narrative lives behind ⓘ help —
    documentation occupying the first screen of a dashboard gets scrolled past,
-   not read, and it pushed the actual data below the fold. */
+   not read, and it pushed the actual data below the fold.
+
+   S8 row 7: TRANSPARENT at scrollTop 0, gains a floor once `.is-scrolled` is set
+   (shell-header.mjs's IntersectionObserver on `[data-shell-sentinel]`). Reuses
+   `--prism-surface-2` for that floor rather than inventing a near-duplicate token --
+   it is already documented "CHROME ONLY (sticky bar, drawer)", which is exactly
+   this. z-index 20: above `.reg-sticky` (z5) and page content (z1/z2), below the
+   detail drawer (z40) -- the drawer must cover the header, never hide behind it. */
 .shell-topbar {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: var(--prism-sp-6); flex-wrap: wrap; margin-bottom: var(--prism-sp-5);
-  padding-bottom: var(--prism-sp-4); border-bottom: 1px solid var(--prism-border-soft);
+  position: sticky; top: 0; z-index: 20; height: var(--prism-header-h); box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--prism-sp-4); padding: 0 var(--prism-sp-6); margin: 0 0 var(--prism-sp-5);
+  background: transparent; border-bottom: 1px solid transparent;
+  transition: background var(--prism-hover), border-color var(--prism-hover), backdrop-filter var(--prism-hover);
+}
+.shell-topbar.is-scrolled {
+  background: var(--prism-surface-2);
+  backdrop-filter: blur(var(--prism-blur));
+  border-bottom-color: var(--prism-border-soft);
 }
 .shell-topbar .shell-title { margin: 0; font-size: var(--prism-text-20); letter-spacing: -0.01em; }
 .shell-topmeta { display: flex; align-items: center; gap: var(--prism-sp-4); }
+/* NVIDIA measured nav links at 14px (S5 §3) -- this dropdown's items are the only
+   always-navigable "nav" surface the header has (the breadcrumb is chrome, not a
+   nav list), so row 7's "nav 14px" lands here, overriding S7's row-2/3 mechanical
+   nearest-step map (13px) with the design-language row's explicit value. */
+.shell-nav-item { font-size: var(--prism-text-14); }
+/* The ⌘K hint. Points at the real search input in `.reg-controls` (registry.mjs) --
+   see that file's comment on why this markup lives there and not in this module. */
+.shell-search-hint {
+  font: inherit; font-size: var(--prism-text-12); cursor: pointer; color: var(--prism-muted);
+  background: none; border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm);
+  padding: var(--prism-sp-1) var(--prism-sp-3); font-variant-numeric: tabular-nums;
+}
+.shell-search-hint:hover { border-color: var(--prism-accent); color: var(--prism-accent); }
 
 /* The breadcrumb (g.1). Underlined only on hover: it must READ as chrome and
    BEHAVE as a link, because a header that looks like a link everywhere makes the
@@ -993,4 +1094,5 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 }
 @media (prefers-reduced-motion: reduce) {
   .reg-detail:not([hidden]) { animation: none; }
+  .shell-topbar { transition: none; }   /* S8 row 7: state still changes, just not animated */
 }
