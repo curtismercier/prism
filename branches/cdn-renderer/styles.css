@@ -9,7 +9,7 @@
   --prism-soft:         #aaa;
   --prism-accent:       #c9421e;    /* refraction-orange */
   --prism-accent-soft:  #f5dccf;
-  --prism-card:         #fff;
+  --prism-card:         var(--prism-surface);
   --prism-border:       #e2dfd8;
   --prism-border-soft:  #ecebe6;
   --prism-status-shipped:    #5a8c4e;
@@ -21,6 +21,24 @@
   --prism-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   --prism-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --prism-serif: "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", Georgia, serif;
+
+  /* ── S7 metric + chrome tokens — values from S5 §4.1. A host page's :root override
+     (loaded AFTER this sheet) wins; these defaults preserve the standalone look. ── */
+  --prism-surface: #fff;                        /* opaque card surface (--prism-card aliases this) */
+  --prism-surface-2: rgba(255,255,255,0.88);    /* translucent tier — CHROME ONLY (sticky bar, drawer) */
+  --prism-glow: 0 0 30px rgba(201,66,30,0.10);  /* focus/selection only */
+  --prism-blur: 12px;                           /* backdrop blur — chrome only, never cards */
+  --prism-hover: 0.15s ease;
+  --prism-spring: cubic-bezier(0.34,1.56,0.64,1);
+
+  --prism-sp-1: 2px;  --prism-sp-2: 4px;  --prism-sp-3: 6px;  --prism-sp-4: 8px;
+  --prism-sp-5: 12px; --prism-sp-6: 16px; --prism-sp-7: 24px; --prism-sp-8: 32px;
+  --prism-sp-9: 48px; --prism-sp-10: 64px;
+
+  --prism-text-10: 10px; --prism-text-11: 11px; --prism-text-12: 12px; --prism-text-13: 13px;
+  --prism-text-14: 14px; --prism-text-16: 16px; --prism-text-20: 20px;
+
+  --prism-r-sm: 6px; --prism-r-md: 12px; --prism-r-lg: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,7 +49,9 @@
     --prism-soft:         #6a6a6a;
     --prism-accent:       #ec7950;
     --prism-accent-soft:  #3a2620;
-    --prism-card:         #232323;
+    --prism-surface:      #232323;
+    --prism-surface-2:    rgba(35,35,35,0.88);
+    --prism-glow:         0 0 30px rgba(236,121,80,0.10);
     --prism-border:       #3a3a3a;
     --prism-border-soft:  #2a2a2a;
   }
@@ -41,36 +61,36 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 
 /* ── Loading + error states ─────────────────────────────────────────── */
 .prism-loading, .prism-error {
-  max-width: 720px; margin: 4rem auto; padding: 2rem; border-radius: 0.75rem;
+  max-width: 720px; margin: var(--prism-sp-10) auto; padding: var(--prism-sp-8); border-radius: var(--prism-r-md);
   background: var(--prism-card); border: 1px solid var(--prism-border);
-  color: var(--prism-muted); font-family: var(--prism-mono); font-size: 0.9rem;
+  color: var(--prism-muted); font-family: var(--prism-mono); font-size: var(--prism-text-14);
 }
 .prism-error { border-color: var(--prism-accent); }
 .prism-error strong { color: var(--prism-accent); }
-.prism-error small { display: block; margin-top: 0.5rem; }
+.prism-error small { display: block; margin-top: var(--prism-sp-4); }
 
 /* ── Article shell ──────────────────────────────────────────────────── */
 .prism {
-  max-width: 1080px; margin: 0 auto; padding: 2.5rem 2rem 6rem;
+  max-width: 1080px; margin: 0 auto; padding: var(--prism-sp-8) var(--prism-sp-8) var(--prism-sp-10);
 }
 
 /* ── Header ─────────────────────────────────────────────────────────── */
 .cycle-header {
   border-bottom: 1px solid var(--prism-border);
-  padding-bottom: 1.5rem; margin-bottom: 2rem;
+  padding-bottom: var(--prism-sp-7); margin-bottom: var(--prism-sp-8);
 }
 .cycle-title-row {
-  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  display: flex; align-items: baseline; gap: var(--prism-sp-6); flex-wrap: wrap;
 }
 .cycle-header h1 {
   margin: 0; font-family: var(--prism-serif); font-size: 2rem; font-weight: 500;
   letter-spacing: -0.02em; line-height: 1.15;
 }
-.cycle-no { color: var(--prism-soft); font-family: var(--prism-mono); font-size: 1.2rem; font-weight: 400; margin-left: 0.5rem; }
+.cycle-no { color: var(--prism-soft); font-family: var(--prism-mono); font-size: var(--prism-text-20); font-weight: 400; margin-left: var(--prism-sp-4); }
 .status {
-  font-family: var(--prism-mono); font-size: 0.7rem; font-weight: 600;
+  font-family: var(--prism-mono); font-size: var(--prism-text-11); font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase;
-  padding: 0.25rem 0.6rem; border-radius: 1rem;
+  padding: var(--prism-sp-2) var(--prism-sp-4); border-radius: var(--prism-r-lg);
   background: var(--prism-border-soft); color: var(--prism-muted);
   white-space: nowrap;
 }
@@ -81,32 +101,32 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .status-superseded, .status-archived { background: rgba(170,170,170,0.1); color: var(--prism-soft); }
 
 .meta-row, .refs-row {
-  margin-top: 0.75rem; font-family: var(--prism-mono); font-size: 0.78rem;
+  margin-top: var(--prism-sp-5); font-family: var(--prism-mono); font-size: var(--prism-text-12);
   color: var(--prism-muted); letter-spacing: 0.02em;
 }
-.meta-label { color: var(--prism-soft); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 0.25rem; }
-.meta-item code { background: var(--prism-border-soft); padding: 0.05rem 0.3rem; border-radius: 0.2rem; }
-.ref-label { color: var(--prism-soft); margin-right: 0.25rem; }
+.meta-label { color: var(--prism-soft); font-size: var(--prism-text-11); text-transform: uppercase; letter-spacing: 0.1em; margin-right: var(--prism-sp-2); }
+.meta-item code { background: var(--prism-border-soft); padding: 0.05rem var(--prism-sp-2); border-radius: var(--prism-r-sm); }
+.ref-label { color: var(--prism-soft); margin-right: var(--prism-sp-2); }
 .ref {
   display: inline-block; background: var(--prism-card); border: 1px solid var(--prism-border);
-  padding: 0.1rem 0.4rem; border-radius: 0.2rem; font-size: 0.72rem; margin: 0 0.15rem;
+  padding: var(--prism-sp-1) var(--prism-sp-3); border-radius: var(--prism-r-sm); font-size: var(--prism-text-12); margin: 0 var(--prism-sp-1);
 }
 
 .purpose {
-  margin-top: 1.25rem; padding: 1rem 1.25rem;
+  margin-top: var(--prism-sp-6); padding: var(--prism-sp-6) var(--prism-sp-6);
   background: var(--prism-card); border-left: 3px solid var(--prism-accent);
-  border-radius: 0 0.5rem 0.5rem 0;
+  border-radius: 0 var(--prism-r-sm) var(--prism-r-sm) 0;
 }
 .purpose-label {
-  font-family: var(--prism-mono); font-size: 0.65rem; letter-spacing: 0.15em;
-  text-transform: uppercase; color: var(--prism-accent); margin-bottom: 0.5rem;
+  font-family: var(--prism-mono); font-size: var(--prism-text-10); letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--prism-accent); margin-bottom: var(--prism-sp-4);
 }
-.purpose p { margin: 0; color: var(--prism-fg); font-size: 0.95rem; line-height: 1.55; }
-.purpose p + p { margin-top: 0.5rem; }
+.purpose p { margin: 0; color: var(--prism-fg); font-size: var(--prism-text-16); line-height: 1.55; }
+.purpose p + p { margin-top: var(--prism-sp-4); }
 
 /* ── Body layout: sidebar TOC + main ────────────────────────────────── */
 .cycle-body {
-  display: grid; grid-template-columns: 200px 1fr; gap: 2.5rem; align-items: start;
+  display: grid; grid-template-columns: 200px 1fr; gap: var(--prism-sp-8); align-items: start;
 }
 /* When the artifact has no TOC sidebar (type=decision, type=task, type=briefing,
    or any artifact the renderer emits without an <aside class="toc">), collapse to a
@@ -126,14 +146,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* ── TOC sidebar ────────────────────────────────────────────────────── */
 .toc {
   position: sticky; top: 1rem; align-self: start;
-  display: flex; flex-direction: column; gap: 0.1rem;
-  font-family: var(--prism-mono); font-size: 0.75rem;
+  display: flex; flex-direction: column; gap: var(--prism-sp-1);
+  font-family: var(--prism-mono); font-size: var(--prism-text-12);
   border-left: 1px solid var(--prism-border-soft);
-  padding-left: 1rem;
+  padding-left: var(--prism-sp-6);
 }
 .toc-item {
-  color: var(--prism-muted); text-decoration: none; padding: 0.2rem 0;
-  letter-spacing: 0.02em; transition: color 0.15s;
+  color: var(--prism-muted); text-decoration: none; padding: var(--prism-sp-2) 0;
+  letter-spacing: 0.02em; transition: color var(--prism-hover);
 }
 .toc-item:hover { color: var(--prism-accent); }
 
@@ -143,14 +163,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    one would hide which documents actually carry addressing. */
 .toc-derived { border-left-style: dashed; }
 .toc-note {
-  font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--prism-muted); opacity: 0.65; padding-bottom: 0.35rem; cursor: help;
+  font-size: var(--prism-text-10); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--prism-muted); opacity: 0.65; padding-bottom: var(--prism-sp-3); cursor: help;
 }
 .toc-derived .toc-item { opacity: 0.82; }
 
 /* ── Main column ────────────────────────────────────────────────────── */
 .cycle-main section {
-  margin: 0 0 2.5rem 0; scroll-margin-top: 1rem;
+  margin: 0 0 var(--prism-sp-8) 0; scroll-margin-top: var(--prism-sp-6);
 }
 .section-flash {
   animation: flash 1.2s ease-out;
@@ -160,10 +180,10 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   100% { background-color: transparent; }
 }
 .section-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--prism-sp-5);
 }
 .section-tag {
-  font-family: var(--prism-mono); font-size: 0.7rem;
+  font-family: var(--prism-mono); font-size: var(--prism-text-11);
   letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--prism-accent); font-weight: 600;
 }
@@ -171,26 +191,26 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* ── Markdown inside sections ───────────────────────────────────────── */
 .section-body h2, .section-body h3, .section-body h4 {
   font-family: var(--prism-serif); font-weight: 500;
-  letter-spacing: -0.01em; margin-top: 1.25rem; margin-bottom: 0.5rem;
+  letter-spacing: -0.01em; margin-top: var(--prism-sp-6); margin-bottom: var(--prism-sp-4);
 }
 .section-body h2 { font-size: 1.4rem; }
 .section-body h3 { font-size: 1.15rem; }
-.section-body h4 { font-size: 1rem; color: var(--prism-muted); }
-.section-body p { margin: 0.75rem 0; }
+.section-body h4 { font-size: var(--prism-text-16); color: var(--prism-muted); }
+.section-body p { margin: var(--prism-sp-5) 0; }
 .section-body p:first-child { margin-top: 0; }
-.section-body ul, .section-body ol { padding-left: 1.5rem; margin: 0.75rem 0; }
-.section-body li { margin: 0.25rem 0; }
+.section-body ul, .section-body ol { padding-left: var(--prism-sp-7); margin: var(--prism-sp-5) 0; }
+.section-body li { margin: var(--prism-sp-2) 0; }
 .section-body strong { font-weight: 600; }
 .section-body code {
   font-family: var(--prism-mono); font-size: 0.86em;
-  background: var(--prism-border-soft); padding: 0.05rem 0.35rem;
-  border-radius: 0.2rem;
+  background: var(--prism-border-soft); padding: 0.05rem var(--prism-sp-3);
+  border-radius: var(--prism-r-sm);
 }
 .section-body pre {
-  font-family: var(--prism-mono); font-size: 0.82rem;
+  font-family: var(--prism-mono); font-size: var(--prism-text-13);
   background: var(--prism-card); border: 1px solid var(--prism-border);
-  padding: 1rem; border-radius: 0.5rem; overflow-x: auto;
-  margin: 1rem 0; line-height: 1.5;
+  padding: var(--prism-sp-6); border-radius: var(--prism-r-sm); overflow-x: auto;
+  margin: var(--prism-sp-6) 0; line-height: 1.5;
 }
 .section-body pre code { background: none; padding: 0; }
 
@@ -205,7 +225,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    makes the first one someone writes come out right. */
 .section-body img {
   max-width: 100%; height: auto; display: block;      /* never push the pane like tables did */
-  margin: 1rem 0; border-radius: 0.5rem; border: 1px solid var(--prism-border-soft);
+  margin: var(--prism-sp-6) 0; border-radius: var(--prism-r-sm); border: 1px solid var(--prism-border-soft);
   background: var(--prism-card);                      /* transparent PNGs stay legible in dark */
 }
 .section-body a img { border-color: var(--prism-accent-soft); }
@@ -222,29 +242,29 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .section-body li:has(> input[type="checkbox"]:checked) { color: var(--prism-muted); }
 
 .section-body details {
-  margin: 1rem 0; padding: 0.5rem 0.85rem; border-radius: 0.5rem;
+  margin: var(--prism-sp-6) 0; padding: var(--prism-sp-4) var(--prism-sp-5); border-radius: var(--prism-r-sm);
   border: 1px solid var(--prism-border); background: var(--prism-card);
 }
 .section-body summary { cursor: pointer; font-weight: 600; }
-.section-body details[open] summary { margin-bottom: 0.6rem; }
+.section-body details[open] summary { margin-bottom: var(--prism-sp-4); }
 
 .section-body del { color: var(--prism-muted); text-decoration-color: var(--prism-accent); }
-.section-body hr { border: 0; border-top: 1px solid var(--prism-border); margin: 1.75rem 0; }
+.section-body hr { border: 0; border-top: 1px solid var(--prism-border); margin: var(--prism-sp-7) 0; }
 .section-body blockquote {
-  margin: 1rem 0; padding: 0.5rem 1rem;
+  margin: var(--prism-sp-6) 0; padding: var(--prism-sp-4) var(--prism-sp-6);
   border-left: 3px solid var(--prism-accent-soft);
   color: var(--prism-muted); font-style: italic;
 }
 .section-body table {
-  width: 100%; border-collapse: collapse; margin: 1rem 0;
-  font-size: 0.9rem;
+  width: 100%; border-collapse: collapse; margin: var(--prism-sp-6) 0;
+  font-size: var(--prism-text-14);
 }
 .section-body th, .section-body td {
-  text-align: left; padding: 0.55rem 0.75rem;
+  text-align: left; padding: var(--prism-sp-4) var(--prism-sp-5);
   border-bottom: 1px solid var(--prism-border-soft);
 }
 .section-body th {
-  font-family: var(--prism-mono); font-size: 0.75rem;
+  font-family: var(--prism-mono); font-size: var(--prism-text-12);
   letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--prism-muted); font-weight: 600;
   border-bottom: 2px solid var(--prism-border);
@@ -255,9 +275,9 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 
 /* ── Preamble + trailer ─────────────────────────────────────────────── */
 .preamble, .trailer {
-  margin-bottom: 2rem; padding: 0.75rem 1rem;
-  background: var(--prism-border-soft); border-radius: 0.5rem;
-  font-size: 0.95rem; color: var(--prism-muted);
+  margin-bottom: var(--prism-sp-8); padding: var(--prism-sp-5) var(--prism-sp-6);
+  background: var(--prism-border-soft); border-radius: var(--prism-r-sm);
+  font-size: var(--prism-text-16); color: var(--prism-muted);
 }
 .preamble blockquote, .trailer blockquote {
   border: none; padding: 0; margin: 0;
@@ -265,50 +285,51 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 
 /* ── Frontmatter dl (default layout) ────────────────────────────────── */
 .frontmatter-dl {
-  display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem;
-  margin-top: 1rem; font-family: var(--prism-mono); font-size: 0.78rem;
+  display: grid; grid-template-columns: max-content 1fr; gap: var(--prism-sp-3) var(--prism-sp-6);
+  margin-top: var(--prism-sp-6); font-family: var(--prism-mono); font-size: var(--prism-text-12);
 }
-.frontmatter-dl dt { color: var(--prism-soft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+.frontmatter-dl dt { color: var(--prism-soft); text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--prism-text-11); }
 .frontmatter-dl dd { margin: 0; color: var(--prism-fg); }
-.frontmatter-dl pre { margin: 0; padding: 0.4rem; background: var(--prism-border-soft); border-radius: 0.25rem; }
+.frontmatter-dl pre { margin: 0; padding: var(--prism-sp-3); background: var(--prism-border-soft); border-radius: var(--prism-r-sm); }
 
 /* ── layout: registry (project / arc / phase) ─────────────────────────────
    Hierarchy first. The flat sortable table this replaced reproduced the exact
    wall-of-cycles defect the model exists to fix (Curtis, s01-bbca8a): sorting is
    a lens ON a structure, not a substitute for having one. Broken rows stay LOUD. */
 
-.reg { font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
-.reg-counts { font-size: 13px; color: #667; }
+.reg { font: var(--prism-text-14)/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+.reg-counts { font-size: var(--prism-text-13); color: #667; }
 .reg-k { font-weight: 700; color: #223; font-variant-numeric: tabular-nums; }
 .reg-bad { color: #c0392b; }
-.reg-gen { margin-left: .75rem; opacity: .55; font-size: 12px; }
-.reg-pre { margin: .6rem 0 0; color: #445; }
+.reg-gen { margin-left: var(--prism-sp-5); opacity: .55; font-size: var(--prism-text-12); }
+.reg-pre { margin: var(--prism-sp-4) 0 0; color: #445; }
 
 /* ── Stat cards ── doubling as quick filters, so there is no separate filter chrome. */
 .reg-cards {
-  display: flex; gap: .5rem; flex-wrap: wrap; margin: 0 0 .75rem;
+  display: flex; gap: var(--prism-sp-4); flex-wrap: wrap; margin: 0 0 var(--prism-sp-5);
 }
 .reg-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
-  padding: .5rem .7rem; min-width: 5.5rem;
-  border: 1px solid var(--prism-border-soft); border-radius: 8px;
-  background: var(--prism-bg, #fff); cursor: pointer;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--prism-sp-1);
+  padding: var(--prism-sp-4) var(--prism-sp-5); min-width: 5.5rem;
+  border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm);
+  background: var(--prism-surface); cursor: pointer;   /* S7 row 5: opaque surface, one step off canvas */
   font-family: inherit; text-align: left;
-  transition: border-color .15s, background .15s, transform .05s;
+  transition: border-color var(--prism-hover), background var(--prism-hover), transform .05s;
 }
 .reg-card:hover { border-color: var(--prism-accent); }
 .reg-card:active { transform: translateY(1px); }
 .reg-card-static { cursor: default; opacity: .85; }
 .reg-card-static:hover { border-color: var(--prism-border-soft); }
-.reg-card-n { font-size: 1.15rem; font-weight: 600; line-height: 1.1; }
+.reg-card-n { font-size: var(--prism-text-20); font-weight: 600; line-height: 1.1; }
 .reg-card-l {
-  font-size: .65rem; letter-spacing: .04em; text-transform: uppercase;
+  font-size: var(--prism-text-10); letter-spacing: .04em; text-transform: uppercase;
   color: var(--prism-muted);
 }
 /* Active card is unmistakable: it IS the current filter, and a filter you cannot
    see is how a reader concludes the data is wrong. */
 .reg-card-on {
-  border-color: var(--prism-accent); box-shadow: inset 0 0 0 1px var(--prism-accent);
+  border-color: var(--prism-accent);
+  box-shadow: inset 0 0 0 1px var(--prism-accent), var(--prism-glow);   /* S7 row 5: selection glow */
 }
 .reg-card-warn .reg-card-n { color: #b45309; }
 .reg-card-bad  .reg-card-n { color: #b91c1c; }
@@ -324,7 +345,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-card-seeded .reg-card-n { color: #8a5a12; }   /* = .reg-b-seeded  fg */
 .reg-card-closed .reg-card-n { color: #1c6b34; }   /* = .reg-b-shipped fg */
 @media (prefers-color-scheme: dark) {
-  .reg-card { background: #16161d; }
+  .reg-card { background: var(--prism-surface); }
   /* Base first: the untoned cards (total, and any status with a 0 count) were
      inheriting black on #16161d and disappearing entirely. */
   .reg-card-n { color: #e6e6ef; }
@@ -338,65 +359,66 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* Group completion — closed / parseable. Distinct from the A/S/C chips: those are a
    census, this is a ratio. */
 .reg-stat-pct {
-  font-variant-numeric: tabular-nums; font-size: .7rem;
-  color: var(--prism-muted); margin-left: .35rem;
+  font-variant-numeric: tabular-nums; font-size: var(--prism-text-11);
+  color: var(--prism-muted); margin-left: var(--prism-sp-3);
 }
 
 /* Sticky owns the pin now, not .reg-controls — cards and filters must travel as ONE
    unit or the numbers scroll away from the controls that filter by them. */
 .reg-sticky {
   position: sticky; top: 0; z-index: 5;
-  background: #fbfbfd; padding-top: .5rem;
-  margin: .9rem 0 .4rem;
-  transition: box-shadow .15s;
+  background: var(--prism-surface-2); padding-top: var(--prism-sp-4);   /* S7 row 5: chrome tier */
+  margin: var(--prism-sp-6) 0 var(--prism-sp-3);
+  transition: box-shadow var(--prism-hover);
 }
 .reg-sticky.is-stuck {
   box-shadow: 0 6px 16px -12px rgba(0,0,0,.55);
   border-bottom: 1px solid var(--prism-border-soft);
+  backdrop-filter: blur(var(--prism-blur));   /* S7 row 5: blur is CHROME ONLY — here and the drawer */
 }
 /* Compact while pinned: a full-height card row that follows you down 500 rows is a
    banner, not a dashboard. Numbers stay legible; the chrome shrinks. */
-.reg-sticky.is-stuck .reg-cards { gap: .35rem; margin-bottom: .4rem; }
-.reg-sticky.is-stuck .reg-card { padding: .25rem .55rem; min-width: 0; flex-direction: row;
-  align-items: baseline; gap: .35rem; }
-.reg-sticky.is-stuck .reg-card-n { font-size: .85rem; }
-.reg-sticky.is-stuck .reg-card-l { font-size: .58rem; }
+.reg-sticky.is-stuck .reg-cards { gap: var(--prism-sp-3); margin-bottom: var(--prism-sp-3); }
+.reg-sticky.is-stuck .reg-card { padding: var(--prism-sp-2) var(--prism-sp-4); min-width: 0; flex-direction: row;
+  align-items: baseline; gap: var(--prism-sp-3); }
+.reg-sticky.is-stuck .reg-card-n { font-size: var(--prism-text-14); }
+.reg-sticky.is-stuck .reg-card-l { font-size: var(--prism-text-10); }
 
-.reg-controls { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
-  margin: 0 0 .4rem; padding: .6rem .7rem; background: #f4f5f8; border-radius: 8px; }
-.reg-input { flex: 1 1 15rem; padding: .4rem .6rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
-.reg-select, .reg-btn { padding: .4rem .5rem; border: 1px solid #ccd; border-radius: 6px; font: inherit; background: #fff; }
+.reg-controls { display: flex; gap: var(--prism-sp-4); align-items: center; flex-wrap: wrap;
+  margin: 0 0 var(--prism-sp-3); padding: var(--prism-sp-4) var(--prism-sp-5); background: #f4f5f8; border-radius: var(--prism-r-sm); }
+.reg-input { flex: 1 1 15rem; padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid #ccd; border-radius: var(--prism-r-sm); font: inherit; background: #fff; }
+.reg-select, .reg-btn { padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid #ccd; border-radius: var(--prism-r-sm); font: inherit; background: #fff; }
 .reg-btn { cursor: pointer; }
 .reg-btn:hover { background: #eef; }
-.reg-chk { font-size: 13px; color: #556; display: flex; align-items: center; gap: .3rem; }
-.reg-shown { margin-left: auto; font-size: 12px; color: #778; font-variant-numeric: tabular-nums; }
-.reg-legend { font-size: 11.5px; color: #99a; margin: 0 0 .8rem .2rem; }
+.reg-chk { font-size: var(--prism-text-13); color: #556; display: flex; align-items: center; gap: var(--prism-sp-2); }
+.reg-shown { margin-left: auto; font-size: var(--prism-text-12); color: #778; font-variant-numeric: tabular-nums; }
+.reg-legend { font-size: var(--prism-text-11); color: #99a; margin: 0 0 var(--prism-sp-5) var(--prism-sp-2); }
 .reg-legend em { opacity: .8; }
 
-.reg-proj { margin: 0 0 1.1rem; border-top: 2px solid #d7d7e4; }
-.reg-proj-head { display: flex; align-items: center; gap: .5rem; margin: 0; padding: .7rem .2rem;
-  font-size: 16px; font-weight: 800; color: #000; cursor: pointer; user-select: none;
+.reg-proj { margin: 0 0 var(--prism-sp-6); border-top: 2px solid #d7d7e4; }
+.reg-proj-head { display: flex; align-items: center; gap: var(--prism-sp-4); margin: 0; padding: var(--prism-sp-5) var(--prism-sp-2);
+  font-size: var(--prism-text-16); font-weight: 800; color: #000; cursor: pointer; user-select: none;
   letter-spacing: -.01em; }
 .reg-proj-head:hover, .reg-proj-head:focus-visible { background: #f2f4ff; outline: none; }
 .reg-proj-name { letter-spacing: .01em; }
-.reg-proj-n { font-weight: 500; font-size: 12px; color: #889; background: #eef0f6;
-  padding: .05rem .45rem; border-radius: 999px; font-variant-numeric: tabular-nums; }
-.reg-caret { width: .9em; display: inline-block; color: #89a; font-size: 11px; }
+.reg-proj-n { font-weight: 500; font-size: var(--prism-text-12); color: #889; background: #eef0f6;
+  padding: .05rem var(--prism-sp-4); border-radius: 999px; font-variant-numeric: tabular-nums; }
+.reg-caret { width: .9em; display: inline-block; color: #89a; font-size: var(--prism-text-11); }
 .reg-closed > .reg-proj-body, .reg-closed > .reg-arc-body { display: none; }
 
-.reg-arc { margin: 0 0 .15rem .9rem; }
-.reg-arc-head { display: flex; align-items: center; gap: .5rem; padding: .3rem .3rem;
-  cursor: pointer; user-select: none; border-radius: 5px; }
+.reg-arc { margin: 0 0 var(--prism-sp-1) var(--prism-sp-6); }
+.reg-arc-head { display: flex; align-items: center; gap: var(--prism-sp-4); padding: var(--prism-sp-2) var(--prism-sp-2);
+  cursor: pointer; user-select: none; border-radius: var(--prism-r-sm); }
 .reg-arc-head:hover, .reg-arc-head:focus-visible { background: #f4f6ff; outline: none; }
-.reg-arc-name { font-weight: 650; color: #1b2b3d; font-size: 13.5px; flex: 0 0 auto; }
-.reg-arc-n { font-size: 11.5px; color: #8a8fa0; }
+.reg-arc-name { font-weight: 650; color: #1b2b3d; font-size: var(--prism-text-14); flex: 0 0 auto; }
+.reg-arc-n { font-size: var(--prism-text-11); color: #8a8fa0; }
 .reg-noentry { opacity: .65; font-style: italic; }
-.reg-arc-body { margin-left: 1.3rem; border-left: 2px solid #dcdce9; padding-left: .85rem; }
-.reg-entrylink { font-size: 12px; color: #5a6; padding: .2rem .3rem; cursor: pointer; color: #4a6a8a; }
+.reg-arc-body { margin-left: var(--prism-sp-7); border-left: 2px solid #dcdce9; padding-left: var(--prism-sp-5); }
+.reg-entrylink { font-size: var(--prism-text-12); color: #5a6; padding: var(--prism-sp-2) var(--prism-sp-2); cursor: pointer; color: #4a6a8a; }
 .reg-entrylink:hover { background: #f0f6ff; }
 
-.reg-row { display: flex; align-items: baseline; gap: .9rem; padding: .3rem .35rem;
-  border-radius: 5px; cursor: pointer; }
+.reg-row { display: flex; align-items: baseline; gap: var(--prism-sp-6); padding: var(--prism-sp-2) var(--prism-sp-3);
+  border-radius: var(--prism-r-sm); cursor: pointer; }
 .reg-row:hover { background: #f6f8ff; }
 /* `.reg-row { display: flex }` above has the same specificity as the UA default
    `[hidden] { display: none }`, and author rules beat UA rules regardless of source
@@ -407,19 +429,19 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-row[hidden] { display: none; }
 .reg-row-phase .reg-nm { font-variant-numeric: tabular-nums; }
 .reg-name { flex: 1 1 auto; min-width: 0; }
-.reg-nm { font-weight: 400; color: #46506a; font-size: 12.5px; }
-.reg-title { color: #8a8fa0; font-size: 12px; margin-left: .4rem; }
-.reg-status-note { display: block; color: #6a6a8a; font-size: 11.5px; font-style: italic;
-  margin-top: .1rem; }
-.reg-meta { display: inline-flex; gap: 1.1rem; flex: 0 0 auto; padding-left: 1.1rem;
-  border-left: 1px solid #ececf4; margin-left: .6rem; }
-.reg-d, .reg-age { font-size: 11.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
+.reg-nm { font-weight: 400; color: #46506a; font-size: var(--prism-text-12); }
+.reg-title { color: #8a8fa0; font-size: var(--prism-text-12); margin-left: var(--prism-sp-3); }
+.reg-status-note { display: block; color: #6a6a8a; font-size: var(--prism-text-11); font-style: italic;
+  margin-top: var(--prism-sp-1); }
+.reg-meta { display: inline-flex; gap: var(--prism-sp-6); flex: 0 0 auto; padding-left: var(--prism-sp-6);
+  border-left: 1px solid #ececf4; margin-left: var(--prism-sp-4); }
+.reg-d, .reg-age { font-size: var(--prism-text-11); color: #8b8b9c; font-variant-numeric: tabular-nums;
   min-width: 5.6rem; text-align: right; letter-spacing: .01em; }
 .reg-age { min-width: 3rem; }
 .reg-drift { color: #b8860b; font-weight: 600; }
 
-.reg-pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
-  font-size: 11px; margin-right: .3rem; white-space: nowrap; background: #e8eaf0; color: #445; flex: 0 0 auto;
+.reg-pill { display: inline-block; padding: var(--prism-sp-1) var(--prism-sp-4); border-radius: 999px;
+  font-size: var(--prism-text-11); margin-right: var(--prism-sp-2); white-space: nowrap; background: #e8eaf0; color: #445; flex: 0 0 auto;
   max-width: 20rem; overflow: hidden; text-overflow: ellipsis; }
 .reg-b-active  { background: #e3f0ff; color: #14508c; }
 .reg-b-seeded  { background: #fff4e0; color: #8a5a12; }
@@ -427,9 +449,9 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-b-broken  { background: #ffe3e3; color: #a11; }
 
 .reg-row-broken { background: #fff6f6; }
-.reg-badge-broken { display: inline-block; padding: .05rem .4rem; border-radius: 4px;
-  background: #c0392b; color: #fff; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; }
-.reg-err { display: block; color: #a11; font-size: 11.5px; font-family: ui-monospace, monospace; }
+.reg-badge-broken { display: inline-block; padding: .05rem var(--prism-sp-3); border-radius: var(--prism-r-sm);
+  background: #c0392b; color: #fff; font-size: var(--prism-text-10); font-weight: 700; letter-spacing: .04em; }
+.reg-err { display: block; color: #a11; font-size: var(--prism-text-11); font-family: ui-monospace, monospace; }
 
 /* ── The artifact preview pane (registry-detail.mjs) ──────────────────────
    RELOCATED, not rebuilt. It used to be an inline block BELOW the list, reached
@@ -447,13 +469,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
      property is the whole mechanism: registry-detail.mjs writes it on drag and
      restores it from localStorage on load. The min() stays as the default only. */
   width: var(--reg-detail-w, min(760px, 52vw)); display: flex; flex-direction: column;
-  background: var(--prism-bg); border-left: 3px solid var(--prism-accent);
+  background: var(--prism-surface-2); border-left: 3px solid var(--prism-accent);   /* S7 row 5 */
+  backdrop-filter: blur(var(--prism-blur));   /* translucency is earned here: it overlays content */
   box-shadow: -18px 0 40px -30px rgba(0,0,0,.75);
-  padding: .75rem 1rem 1rem;
+  padding: var(--prism-sp-5) var(--prism-sp-6) var(--prism-sp-6);
 }
 .reg-detail[hidden] { display: none; }
-.reg-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem;
-  padding-bottom: .5rem; border-bottom: 1px solid var(--prism-border-soft); }
+.reg-detail-bar { display: flex; align-items: center; gap: var(--prism-sp-6); margin-bottom: var(--prism-sp-5);
+  padding-bottom: var(--prism-sp-4); border-bottom: 1px solid var(--prism-border-soft); }
 /* The pane scrolls ITSELF. Scrolling the page instead is what put the reader
    somewhere they did not ask to be. */
 /* padding-right, not a symmetric padding: the 15px scrollbar lives INSIDE this box,
@@ -463,9 +486,9 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    `scrollbar-gutter: stable` reserves the track even when the pane does not scroll,
    so switching artifacts cannot shift the text sideways mid-read. */
 .reg-detail-body { overflow: auto; flex: 1; overscroll-behavior: contain;
-  padding-right: 1rem; scrollbar-gutter: stable; }
-.reg-close { margin-left: auto; padding: .25rem .6rem; border: 1px solid #ccd;
-  background: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: #556; }
+  padding-right: var(--prism-sp-6); scrollbar-gutter: stable; }
+.reg-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid #ccd;
+  background: #fff; border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: #556; }
 
 /* Narrow screens have no room beside the list, so the panel becomes a bottom
    sheet -- still out of flow, still leaves the list where it was. */
@@ -546,8 +569,8 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
      surface -- you open it to land on a section. It collapses to a summary so it
      costs one line, not a screen. */
   .cycle-body > .toc { order: -1; position: static; max-height: 40vh; overflow: auto;
-    margin: 0 0 1rem; padding: .5rem .75rem;
-    border: 1px solid var(--prism-border-soft); border-radius: 8px; }
+    margin: 0 0 var(--prism-sp-6); padding: var(--prism-sp-4) var(--prism-sp-5);
+    border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm); }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -579,10 +602,10 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    numbers form a scannable rail. Vision review after adding these: "still scannable
    but denser -- demote the secondary info". Weight added to a header has to be taken
    back off somewhere, or every element shouts equally. */
-.reg-stats { display: inline-flex; gap: .28rem; align-items: center; margin-left: auto;
+.reg-stats { display: inline-flex; gap: var(--prism-sp-2); align-items: center; margin-left: auto;
   flex: 0 0 auto; opacity: .82; }
 .reg-proj-head:hover .reg-stats, .reg-arc-head:hover .reg-stats { opacity: 1; }
-.reg-stat { font-size: 10px; font-weight: 600; padding: .04rem .3rem; border-radius: 3px;
+.reg-stat { font-size: var(--prism-text-10); font-weight: 600; padding: .04rem var(--prism-sp-2); border-radius: var(--prism-r-sm);
   font-variant-numeric: tabular-nums; letter-spacing: .02em; min-width: 1.6rem; text-align: center; }
 /* Stat chips MUST use the same palette as the status pills they summarise --
    a chip and a pill describing the same status in different colours makes the
@@ -595,10 +618,10 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-stat-C { background: #e3f7e8; color: #1c6b34; }   /* = .reg-b-shipped */
 .reg-stat-O { background: #e8eaf0; color: #445; }      /* = .reg-pill base */
 .reg-stat-x { background: #ffe3e3; color: #a11; }      /* = .reg-b-broken  */
-.reg-stat-added { font-size: 10.5px; color: #8b8b9c; font-variant-numeric: tabular-nums;
-  padding-left: .25rem; }
-.reg-stat-fresh { font-size: 10.5px; color: #5f8a5f; font-variant-numeric: tabular-nums;
-  background: #eef6ee; padding: .05rem .3rem; border-radius: 4px; }
+.reg-stat-added { font-size: var(--prism-text-10); color: #8b8b9c; font-variant-numeric: tabular-nums;
+  padding-left: var(--prism-sp-2); }
+.reg-stat-fresh { font-size: var(--prism-text-10); color: #5f8a5f; font-variant-numeric: tabular-nums;
+  background: #eef6ee; padding: .05rem var(--prism-sp-2); border-radius: var(--prism-r-sm); }
 
 @media (prefers-color-scheme: dark) {
   .reg-stat-A { background: #16304d; color: #8ec2ff; }   /* = .reg-b-active  */
@@ -619,13 +642,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* Empty state — names the active filters instead of just saying zero. */
 .reg-empty { color: #b45309; }
 .reg-clearbtn {
-  font: inherit; font-size: .7rem; cursor: pointer;
-  background: none; border: 1px solid currentColor; border-radius: 4px;
-  padding: .05rem .4rem; color: inherit;
+  font: inherit; font-size: var(--prism-text-11); cursor: pointer;
+  background: none; border: 1px solid currentColor; border-radius: var(--prism-r-sm);
+  padding: .05rem var(--prism-sp-3); color: inherit;
 }
 @media (prefers-color-scheme: dark) {
   .reg-empty { color: #fbbf24; }
-  .reg-sticky { background: #0f0f14; }
+  .reg-sticky { background: var(--prism-surface-2); }
   .reg-sticky.is-stuck { box-shadow: 0 6px 16px -12px rgba(0,0,0,.9); }
 }
 
@@ -636,11 +659,11 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    not read, and it pushed the actual data below the fold. */
 .shell-topbar {
   display: flex; align-items: baseline; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem;
-  padding-bottom: .5rem; border-bottom: 1px solid var(--prism-border-soft);
+  gap: var(--prism-sp-6); flex-wrap: wrap; margin-bottom: var(--prism-sp-5);
+  padding-bottom: var(--prism-sp-4); border-bottom: 1px solid var(--prism-border-soft);
 }
-.shell-topbar .shell-title { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
-.shell-topmeta { display: flex; align-items: center; gap: .6rem; }
+.shell-topbar .shell-title { margin: 0; font-size: var(--prism-text-20); letter-spacing: -0.01em; }
+.shell-topmeta { display: flex; align-items: center; gap: var(--prism-sp-4); }
 
 /* The breadcrumb (g.1). Underlined only on hover: it must READ as chrome and
    BEHAVE as a link, because a header that looks like a link everywhere makes the
@@ -653,8 +676,8 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .shell-menu { position: relative; }
 .shell-menu-btn {
   list-style: none; cursor: pointer; user-select: none;
-  font-size: .72rem; color: var(--prism-muted);
-  padding: .18rem .5rem; border: 1px solid var(--prism-border); border-radius: 6px;
+  font-size: var(--prism-text-12); color: var(--prism-muted);
+  padding: var(--prism-sp-1) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm);
 }
 .shell-menu-btn::-webkit-details-marker { display: none; }
 .shell-menu[open] .shell-menu-btn { border-color: var(--prism-accent); color: var(--prism-accent); }
@@ -662,11 +685,11 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   position: absolute; right: 0; top: calc(100% + .3rem); z-index: 30;
   display: flex; flex-direction: column; min-width: 15rem;
   background: var(--prism-card); border: 1px solid var(--prism-border);
-  border-radius: 8px; padding: .3rem; box-shadow: 0 10px 28px -18px rgba(0,0,0,.6);
+  border-radius: var(--prism-r-sm); padding: var(--prism-sp-2); box-shadow: 0 10px 28px -18px rgba(0,0,0,.6);
 }
 .shell-nav-item {
-  display: flex; align-items: baseline; gap: .4rem; justify-content: space-between;
-  padding: .32rem .5rem; border-radius: 5px; font-size: .8rem;
+  display: flex; align-items: baseline; gap: var(--prism-sp-3); justify-content: space-between;
+  padding: var(--prism-sp-3) var(--prism-sp-4); border-radius: var(--prism-r-sm); font-size: var(--prism-text-13);
   color: var(--prism-fg); text-decoration: none;
 }
 a.shell-nav-item:hover { background: var(--prism-accent-soft); }
@@ -676,20 +699,20 @@ a.shell-nav-item:hover { background: var(--prism-accent-soft); }
    unused is self-reinforcing (never shown → never used → never shown). */
 .shell-nav-item.is-empty { opacity: .62; }
 .shell-nav-empty {
-  font-size: .62rem; letter-spacing: .04em; text-transform: uppercase;
+  font-size: var(--prism-text-10); letter-spacing: .04em; text-transform: uppercase;
   color: var(--prism-muted); border: 1px solid var(--prism-border-soft);
-  border-radius: 4px; padding: 0 .3rem;
+  border-radius: var(--prism-r-sm); padding: 0 var(--prism-sp-2);
 }
 .reg-gen {
-  font-family: var(--prism-mono); font-size: .68rem; color: var(--prism-muted);
+  font-family: var(--prism-mono); font-size: var(--prism-text-11); color: var(--prism-muted);
   cursor: help;
 }
-.reg-info { font-size: .72rem; }
+.reg-info { font-size: var(--prism-text-12); }
 .reg-info-on { border-color: var(--prism-accent); color: var(--prism-accent); }
 .reg-pre {
-  margin: 0 0 1rem; padding: .85rem 1rem;
+  margin: 0 0 var(--prism-sp-6); padding: var(--prism-sp-5) var(--prism-sp-6);
   border: 1px solid var(--prism-border-soft); border-left: 3px solid var(--prism-accent);
-  border-radius: 6px; font-size: .82rem; line-height: 1.55;
+  border-radius: var(--prism-r-sm); font-size: var(--prism-text-13); line-height: 1.55;
 }
 .reg-pre p:first-child { margin-top: 0; }
 .reg-pre p:last-child { margin-bottom: 0; }
@@ -702,7 +725,7 @@ a.shell-nav-item:hover { background: var(--prism-accent-soft); }
    BRAND ∕ PRODUCT. The brand is adjustable (emitter reads .env); the product
    names what this dashboard is. Weighted so the brand leads and the product
    reads as its subtitle on the same line. */
-.shell-brand { display: inline-flex; align-items: baseline; gap: .3rem; text-decoration: none; color: inherit; }
+.shell-brand { display: inline-flex; align-items: baseline; gap: var(--prism-sp-2); text-decoration: none; color: inherit; }
 /* The signature swap. The sigma inherits font-family, weight and size from the
    surrounding name -- only colour and glow differ, so the wordmark reads as ONE
    word with a coloured letter, not as a glyph glued to text.
@@ -716,7 +739,7 @@ a.shell-nav-item:hover { background: var(--prism-accent-soft); }
    subtitle. */
 .shell-brand-name { font-weight: 650; letter-spacing: -0.01em; color: var(--prism-fg); }
 a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
-.shell-brand-sep { color: var(--prism-border-soft); margin: 0 .15rem; font-weight: 300; }
+.shell-brand-sep { color: var(--prism-border-soft); margin: 0 var(--prism-sp-1); font-weight: 300; }
 .shell-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
 
 /* Dark-surface brand value. MUST come after the base .shell-brand-sigma rule: equal
@@ -734,22 +757,22 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 /* ── registry: FLAT table mode (registry-flat.mjs) ─────────────────────────── */
 .reg-viewtog { display: inline-flex; }
 .reg-viewtog .reg-btn { border-radius: 0; }
-.reg-viewtog .reg-btn:first-child { border-radius: 6px 0 0 6px; }
-.reg-viewtog .reg-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.reg-viewtog .reg-btn:first-child { border-radius: var(--prism-r-sm) 0 0 var(--prism-r-sm); }
+.reg-viewtog .reg-btn:last-child { border-radius: 0 var(--prism-r-sm) var(--prism-r-sm) 0; border-left: none; }
 .reg-btn.reg-vt-on { background: #eef; font-weight: 600; }
 
-.reg-ftable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.reg-ftable th { text-align: left; padding: .35rem .5rem; cursor: pointer; user-select: none;
-  font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #8b8b9c;
+.reg-ftable { width: 100%; border-collapse: collapse; font-size: var(--prism-text-12); }
+.reg-ftable th { text-align: left; padding: var(--prism-sp-3) var(--prism-sp-4); cursor: pointer; user-select: none;
+  font-size: var(--prism-text-11); text-transform: uppercase; letter-spacing: .04em; color: #8b8b9c;
   border-bottom: 1px solid #ccd; white-space: nowrap; }
 .reg-ftable th:hover { color: #46506a; }
 .reg-ftable th.reg-fsorted { color: #2b3a67; }
 .reg-frow { cursor: pointer; }
 .reg-frow:hover { background: #f6f8ff; }
-.reg-frow td { padding: .3rem .5rem; border-bottom: 1px solid #eef0f6; vertical-align: baseline; }
-.reg-fd, .reg-fage { font-variant-numeric: tabular-nums; color: #8b8b9c; font-size: 11.5px; white-space: nowrap; }
+.reg-frow td { padding: var(--prism-sp-2) var(--prism-sp-4); border-bottom: 1px solid #eef0f6; vertical-align: baseline; }
+.reg-fd, .reg-fage { font-variant-numeric: tabular-nums; color: #8b8b9c; font-size: var(--prism-text-11); white-space: nowrap; }
 .reg-fage { text-align: right; }
-.reg-farc, .reg-fproj { color: #6a7086; font-size: 12px; }
+.reg-farc, .reg-fproj { color: #6a7086; font-size: var(--prism-text-12); }
 
 @media (prefers-color-scheme: dark) {
   .reg-btn.reg-vt-on { background: #26262f; }
@@ -765,10 +788,10 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    Chips open in a NEW WINDOW (target=_blank) rather than the detail pane, because
    a rendered map/dashboard is already a page — projecting a page through PRISM's
    artifact renderer would double-render it. Added s01-2b577f (Curtis). */
-.reg-arts { display: inline-flex; flex-wrap: wrap; gap: .3rem; margin-left: .5rem;
+.reg-arts { display: inline-flex; flex-wrap: wrap; gap: var(--prism-sp-2); margin-left: var(--prism-sp-4);
   vertical-align: middle; }
-.reg-art { display: inline-block; padding: .05rem .45rem; border-radius: 5px;
-  font-size: 11px; line-height: 1.6; text-decoration: none; white-space: nowrap;
+.reg-art { display: inline-block; padding: .05rem var(--prism-sp-4); border-radius: var(--prism-r-sm);
+  font-size: var(--prism-text-11); line-height: 1.6; text-decoration: none; white-space: nowrap;
   border: 1px solid #dcdce4; background: #f4f4f8; color: #55596a; }
 .reg-art:hover { background: #e9e9f2; border-color: #b9b9c8; color: #23252f; }
 .reg-art-view { border-color: #b6d8f5; background: #eaf4fd; color: #1c5a8a; font-weight: 600; }
@@ -795,19 +818,19 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    with a kind tag and its parent, so "am I reading the cycle or a document beside it"
    is never inferred from the content. Subtle on purpose -- it disambiguates, it does not
    announce. */
-.reg-detail-kind { display: inline-block; padding: .05rem .4rem; margin-right: .1rem;
-  border: 1px solid #dcdce4; border-radius: 5px; background: #f4f4f8;
-  font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+.reg-detail-kind { display: inline-block; padding: .05rem var(--prism-sp-3); margin-right: var(--prism-sp-1);
+  border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); background: #f4f4f8;
+  font-size: var(--prism-text-10); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
   color: #7a7f90; vertical-align: 2px; }
-.reg-detail-of { font-size: 12px; font-weight: 400; color: #8a8fa0; }
+.reg-detail-of { font-size: var(--prism-text-12); font-weight: 400; color: #8a8fa0; }
 @media (prefers-color-scheme: dark) {
   .reg-detail-kind { border-color: #33343f; background: #1c1c24; color: #8a8f9e; }
   .reg-detail-of { color: #6f7484; }
 }
 
 /* arc count beside a project's cycle count (s01-2b577f) */
-.reg-proj-arcs { font-size: 11px; color: #8a8fa0; margin-left: .45rem;
-  padding: .05rem .4rem; border: 1px solid #dcdce4; border-radius: 5px; }
+.reg-proj-arcs { font-size: var(--prism-text-11); color: #8a8fa0; margin-left: var(--prism-sp-4);
+  padding: .05rem var(--prism-sp-3); border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); }
 @media (prefers-color-scheme: dark) {
   .reg-proj-arcs { color: #7a7a88; border-color: #33343f; }
 }
@@ -818,25 +841,25 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    [hidden] rule regardless of specificity, so the attribute gets set correctly
    and the browser's own hiding never fires. That exact bug shipped in the cycle
    registry and made "1 shown" display 100+ rows. Do not remove it. */
-.bd-wrap { font-size: 13px; }
-.bd-head h1 { margin: 0 0 .1rem; font-size: 20px; }
-.bd-sub { margin: 0 0 1rem; font-size: 11px; color: #8a8fa0; }
-.bd-h2 { display: flex; align-items: center; gap: .6rem; font-size: 13px;
-  margin: 1.6rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid #e6e6ee; }
+.bd-wrap { font-size: var(--prism-text-13); }
+.bd-head h1 { margin: 0 0 var(--prism-sp-1); font-size: var(--prism-text-20); }
+.bd-sub { margin: 0 0 var(--prism-sp-6); font-size: var(--prism-text-11); color: #8a8fa0; }
+.bd-h2 { display: flex; align-items: center; gap: var(--prism-sp-4); font-size: var(--prism-text-13);
+  margin: var(--prism-sp-7) 0 var(--prism-sp-4); padding-bottom: var(--prism-sp-2); border-bottom: 1px solid #e6e6ee; }
 .bd-h2 span { font-weight: 400; color: #8a8fa0; }
-.bd-filter { margin-left: auto; font: inherit; font-size: 12px; padding: .2rem .5rem;
-  border: 1px solid #dcdce4; border-radius: 6px; background: #fff; }
-.bd-shown { font-size: 11px; color: #8a8fa0; }
+.bd-filter { margin-left: auto; font: inherit; font-size: var(--prism-text-12); padding: var(--prism-sp-2) var(--prism-sp-4);
+  border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); background: #fff; }
+.bd-shown { font-size: var(--prism-text-11); color: #8a8fa0; }
 
 /* three populations — the distinction a file listing cannot show */
 .bd-pops { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: .6rem; margin: .8rem 0 1.2rem; }
-.bd-pop { padding: .55rem .7rem; border: 1px solid #dcdce4; border-radius: 8px;
+  gap: var(--prism-sp-4); margin: var(--prism-sp-5) 0 var(--prism-sp-6); }
+.bd-pop { padding: var(--prism-sp-4) var(--prism-sp-5); border: 1px solid #dcdce4; border-radius: var(--prism-r-sm);
   background: #fafafd; }
-.bd-pop b { display: block; font-size: 21px; line-height: 1.1; }
-.bd-pop span { font-size: 11px; font-weight: 600; letter-spacing: .03em;
+.bd-pop b { display: block; font-size: var(--prism-text-20); line-height: 1.1; }
+.bd-pop span { font-size: var(--prism-text-11); font-weight: 600; letter-spacing: .03em;
   text-transform: uppercase; color: #55596a; }
-.bd-pop em { display: block; margin-top: .2rem; font-size: 10.5px; font-style: normal;
+.bd-pop em { display: block; margin-top: var(--prism-sp-2); font-size: var(--prism-text-10); font-style: normal;
   color: #8a8fa0; }
 .bd-pop-res { border-color: #b6d8f5; background: #eaf4fd; }
 .bd-pop-res b { color: #1c5a8a; }
@@ -845,60 +868,60 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 .bd-pop-tot b { color: #23252f; }
 
 /* the ladder — order is cache order; never sortable */
-.bd-ladder { border: 1px solid #e6e6ee; border-radius: 8px; overflow: hidden; }
+.bd-ladder { border: 1px solid #e6e6ee; border-radius: var(--prism-r-sm); overflow: hidden; }
 .bd-ladder-head, .bd-slot { display: grid;
   grid-template-columns: 190px minmax(140px, 1fr) 56px minmax(200px, 1.4fr);
-  gap: .6rem; align-items: center; padding: .3rem .6rem; }
-.bd-ladder-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
+  gap: var(--prism-sp-4); align-items: center; padding: var(--prism-sp-2) var(--prism-sp-4); }
+.bd-ladder-head { font-size: var(--prism-text-10); text-transform: uppercase; letter-spacing: .04em;
   color: #8a8fa0; background: #f7f7fb; border-bottom: 1px solid #e6e6ee; }
 .bd-slot { border-bottom: 1px solid #f2f2f7; }
 .bd-slot:last-of-type { border-bottom: 0; }
-.bd-slot code { font-size: 12px; }
-.bd-line { color: #b0b4c0; font-size: 10.5px; margin-left: .2rem; }
-.bd-h-src { font-size: 11px; color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+.bd-slot code { font-size: var(--prism-text-12); }
+.bd-line { color: #b0b4c0; font-size: var(--prism-text-10); margin-left: var(--prism-sp-2); }
+.bd-h-src { font-size: var(--prism-text-11); color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; }
-.bd-h-n { font-size: 11px; color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
-.bd-h-bar { display: flex; align-items: center; gap: .45rem; }
-.bd-bar { flex: 1; height: 7px; border-radius: 4px; background: #eeeef4; overflow: hidden; }
+.bd-h-n { font-size: var(--prism-text-11); color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-h-bar { display: flex; align-items: center; gap: var(--prism-sp-4); }
+.bd-bar { flex: 1; height: 7px; border-radius: var(--prism-r-sm); background: #eeeef4; overflow: hidden; }
 .bd-bar i { display: block; height: 100%; background: #9aa0b4; }
 .bd-hot  .bd-bar i { background: #e06a5a; }
 .bd-warm .bd-bar i { background: #e0a34a; }
 .bd-cool .bd-bar i { background: #6aa8d8; }
-.bd-pct { font-size: 11px; width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
-.bd-abs { font-size: 10px; color: #a0a4b0; width: 52px; text-align: right;
+.bd-pct { font-size: var(--prism-text-11); width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-abs { font-size: var(--prism-text-10); color: #a0a4b0; width: 52px; text-align: right;
   font-variant-numeric: tabular-nums; }
-.bd-mode { display: inline-block; margin-right: .35rem; padding: 0 .3rem; border-radius: 4px;
-  font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.bd-mode { display: inline-block; margin-right: var(--prism-sp-3); padding: 0 var(--prism-sp-2); border-radius: var(--prism-r-sm);
+  font-size: var(--prism-text-10); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
 .bd-mode-full    { background: #eaf4fd; color: #1c5a8a; }
 .bd-mode-lazy    { background: #fdf7ea; color: #8a6a1c; }
 .bd-mode-runtime { background: #f0f0f5; color: #7a7f90; }
-.bd-ladder-foot { padding: .5rem .6rem; font-size: 10.5px; color: #8a8fa0;
+.bd-ladder-foot { padding: var(--prism-sp-4) var(--prism-sp-4); font-size: var(--prism-text-10); color: #8a8fa0;
   background: #fafafd; border-top: 1px solid #e6e6ee; }
 
 /* file table */
-.bd-table { border: 1px solid #e6e6ee; border-radius: 8px; overflow: hidden; }
+.bd-table { border: 1px solid #e6e6ee; border-radius: var(--prism-r-sm); overflow: hidden; }
 .bd-row { display: grid;
   grid-template-columns: 240px minmax(200px, 2fr) 56px 56px 110px;
-  gap: .6rem; align-items: baseline; padding: .3rem .6rem; cursor: pointer;
+  gap: var(--prism-sp-4); align-items: baseline; padding: var(--prism-sp-2) var(--prism-sp-4); cursor: pointer;
   border-bottom: 1px solid #f2f2f7; }
 .bd-row[hidden] { display: none; }            /* ← load-bearing. See header. */
 .bd-row:hover { background: #f7f9fc; }
-.bd-thead { cursor: default; background: #f7f7fb; font-size: 10.5px;
+.bd-thead { cursor: default; background: #f7f7fb; font-size: var(--prism-text-10);
   text-transform: uppercase; letter-spacing: .04em; color: #8a8fa0; }
 .bd-thead:hover { background: #f7f7fb; }
 .bd-thead [data-sort] { cursor: pointer; }
 .bd-thead [data-sort]:hover { color: #23252f; text-decoration: underline dotted 1px; }
-.bd-c-name code { font-size: 12px; }
-.bd-c-desc { font-size: 11px; color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+.bd-c-name code { font-size: var(--prism-text-12); }
+.bd-c-desc { font-size: var(--prism-text-11); color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; }
-.bd-c-n { font-size: 11px; color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
-.bd-c-when { font-size: 10.5px; color: #8a8fa0; font-variant-numeric: tabular-nums; }
+.bd-c-n { font-size: var(--prism-text-11); color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-c-when { font-size: var(--prism-text-10); color: #8a8fa0; font-variant-numeric: tabular-nums; }
 .bd-row.bd-pop-res { box-shadow: inset 3px 0 0 #6aa8d8; }
 .bd-row.bd-pop-sum { box-shadow: inset 3px 0 0 #e0a34a; }
 .bd-broken { background: #fff2f0; box-shadow: inset 3px 0 0 #e0503a !important; }
-.bd-err { grid-column: 1 / -1; font-size: 11px; color: #b0301a; font-weight: 600; }
-.bd-tag { display: inline-block; margin-left: .3rem; padding: 0 .3rem; border-radius: 4px;
-  font-size: 9.5px; font-weight: 600; letter-spacing: .02em; vertical-align: 1px; }
+.bd-err { grid-column: 1 / -1; font-size: var(--prism-text-11); color: #b0301a; font-weight: 600; }
+.bd-tag { display: inline-block; margin-left: var(--prism-sp-2); padding: 0 var(--prism-sp-2); border-radius: var(--prism-r-sm);
+  font-size: var(--prism-text-10); font-weight: 600; letter-spacing: .02em; vertical-align: 1px; }
 .bd-tag-slot  { background: #eaf4fd; color: #1c5a8a; }
 .bd-tag-lazy  { background: #fdf7ea; color: #8a6a1c; }
 .bd-tag-nofm  { background: #f3eaf7; color: #6a3a8a; }
@@ -908,12 +931,12 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    (docked, position:fixed) -- the old inline-block margin/border/padding here would
    fight the docked panel's own spacing. `.bd-detail` stays as a query-selector hook only
    (body.mjs:211), it owns no visual styling anymore. */
-.bd-detail-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
-.bd-detail-kind { display: inline-block; padding: .05rem .4rem; border: 1px solid #dcdce4;
-  border-radius: 5px; background: #f4f4f8; font-size: 10px; font-weight: 600;
+.bd-detail-bar { display: flex; align-items: center; gap: var(--prism-sp-6); margin-bottom: var(--prism-sp-5); }
+.bd-detail-kind { display: inline-block; padding: .05rem var(--prism-sp-3); border: 1px solid #dcdce4;
+  border-radius: var(--prism-r-sm); background: #f4f4f8; font-size: var(--prism-text-10); font-weight: 600;
   letter-spacing: .04em; text-transform: uppercase; color: #7a7f90; vertical-align: 2px; }
-.bd-close { margin-left: auto; padding: .25rem .6rem; border: 1px solid #ccd; background: #fff;
-  border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: #556; }
+.bd-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid #ccd; background: #fff;
+  border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: #556; }
 
 @media (prefers-color-scheme: dark) {
   .bd-sub, .bd-h2 span, .bd-shown, .bd-pop em, .bd-ladder-foot, .bd-abs { color: #7a7a88; }
@@ -941,4 +964,33 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
   .bd-broken { background: #2a1512; }
   .bd-detail { border-top-color: #333; }
   .bd-close { background: #1a1a22; border-color: #333; color: #bbc; }
+}
+
+/* ── S7 row 11: motion ─────────────────────────────────────────────────
+   Every interactive surface transitions at the hover token; the drawer gets the
+   spring on OPEN only (an animation, not a width transition — the drag-resize
+   writes --reg-detail-w live, and a width transition would rubber-band the drag). */
+.reg-btn, .reg-row, .reg-frow, .reg-proj-head, .reg-arc-head, .reg-entrylink,
+.reg-art, .reg-close, .reg-clearbtn, .reg-info, .reg-resize, .reg-stats,
+.shell-menu-btn, .shell-crumb, .shell-nav-item,
+.bd-row, .bd-filter, .bd-close,
+.section-body a, .toc-item {
+  transition: background-color var(--prism-hover), border-color var(--prism-hover),
+              color var(--prism-hover), opacity var(--prism-hover);
+}
+
+.reg-detail:not([hidden]) { animation: prism-drawer-in 0.3s var(--prism-spring); }
+@keyframes prism-drawer-in {
+  from { transform: translateX(24px); opacity: 0.4; }
+  to   { transform: none; opacity: 1; }
+}
+@media (max-width: 800px) {
+  .reg-detail:not([hidden]) { animation-name: prism-drawer-in-up; }  /* bottom sheet enters upward */
+}
+@keyframes prism-drawer-in-up {
+  from { transform: translateY(24px); opacity: 0.4; }
+  to   { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reg-detail:not([hidden]) { animation: none; }
 }
