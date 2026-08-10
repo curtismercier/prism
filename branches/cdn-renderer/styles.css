@@ -491,7 +491,12 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-controls { display: flex; gap: var(--prism-sp-4); align-items: center; flex-wrap: wrap;
   margin: 0 0 var(--prism-sp-3); padding: var(--prism-sp-4) var(--prism-sp-5); background: var(--prism-surface-sunken); border-radius: var(--prism-r-sm); }
 .reg-input { flex: 1 1 15rem; padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); font: inherit; background: var(--prism-surface-input); }
-.reg-select, .reg-btn { padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); font: inherit; background: var(--prism-surface-input); }
+/* `color` is NOT optional here even though `font: inherit` is set: `font` does not carry colour,
+   so a <button>/<select> falls back to the UA's `buttontext` system colour -- near-black. On a dark
+   surface that measured 1.13:1, i.e. invisible, on "ⓘ help", "grouped" and "flat".
+   It survived a 27-element contrast pass because that pass used a hand-picked selector list and
+   `.reg-btn` was not on it. Any rule that sets `background` on a form control must set `color`. */
+.reg-select, .reg-btn { padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); font: inherit; color: var(--prism-fg); background: var(--prism-surface-input); }
 .reg-btn { cursor: pointer; }
 .reg-btn:hover { background: var(--prism-surface-hover); }
 .reg-chk { font-size: var(--prism-text-13); color: var(--prism-muted); display: flex; align-items: center; gap: var(--prism-sp-2); }

@@ -48,8 +48,15 @@
 
   /* ── text ── */
   --prism-fg:           #e4eaf4;
-  --prism-muted:        #9dafc4;
-  --prism-soft:         #7b8798;   /* S10 G5: was #647080 = 3.81:1 on this canvas. It carries the
+  --prism-muted:        #9dafc4;   /* 8.55:1 on bg · 8.07 on surface */
+  /* 🔑 `soft` is the SMALL-TEXT colour — legends, dates, ages, counts, mostly 10–12px. Measure it
+     against the SURFACE, not the page: it is 0.3–0.4 tighter on cards, and cards are where it is
+     mostly read. At #7b8798 it was 5.26 on bg but only **4.97 on surface** — inside the AA floor's
+     rounding, for the smallest type in the product.
+     Raised to 6.55 on bg / 6.18 on surface. NOT to 7.0 (AAA): that needs #949dab, which closes the
+     gap to `muted` from 2.00 to 1.55 and starts flattening the emphasis ladder soft < muted < fg.
+     Legibility and hierarchy are the counter-axes here; 6.5 is where both hold. */
+  --prism-soft:         #8d98a6;   /* S10 G5: was #647080 = 3.81:1 on this canvas. It carries the
                                       row dates, the arc counts, the legend and the "N shown" --
                                       the tier a reader consults, not the tier they ignore.
                                       5.20:1 now. */
@@ -95,6 +102,18 @@
 
   /* the brand mark follows the SURFACE, not the reader's OS */
   --prism-brand:        var(--prism-brand-dark, var(--prism-accent));
+
+  /* ── type faces ──
+     Declared HERE, not just in styles.css, because a theme that cannot change the typeface is not a
+     theme — it is a palette. styles.css keeps identical defaults so a page that links no theme
+     still renders; these override them at equal specificity by loading later.
+     ⚠ There is NO `@font-face` in this project: every stack below is system fonts, so the dashboard
+     renders in a different typeface on every machine and the metrics S5 measured are not what a
+     reader necessarily sees. Self-hosting one was RULED (gap-table row 10) and never built — it
+     needs a licensed file committed, which is a decision, not an oversight. */
+  --prism-sans:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --prism-mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --prism-serif: "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", Georgia, serif;
 
   /* ── chrome + motion ── */
   --prism-header-h:48px;
