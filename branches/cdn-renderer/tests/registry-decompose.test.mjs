@@ -200,7 +200,19 @@ if (!existsSync(DATA)) {
     { encoding: 'utf8' }).trim();
   const scratch = join(tmpdir(), `prism-old-registry-${base.slice(0, 7)}`);
   mkdirSync(scratch, { recursive: true });
-  for (const f of ['registry.mjs', 'registry-flat.mjs']) {
+  // ENUMERATE, never list. This was `['registry.mjs', 'registry-flat.mjs']` hardcoded. When the
+  // renderer was decomposed further, `registry-tree.mjs` was added to the imports and NOT to this
+  // list, so the old module could not resolve its own import and the differential died with
+  // ERR_MODULE_NOT_FOUND -- a CRASH, not a failure, which is why it read as noise and went
+  // unnoticed. The guard that protects the tree markup has therefore been dead for exactly as
+  // long as the tree markup has been worth guarding. A list of files that must match an import
+  // graph is a second copy of that graph; ask git for the real one.
+  const layoutFiles = execFileSync(
+    'git', ['-C', REPO, 'ls-tree', '--name-only', `${base}:branches/cdn-renderer/layouts`],
+    { encoding: 'utf8' },
+  ).split('\n').filter((f) => f.endsWith('.mjs'));
+  assert.ok(layoutFiles.length >= 2, `expected layout modules at ${base}, got ${layoutFiles.length}`);
+  for (const f of layoutFiles) {
     writeFileSync(join(scratch, f),
       execFileSync('git', ['-C', REPO, 'show', `${base}:branches/cdn-renderer/layouts/${f}`]));
   }
