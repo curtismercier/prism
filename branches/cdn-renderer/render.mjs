@@ -73,6 +73,87 @@ const LAYOUTS = {
   // future: decision, task, briefing, methodology, spec...
 };
 
+// ── THE LAYOUT MANIFEST — how a dashboard DROPS IN ────────────────────────────────────
+//
+// The map above is a LIST edited by hand in TWO places (here and the `Promise.all` import
+// block) every time a surface is added. `shell-header.mjs` already solved this one level up
+// for the dashboard MENU -- `loadDashboards()` resolves inline -> `dashboards.json` ->
+// derived-from-tags -> none, and a passing test states the property outright: "a row
+// self-declares by TAG and joins the menu -- zero edits to shell-header.mjs".
+//
+// So a dashboard could ADVERTISE itself with zero edits but could not RENDER itself without
+// them. This closes that half, with the same four-tier shape and the same discipline that an
+// absent manifest is a normal state, not an error.
+//
+// ⚠ A browser cannot enumerate a directory -- there is no readdir over HTTP, and zero-build is
+//   load-bearing here. The SERVER can enumerate; the CLIENT reads what it emits. The manifest
+//   is that seam (see 005-plugin-packaging).
+//
+// PRECEDENCE: built-ins WIN unless an entry sets `"override": true`. Deliberate -- a typo in a
+// dropped-in manifest must not be able to shadow a shipped, working layout by accident. Opting
+// in is one word; debugging a silent shadow is not.
+//
+//   layouts.json, beside the ARTIFACT (not the page):
+//     { "layouts": [
+//         { "type": "timeline", "module": "./layouts/timeline.mjs" },
+//         { "type": "registry", "module": "./my-registry.mjs", "override": true }
+//     ] }
+//
+// A module supplies `render` and optionally `attach`; the entry may rename them via
+// `"render"`/`"attach"`. Resolution is RELATIVE TO THE MANIFEST, and the manifest is found
+// relative to the SOURCE -- the same lesson `srcUrl` below already records, because the .md
+// and the page including it are routinely in different directories.
+const MANIFESTS = new Map();   // manifest URL -> { type -> entry }
+const LAYOUT_MODULES = new Map(); // module URL -> resolved layout
+
+async function loadLayoutManifest(srcUrl) {
+  const url = new URL('layouts.json', srcUrl).href;
+  if (MANIFESTS.has(url)) return MANIFESTS.get(url);
+  const map = {};
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) {
+      const m = await res.json();
+      for (const e of (Array.isArray(m) ? m : m.layouts || [])) {
+        if (e && e.type && e.module) map[e.type] = { ...e, base: url };
+      }
+    }
+  } catch { /* no manifest is a normal state, not an error */ }
+  MANIFESTS.set(url, map);
+  return map;
+}
+
+/**
+ * type -> layout entry, or null to fall through to renderDefault.
+ * NEVER throws: a broken manifest entry degrades to the default layout with a console
+ * warning. A dropped-in dashboard that 404s must not take the page down with it.
+ */
+async function resolveLayout(type, srcUrl) {
+  const declared = (await loadLayoutManifest(srcUrl))[type];
+  if (!declared || (LAYOUTS[type] && !declared.override)) return LAYOUTS[type] || null;
+
+  // `+ V` forwards this renderer's own `?v=` to the child import. Without it a dropped-in
+  // layout is cached past its own edits -- the exact failure this file's header documents.
+  const modUrl = new URL(declared.module, declared.base).href + V;
+  if (LAYOUT_MODULES.has(modUrl)) return LAYOUT_MODULES.get(modUrl);
+
+  let entry = null;
+  try {
+    const mod = await import(modUrl);
+    const render = mod[declared.render || 'render'];
+    if (typeof render !== 'function') {
+      throw new Error(`no '${declared.render || 'render'}' export`);
+    }
+    const attach = mod[declared.attach || 'attach'];
+    entry = typeof attach === 'function' ? { render, attach } : render;
+  } catch (err) {
+    console.warn(`[prism] layout '${type}' from ${modUrl} failed to load: ${err.message}`);
+    entry = LAYOUTS[type] || null;   // fall back to the built-in if the override is broken
+  }
+  LAYOUT_MODULES.set(modUrl, entry);
+  return entry;
+}
+
 class SomaArtifact extends HTMLElement {
   static get observedAttributes() { return ['src']; }
 
@@ -173,7 +254,7 @@ class SomaArtifact extends HTMLElement {
 
     // Dispatch by type
     const type = parsed.frontmatter?.type || 'unknown';
-    const entry = LAYOUTS[type] || renderDefault;
+    const entry = (await resolveLayout(type, parsed.srcUrl)) || renderDefault;
     const layout = typeof entry === 'function' ? entry : entry.render;
     const attach = typeof entry === 'function' ? null : entry.attach;
 
