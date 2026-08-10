@@ -1,0 +1,76 @@
+/* PRISM theme — somaverse palette · nvidia density. Dark by default.
+ *
+ * A THEME IS A FILE, NOT A PAGE. This block used to live in a <style> tag inside
+ * `meetsoma/.soma/cycles/_browser/index.html`, which meant: to restyle the dashboard you
+ * edited HTML, and every new host page copy-pasted 35 lines that then drifted apart.
+ * The host page's own comment already stated the rule it was breaking —
+ * "THERE IS NO CONTENT IN THIS FILE. That is the design."
+ *
+ * USE IT:
+ *   <link rel="stylesheet" href="/personal/prism/branches/cdn-renderer/styles.css?v=N">
+ *   <link rel="stylesheet" href="/personal/prism/branches/cdn-renderer/themes/somaverse-dark.css?v=N">
+ *
+ * ⚠ ORDER IS LOad-BEARING. These are plain `:root` custom properties at equal specificity,
+ *   so LATER SOURCE WINS — the theme must be linked AFTER styles.css or it does nothing,
+ *   silently, with no error. That is also why this file overrides rather than edits: the
+ *   renderer's own defaults stay intact, so a standalone page with no theme still renders.
+ *
+ * WRITE A NEW THEME: copy this file, change values, link yours instead. Never edit
+ * styles.css to restyle — that changes the default for every consumer, not just yours.
+ *
+ * ⚠ KNOWN GAP, not this file's fault: styles.css still carries ~220 hard-coded hex values,
+ *   205 of them inside its own `@media (prefers-color-scheme: dark)` block. Those do NOT
+ *   read these tokens, so a theme cannot fully retint the dashboard yet — most visibly in
+ *   `reg-*`/`bd-*` under a light-OS browser. Flagged by S7, S8 and S9 in turn; it is colour-role
+ *   work, tracked in prism-universal-registry/p1-family-consolidation.
+ */
+
+:root {
+  /* ── surface ── */
+  --prism-bg:           #0C0F16;
+  --prism-bg-deep:      #0a0c12;
+  --prism-surface:      #12161f;
+  --prism-surface-2:    rgba(20,25,34,0.65);   /* translucent tier — chrome only (header/drawer) */
+  --prism-card:         var(--prism-surface);
+
+  /* ── line ── */
+  --prism-border:       rgba(124,178,212,0.15);
+  --prism-border-hover: rgba(124,178,212,0.30);
+  --prism-border-soft:  rgba(255,255,255,0.08);
+
+  /* ── accent ── */
+  --prism-accent:       #7cb2d4;
+  --prism-accent-warm:  #ec7950;
+  --prism-accent-soft:  rgba(236,121,80,0.12);
+
+  /* ── text ── */
+  --prism-fg:           #e4eaf4;
+  --prism-muted:        #9dafc4;
+  --prism-soft:         #647080;
+
+  /* ── spacing scale (nvidia density) ── */
+  --prism-sp-1:2px;  --prism-sp-2:4px;  --prism-sp-3:6px;  --prism-sp-4:8px;
+  --prism-sp-5:12px; --prism-sp-6:16px; --prism-sp-7:24px; --prism-sp-8:32px;
+  --prism-sp-9:48px; --prism-sp-10:64px;
+
+  /* ── type scale. 7 steps, and that is the point: it caps at 20px, so RELATIONAL
+     typography (a h1/h2/h3 ramp) must NOT be mapped onto it — nearest-step collapses
+     32/22.4/18.4 all to 20 and destroys the hierarchy. Chrome only. ── */
+  --prism-text-10:10px; --prism-text-11:11px; --prism-text-12:12px;
+  --prism-text-13:13px; --prism-text-14:14px; --prism-text-16:16px; --prism-text-20:20px;
+
+  /* ── radius ── */
+  --prism-r-sm:6px; --prism-r-md:12px; --prism-r-lg:16px;
+
+  /* ── chrome + motion ── */
+  --prism-header-h:48px;
+  --prism-blur:12px;
+  --prism-glow:0 0 30px rgba(124,178,212,0.10);
+  --prism-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --prism-hover:0.15s ease;
+}
+
+/* The two page-level declarations the host page also carried. Kept with the theme because
+   they are theme decisions (what colour is the page, how big is base text), not layout. */
+html, body { background: var(--prism-bg); color: var(--prism-fg); margin: 0; }
+body { font-size: var(--prism-text-13); }
