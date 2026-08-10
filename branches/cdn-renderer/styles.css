@@ -462,7 +462,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-legend em { opacity: .8; }
 
 .reg-proj { margin: 0 0 var(--prism-sp-6); border-top: 2px solid #d7d7e4; }
-.reg-proj-head { display: flex; align-items: center; gap: var(--prism-sp-4); margin: 0; padding: var(--prism-sp-5) var(--prism-sp-2);
+/* `flex-wrap` here is the whole narrow-viewport fix (S9 residue: group-header stat chips overflow
+   below 900px). `.reg-stats` is `flex: 0 0 auto` and cannot shrink, so without a wrap on THIS row
+   it forces the page wider than the viewport -- measured 198px of overflow at 390px.
+   Deliberately NOT also wrapping `.reg-stats` or making `.reg-meta` shrinkable: both were tried,
+   and with this rule in place each proved to change nothing (overflow stayed 0 with them reverted).
+   Same fix shape row 9 used on `.reg-row-footer`: too much FIXED content wants reflow. */
+.reg-proj-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--prism-sp-4); margin: 0; padding: var(--prism-sp-5) var(--prism-sp-2);
   font-size: var(--prism-text-16); font-weight: 800; color: #000; cursor: pointer; user-select: none;
   letter-spacing: -.01em; }
 .reg-proj-head:hover, .reg-proj-head:focus-visible { background: #f2f4ff; outline: none; }
@@ -473,7 +479,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-closed > .reg-proj-body, .reg-closed > .reg-arc-body { display: none; }
 
 .reg-arc { margin: 0 0 var(--prism-sp-1) var(--prism-sp-6); }
-.reg-arc-head { display: flex; align-items: center; gap: var(--prism-sp-4); padding: var(--prism-sp-2) var(--prism-sp-2);
+.reg-arc-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--prism-sp-4); padding: var(--prism-sp-2) var(--prism-sp-2);
   cursor: pointer; user-select: none; border-radius: var(--prism-r-sm); }
 .reg-arc-head:hover, .reg-arc-head:focus-visible { background: #f4f6ff; outline: none; }
 .reg-arc-name { font-weight: 650; color: #1b2b3d; font-size: var(--prism-text-14); flex: 0 0 auto; }
