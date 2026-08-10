@@ -18,11 +18,14 @@
  * WRITE A NEW THEME: copy this file, change values, link yours instead. Never edit
  * styles.css to restyle — that changes the default for every consumer, not just yours.
  *
- * ⚠ KNOWN GAP, not this file's fault: styles.css still carries ~220 hard-coded hex values,
- *   205 of them inside its own `@media (prefers-color-scheme: dark)` block. Those do NOT
- *   read these tokens, so a theme cannot fully retint the dashboard yet — most visibly in
- *   `reg-*`/`bd-*` under a light-OS browser. Flagged by S7, S8 and S9 in turn; it is colour-role
- *   work, tracked in prism-universal-registry/p1-family-consolidation.
+ * ✅ CLOSED by S10 (was: "styles.css still carries ~220 hard-coded hex values"). Measured at
+ *   the time: 283 raw literals, 169 in the base cascade and 114 across TWELVE component-level
+ *   dark blocks — the note above had the ratio backwards. All 283 now name a role; the twelve
+ *   blocks are gone; one `:root` dark block remains. This file can retint the dashboard.
+ *
+ * ⚠ SO: a theme is now responsible for the ROLES below, not just the six base tokens. Omit
+ *   `--prism-tone-*` and the dashboard falls back to styles.css's LIGHT defaults on a
+ *   light-OS browser — the exact failure S10 fixed, reintroduced by an incomplete theme.
  */
 
 :root {
@@ -61,6 +64,34 @@
 
   /* ── radius ── */
   --prism-r-sm:6px; --prism-r-md:12px; --prism-r-lg:16px;
+
+  /* ── colour ROLES (S10) — the dashboard's own vocabulary. `reg-*` / `bd-*` read these. ── */
+  --prism-fg-strong:    #ffffff;
+  --prism-on-solid:     #ffffff;
+  --prism-surface-sunken: #0f131b;              /* a well below --prism-surface */
+  --prism-surface-hover:  #1a202c;
+  --prism-surface-input:  #0f131b;
+  --prism-border-strong:  rgba(124,178,212,0.25);
+  --prism-shadow:         rgba(0,0,0,0.75);
+  --prism-shadow-strong:  rgba(0,0,0,0.90);
+
+  /* status tones — bg / fg / border, tuned to the somaverse canvas rather than the
+     renderer's neutral dark. Each pair is used by the pill, the stat chip, the stat card,
+     the tag and the population card at once. */
+  --prism-tone-info-bg:     #12283d;  --prism-tone-info-fg:    #8ec2ff;  --prism-tone-info-border:  #2b5170;
+  --prism-tone-warn-bg:     #33280f;  --prism-tone-warn-fg:    #e8bd6b;  --prism-tone-warn-border:  #6a5424;
+  --prism-tone-ok-bg:       #10301c;  --prism-tone-ok-fg:      #7ddb9c;
+  --prism-tone-danger-bg:   #351414;  --prism-tone-danger-fg:  #ff9b9b;
+  --prism-tone-danger-solid:#c0392b;
+  --prism-tone-neutral-bg:  #1c222d;  --prism-tone-neutral-fg: #b6c2d2;
+  --prism-tone-special-bg:  #241a33;  --prism-tone-special-fg: #c9a6f0;
+  --prism-tone-caution-fg:  #fbbf24;
+
+  /* data encodings — the heat scale keeps its saturated hues; only the track is themed */
+  --prism-heat-track:   #1c222d;
+
+  /* the brand mark follows the SURFACE, not the reader's OS */
+  --prism-brand:        var(--prism-brand-dark, var(--prism-accent));
 
   /* ── chrome + motion ── */
   --prism-header-h:48px;

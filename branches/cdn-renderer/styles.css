@@ -6,7 +6,10 @@
   --prism-bg:           #fbfaf7;
   --prism-fg:           #1c1c1c;
   --prism-muted:        #6a6a6a;
-  --prism-soft:         #aaa;
+  --prism-soft:         #6b7280;   /* S10: was #aaa = 2.32:1 on the page -- below AA for the
+                                      row meta, dates and legends that are its main use.
+                                      4.83:1 now. "De-emphasised" is a rank, not a licence
+                                      to be unreadable. */
   --prism-accent:       #c9421e;    /* refraction-orange */
   --prism-accent-soft:  #f5dccf;
   --prism-card:         var(--prism-surface);
@@ -47,14 +50,80 @@
   --prism-bg-deep: var(--prism-bg);         /* z0 canvas base behind the orbs */
   --prism-accent-warm: var(--prism-accent); /* warm-tier orb -- standalone has no cool/warm split, so both orbs read one hue until a host overrides this */
   --prism-header-h: 48px;                   /* sticky header height */
+
+  /* ── S10 colour ROLES ───────────────────────────────────────────────────────────
+     Every colour in this sheet now names a JOB. Before S10, 283 raw literals sat in
+     component declarations -- 169 in the base cascade, 114 restated inside twelve
+     separate `@media (prefers-color-scheme: dark)` blocks. A declaration that bakes a
+     hex cannot be retinted by anything, so `themes/*.css` could set every token
+     correctly and still not change the dashboard. These 29 names are what the literals
+     were actually saying.
+
+     THE CONTRACT: a component NEVER writes a colour. It names a role. Light values live
+     here; the dark block below reassigns the SAME names; a theme file overrides them
+     again by source order. That is the whole mechanism, and it is why the twelve
+     component-level dark blocks are gone rather than converted.
+
+     RELATIONS ARE NOT ROLES. A hover tint, a broken-row wash and a status pill's
+     translucent backing are all DERIVED from a role (`color-mix`), never given a token
+     of their own -- the same rhythm/relation split S7 drew for spacing. A token for
+     every hover state is how 29 names become 60 and the vocabulary stops being one. ── */
+
+  /* text tiers */
+  --prism-fg-strong: #0b0b12;      /* group headings -- the only thing above body text */
+  --prism-on-solid:  #ffffff;      /* text ON a saturated solid (the broken badge) */
+
+  /* surface tiers -- see also --prism-surface / -2 / -card above */
+  --prism-surface-sunken: #f4f5f8;  /* a well: control bar, table head, ladder foot, pop card */
+  --prism-surface-hover:  #f2f4ff;  /* any row/header/button hover */
+  --prism-surface-input:  #ffffff;  /* a field you can type in or press */
+
+  /* line tiers -- see also --prism-border / -soft above */
+  --prism-border-strong: #d7d7e4;  /* a structural rule (the 2px project divider) */
+  --prism-border-hover:  #b9b9c8;
+
+  /* depth */
+  --prism-shadow:        rgba(0,0,0,.55);
+  --prism-shadow-strong: rgba(0,0,0,.75);   /* the drawer, which overlays content */
+
+  /* ── status TONES. Each is a bg/fg pair (a border where a chip has one), and each is
+     used by every surface that reports that status -- pill, stat chip, stat card, tag,
+     population card. Before S10 those five surfaces carried five hand-matched copies of
+     the same colour with comments asserting they matched; two of them did not. ── */
+  --prism-tone-info-bg:     #e3f0ff;  --prism-tone-info-fg:    #14508c;  --prism-tone-info-border:  #b6d8f5;
+  --prism-tone-warn-bg:     #fff4e0;  --prism-tone-warn-fg:    #8a5a12;  --prism-tone-warn-border:  #f0d9a8;
+  --prism-tone-ok-bg:       #e3f7e8;  --prism-tone-ok-fg:      #1c6b34;
+  --prism-tone-danger-bg:   #ffe3e3;  --prism-tone-danger-fg:  #a11111;
+  --prism-tone-danger-solid:#c0392b;  /* loud on purpose: the BROKEN badge, white on red */
+  --prism-tone-neutral-bg:  #e8eaf0;  --prism-tone-neutral-fg: #444455;
+  --prism-tone-special-bg:  #f3e8ff;  --prism-tone-special-fg: #6b3fa0;
+  --prism-tone-caution-fg:  #b45309;  /* text-only tone: a warning count, an empty state */
+
+  /* ── data ENCODINGS, not UI roles. A heat bar's colour is the datum -- it does not
+     mean "danger", it means hot. It gets tokens so a theme can retint the scale, but it
+     is deliberately NOT folded into the status tones, and it deliberately has no dark
+     variant: a saturated data colour reads on both surfaces and must stay comparable
+     across them or the chart changes meaning with the OS setting. ── */
+  --prism-heat-hot:  #e06a5a;
+  --prism-heat-warm: #e0a34a;
+  --prism-heat-cool: #6aa8d8;
+  --prism-heat-bar:  #9aa0b4;   /* an untyped bar */
+  --prism-heat-track:#eeeef4;
+
+  --prism-brand: var(--prism-brand-light, var(--prism-accent));
 }
 
+/* ── The ENTIRE dark cascade. One block, one job: reassign the role names.
+   S10 deleted twelve component-level `@media (prefers-color-scheme: dark)` blocks by
+   making their declarations read tokens; what those 114 literals were really saying is
+   written out here, once, where a theme file can override it. If you are adding a
+   colour and reaching for a second dark block -- don't. Add a role. ── */
 @media (prefers-color-scheme: dark) {
   :root {
     --prism-bg:           #1a1a1a;
     --prism-fg:           #ecebe6;
     --prism-muted:        #a6a6a6;
-    --prism-soft:         #6a6a6a;
+    --prism-soft:         #7a7a88;
     --prism-accent:       #ec7950;
     --prism-accent-soft:  #3a2620;
     --prism-surface:      #232323;
@@ -63,6 +132,28 @@
     --prism-border:       #3a3a3a;
     --prism-border-soft:  #2a2a2a;
     --prism-bg-deep:      #101010;   /* deeper than --prism-bg -- the orbs read against this, not body */
+
+    --prism-fg-strong:    #ffffff;
+    --prism-surface-sunken: #16161d;
+    --prism-surface-hover:  #1e1e28;
+    --prism-surface-input:  #14141b;
+    --prism-border-strong:  #33333f;
+    --prism-border-hover:   #4a4b59;
+    --prism-shadow:         rgba(0,0,0,.9);
+    --prism-shadow-strong:  rgba(0,0,0,.95);
+
+    --prism-tone-info-bg:     #16304d;  --prism-tone-info-fg:    #8ec2ff;  --prism-tone-info-border:  #2b5170;
+    --prism-tone-warn-bg:     #3d2f14;  --prism-tone-warn-fg:    #e8bd6b;  --prism-tone-warn-border:  #6a5424;
+    --prism-tone-ok-bg:       #14331f;  --prism-tone-ok-fg:      #7ddb9c;
+    --prism-tone-danger-bg:   #3d1616;  --prism-tone-danger-fg:  #ff9b9b;
+    --prism-tone-danger-solid:#c0392b;
+    --prism-tone-neutral-bg:  #26262f;  --prism-tone-neutral-fg: #bbbbcc;
+    --prism-tone-special-bg:  #2a1d3d;  --prism-tone-special-fg: #c9a6f0;
+    --prism-tone-caution-fg:  #fbbf24;
+
+    --prism-heat-track:#24242e;
+
+    --prism-brand: var(--prism-brand-dark, var(--prism-accent));
   }
 }
 
@@ -103,11 +194,16 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   background: var(--prism-border-soft); color: var(--prism-muted);
   white-space: nowrap;
 }
-.status-shipped     { background: rgba(90,140,78,0.12); color: var(--prism-status-shipped); }
+/* S10: the backing is DERIVED from the status colour, not hand-matched to it. Each of
+   these was an rgba() re-typing of the same hue already sitting in `--prism-status-*` at
+   10-15% alpha -- so retinting the token changed the text and left the backing behind.
+   `color-mix` makes the pair structural: one value to change, and the tint cannot drift
+   from the text it backs. */
+.status-shipped     { background: color-mix(in srgb, var(--prism-status-shipped) 12%, transparent); color: var(--prism-status-shipped); }
 .status-in-progress, .status-in { background: var(--prism-accent-soft); color: var(--prism-status-in-progress); }
-.status-queued      { background: rgba(154,154,154,0.15); color: var(--prism-status-queued); }
-.status-drafted     { background: rgba(184,154,58,0.15); color: var(--prism-status-drafted); }
-.status-superseded, .status-archived { background: rgba(170,170,170,0.1); color: var(--prism-soft); }
+.status-queued      { background: color-mix(in srgb, var(--prism-status-queued) 15%, transparent); color: var(--prism-status-queued); }
+.status-drafted     { background: color-mix(in srgb, var(--prism-status-drafted) 15%, transparent); color: var(--prism-status-drafted); }
+.status-superseded, .status-archived { background: color-mix(in srgb, var(--prism-status-archived) 10%, transparent); color: var(--prism-soft); }
 
 .meta-row, .refs-row {
   margin-top: var(--prism-sp-5); font-family: var(--prism-mono); font-size: var(--prism-text-12);
@@ -312,11 +408,11 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    paint BEHIND the z:0 background, backwards from what "z0" means in the grammar. */
 .reg { font: var(--prism-text-14)/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   position: relative; z-index: 1; }
-.reg-counts { font-size: var(--prism-text-13); color: #667; }
-.reg-k { font-weight: 700; color: #223; font-variant-numeric: tabular-nums; }
-.reg-bad { color: #c0392b; }
+.reg-counts { font-size: var(--prism-text-13); color: var(--prism-muted); }
+.reg-k { font-weight: 700; color: var(--prism-fg-strong); font-variant-numeric: tabular-nums; }
+.reg-bad { color: var(--prism-tone-danger-fg); }
 .reg-gen { margin-left: var(--prism-sp-5); opacity: .55; font-size: var(--prism-text-12); }
-.reg-pre { margin: var(--prism-sp-4) 0 0; color: #445; }
+.reg-pre { margin: var(--prism-sp-4) 0 0; color: var(--prism-muted); }
 
 /* ── Stat cards ── doubling as quick filters, so there is no separate filter chrome. */
 .reg-cards {
@@ -345,8 +441,8 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   border-color: var(--prism-accent);
   box-shadow: inset 0 0 0 1px var(--prism-accent), var(--prism-glow);   /* S7 row 5: selection glow */
 }
-.reg-card-warn .reg-card-n { color: #b45309; }
-.reg-card-bad  .reg-card-n { color: #b91c1c; }
+.reg-card-warn .reg-card-n { color: var(--prism-tone-caution-fg); }
+.reg-card-bad  .reg-card-n { color: var(--prism-tone-danger-fg); }
 
 /* Status cards carry the SAME foreground as the pill for that status, so the
    summary at the top and the table under it read as one palette.
@@ -355,20 +451,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    about 1.1:1 contrast. Only `warn` and `bad` were ever given a colour, which
    is why the two warning cards were the only readable ones in dark mode.
    (s01-593a6d, measured via getComputedStyle.) */
-.reg-card-active .reg-card-n { color: #14508c; }   /* = .reg-b-active  fg */
-.reg-card-seeded .reg-card-n { color: #8a5a12; }   /* = .reg-b-seeded  fg */
-.reg-card-closed .reg-card-n { color: #1c6b34; }   /* = .reg-b-shipped fg */
-@media (prefers-color-scheme: dark) {
-  .reg-card { background: var(--prism-surface); }
-  /* Base first: the untoned cards (total, and any status with a 0 count) were
-     inheriting black on #16161d and disappearing entirely. */
-  .reg-card-n { color: #e6e6ef; }
-  .reg-card-warn .reg-card-n { color: #fbbf24; }
-  .reg-card-bad  .reg-card-n { color: #f87171; }
-  .reg-card-active .reg-card-n { color: #8ec2ff; }   /* = .reg-b-active  fg */
-  .reg-card-seeded .reg-card-n { color: #e8bd6b; }   /* = .reg-b-seeded  fg */
-  .reg-card-closed .reg-card-n { color: #7ddb9c; }   /* = .reg-b-shipped fg */
-}
+.reg-card-active .reg-card-n { color: var(--prism-tone-info-fg); }   /* = .reg-b-active  fg */
+.reg-card-seeded .reg-card-n { color: var(--prism-tone-warn-fg); }   /* = .reg-b-seeded  fg */
+.reg-card-closed .reg-card-n { color: var(--prism-tone-ok-fg); }   /* = .reg-b-shipped fg */
+/* S10: the dark block that used to sit here is gone. Its six rules restated the same
+   six tones with dark values; the base rules above now name `--prism-tone-*-fg` and the
+   root dark block reassigns those. `.reg-card-n`'s untoned case needed no rule at all --
+   it inherits `--prism-fg`, which is what "the number, in the page's text colour" always
+   meant. That is the shape of every deletion in this pass. */
 
 /* Group completion — closed / parseable. Distinct from the A/S/C chips: those are a
    census, this is a ratio. */
@@ -386,7 +476,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   transition: box-shadow var(--prism-hover);
 }
 .reg-sticky.is-stuck {
-  box-shadow: 0 6px 16px -12px rgba(0,0,0,.55);
+  box-shadow: 0 6px 16px -12px var(--prism-shadow);
   border-bottom: 1px solid var(--prism-border-soft);
   backdrop-filter: blur(var(--prism-blur));   /* S7 row 5: blur is CHROME ONLY — here and the drawer */
 }
@@ -399,13 +489,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-sticky.is-stuck .reg-card-l { font-size: var(--prism-text-10); }
 
 .reg-controls { display: flex; gap: var(--prism-sp-4); align-items: center; flex-wrap: wrap;
-  margin: 0 0 var(--prism-sp-3); padding: var(--prism-sp-4) var(--prism-sp-5); background: #f4f5f8; border-radius: var(--prism-r-sm); }
-.reg-input { flex: 1 1 15rem; padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid #ccd; border-radius: var(--prism-r-sm); font: inherit; background: #fff; }
-.reg-select, .reg-btn { padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid #ccd; border-radius: var(--prism-r-sm); font: inherit; background: #fff; }
+  margin: 0 0 var(--prism-sp-3); padding: var(--prism-sp-4) var(--prism-sp-5); background: var(--prism-surface-sunken); border-radius: var(--prism-r-sm); }
+.reg-input { flex: 1 1 15rem; padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); font: inherit; background: var(--prism-surface-input); }
+.reg-select, .reg-btn { padding: var(--prism-sp-3) var(--prism-sp-4); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); font: inherit; background: var(--prism-surface-input); }
 .reg-btn { cursor: pointer; }
-.reg-btn:hover { background: #eef; }
-.reg-chk { font-size: var(--prism-text-13); color: #556; display: flex; align-items: center; gap: var(--prism-sp-2); }
-.reg-shown { margin-left: auto; font-size: var(--prism-text-12); color: #778; font-variant-numeric: tabular-nums; }
+.reg-btn:hover { background: var(--prism-surface-hover); }
+.reg-chk { font-size: var(--prism-text-13); color: var(--prism-muted); display: flex; align-items: center; gap: var(--prism-sp-2); }
+.reg-shown { margin-left: auto; font-size: var(--prism-text-12); color: var(--prism-soft); font-variant-numeric: tabular-nums; }
 /* ── S8 row 8: filter rail ─────────────────────────────────────────────
    FINDING: S5's gap table cites ":109,:128" for "200px sticky sidebar exists" -- those
    lines are `.cycle-body`/`.toc`, the DOCUMENT table-of-contents (cycle.mjs), not
@@ -458,10 +548,10 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   .reg-rail { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; }
 }
 
-.reg-legend { font-size: var(--prism-text-11); color: #99a; margin: 0 0 var(--prism-sp-5) var(--prism-sp-2); }
+.reg-legend { font-size: var(--prism-text-11); color: var(--prism-soft); margin: 0 0 var(--prism-sp-5) var(--prism-sp-2); }
 .reg-legend em { opacity: .8; }
 
-.reg-proj { margin: 0 0 var(--prism-sp-6); border-top: 2px solid #d7d7e4; }
+.reg-proj { margin: 0 0 var(--prism-sp-6); border-top: 2px solid var(--prism-border-strong); }
 /* `flex-wrap` here is the whole narrow-viewport fix (S9 residue: group-header stat chips overflow
    below 900px). `.reg-stats` is `flex: 0 0 auto` and cannot shrink, so without a wrap on THIS row
    it forces the page wider than the viewport -- measured 198px of overflow at 390px.
@@ -469,23 +559,23 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    and with this rule in place each proved to change nothing (overflow stayed 0 with them reverted).
    Same fix shape row 9 used on `.reg-row-footer`: too much FIXED content wants reflow. */
 .reg-proj-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--prism-sp-4); margin: 0; padding: var(--prism-sp-5) var(--prism-sp-2);
-  font-size: var(--prism-text-16); font-weight: 800; color: #000; cursor: pointer; user-select: none;
+  font-size: var(--prism-text-16); font-weight: 800; color: var(--prism-fg-strong); cursor: pointer; user-select: none;
   letter-spacing: -.01em; }
-.reg-proj-head:hover, .reg-proj-head:focus-visible { background: #f2f4ff; outline: none; }
+.reg-proj-head:hover, .reg-proj-head:focus-visible { background: var(--prism-surface-hover); outline: none; }
 .reg-proj-name { letter-spacing: .01em; }
-.reg-proj-n { font-weight: 500; font-size: var(--prism-text-12); color: #889; background: #eef0f6;
+.reg-proj-n { font-weight: 500; font-size: var(--prism-text-12); color: var(--prism-tone-neutral-fg); background: var(--prism-tone-neutral-bg);
   padding: .05rem var(--prism-sp-4); border-radius: 999px; font-variant-numeric: tabular-nums; }
-.reg-caret { width: .9em; display: inline-block; color: #89a; font-size: var(--prism-text-11); }
+.reg-caret { width: .9em; display: inline-block; color: var(--prism-soft); font-size: var(--prism-text-11); }
 .reg-closed > .reg-proj-body, .reg-closed > .reg-arc-body { display: none; }
 
 .reg-arc { margin: 0 0 var(--prism-sp-1) var(--prism-sp-6); }
 .reg-arc-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--prism-sp-4); padding: var(--prism-sp-2) var(--prism-sp-2);
   cursor: pointer; user-select: none; border-radius: var(--prism-r-sm); }
-.reg-arc-head:hover, .reg-arc-head:focus-visible { background: #f4f6ff; outline: none; }
-.reg-arc-name { font-weight: 650; color: #1b2b3d; font-size: var(--prism-text-14); flex: 0 0 auto; }
-.reg-arc-n { font-size: var(--prism-text-11); color: #8a8fa0; }
+.reg-arc-head:hover, .reg-arc-head:focus-visible { background: var(--prism-surface-hover); outline: none; }
+.reg-arc-name { font-weight: 650; color: var(--prism-fg); font-size: var(--prism-text-14); flex: 0 0 auto; }
+.reg-arc-n { font-size: var(--prism-text-11); color: var(--prism-soft); }
 .reg-noentry { opacity: .65; font-style: italic; }
-.reg-arc-body { margin-left: var(--prism-sp-7); border-left: 2px solid #dcdce9; padding-left: var(--prism-sp-5); }
+.reg-arc-body { margin-left: var(--prism-sp-7); border-left: 2px solid var(--prism-border); padding-left: var(--prism-sp-5); }
 
 /* ── S9: card anatomy, adapted to a nested list row ────────────────────────
    eyebrow -> title -> description -> hairline -> footer (S5 §4.2), at list density
@@ -495,7 +585,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    condition), so a bare row collapses to eyebrow+footer -- two lines, not four. */
 .reg-row { display: flex; flex-direction: column; gap: var(--prism-sp-2); padding: var(--prism-sp-3);
   border-radius: var(--prism-r-sm); cursor: pointer; }
-.reg-row:hover { background: #f6f8ff; }
+.reg-row:hover { background: var(--prism-surface-hover); }
 /* `.reg-row { display: flex }` above has the same specificity as the UA default
    `[hidden] { display: none }`, and author rules beat UA rules regardless of source
    order -- so `apply()` correctly setting `row.hidden = true` never actually hid
@@ -528,25 +618,29 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-d, .reg-age { font-size: var(--prism-text-11); color: var(--prism-soft); font-variant-numeric: tabular-nums;
   min-width: 5.6rem; text-align: right; letter-spacing: .01em; }
 .reg-age { min-width: 3rem; }
-.reg-drift { color: #b8860b; font-weight: 600; }
+.reg-drift { color: var(--prism-tone-caution-fg); font-weight: 600; }
 
 /* .reg-title survives for registry-flat.mjs's table cell ONLY (S9: the flat table is
    refused for card anatomy -- it stays a dense sortable table by design, see the S9
    report's "the invalidating answer" -- so this rule is untouched, unpromoted). */
-.reg-title { color: #8a8fa0; font-size: var(--prism-text-12); margin-left: var(--prism-sp-3); }
+.reg-title { color: var(--prism-soft); font-size: var(--prism-text-12); margin-left: var(--prism-sp-3); }
 
 .reg-pill { display: inline-block; padding: var(--prism-sp-1) var(--prism-sp-4); border-radius: 999px;
-  font-size: var(--prism-text-11); margin-right: var(--prism-sp-2); white-space: nowrap; background: #e8eaf0; color: #445; flex: 0 0 auto;
+  font-size: var(--prism-text-11); margin-right: var(--prism-sp-2); white-space: nowrap; background: var(--prism-tone-neutral-bg); color: var(--prism-tone-neutral-fg); flex: 0 0 auto;
   max-width: 20rem; overflow: hidden; text-overflow: ellipsis; }
-.reg-b-active  { background: #e3f0ff; color: #14508c; }
-.reg-b-seeded  { background: #fff4e0; color: #8a5a12; }
-.reg-b-shipped { background: #e3f7e8; color: #1c6b34; }
-.reg-b-broken  { background: #ffe3e3; color: #a11; }
+.reg-b-active  { background: var(--prism-tone-info-bg); color: var(--prism-tone-info-fg); }
+.reg-b-seeded  { background: var(--prism-tone-warn-bg); color: var(--prism-tone-warn-fg); }
+.reg-b-shipped { background: var(--prism-tone-ok-bg); color: var(--prism-tone-ok-fg); }
+.reg-b-broken  { background: var(--prism-tone-danger-bg); color: var(--prism-tone-danger-fg); }
 
-.reg-row-broken { background: #fff6f6; }
+/* A row WASH, not a chip: the same danger tone at a fraction, mixed toward the page so it
+   stays a tint at any theme. A token of its own would need a light and a dark value that
+   both have to be kept in step with the pill -- which is exactly the drift this pass
+   removes. Relations derive; roles are declared. */
+.reg-row-broken { background: color-mix(in srgb, var(--prism-tone-danger-bg) 45%, var(--prism-bg)); }
 .reg-badge-broken { display: inline-block; padding: .05rem var(--prism-sp-3); border-radius: var(--prism-r-sm);
-  background: #c0392b; color: #fff; font-size: var(--prism-text-10); font-weight: 700; letter-spacing: .04em; }
-.reg-err { display: block; color: #a11; font-size: var(--prism-text-11); font-family: ui-monospace, monospace; }
+  background: var(--prism-tone-danger-solid); color: var(--prism-on-solid); font-size: var(--prism-text-10); font-weight: 700; letter-spacing: .04em; }
+.reg-err { display: block; color: var(--prism-tone-danger-fg); font-size: var(--prism-text-11); font-family: ui-monospace, monospace; }
 
 /* ── The artifact preview pane (registry-detail.mjs) ──────────────────────
    RELOCATED, not rebuilt. It used to be an inline block BELOW the list, reached
@@ -566,7 +660,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   width: var(--reg-detail-w, min(760px, 52vw)); display: flex; flex-direction: column;
   background: var(--prism-surface-2); border-left: 3px solid var(--prism-accent);   /* S7 row 5 */
   backdrop-filter: blur(var(--prism-blur));   /* translucency is earned here: it overlays content */
-  box-shadow: -18px 0 40px -30px rgba(0,0,0,.75);
+  box-shadow: -18px 0 40px -30px var(--prism-shadow-strong);
   padding: var(--prism-sp-5) var(--prism-sp-6) var(--prism-sp-6);
 }
 .reg-detail[hidden] { display: none; }
@@ -582,15 +676,15 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    so switching artifacts cannot shift the text sideways mid-read. */
 .reg-detail-body { overflow: auto; flex: 1; overscroll-behavior: contain;
   padding-right: var(--prism-sp-6); scrollbar-gutter: stable; }
-.reg-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid #ccd;
-  background: #fff; border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: #556; }
+.reg-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border);
+  background: var(--prism-surface-input); border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: var(--prism-muted); }
 
 /* Narrow screens have no room beside the list, so the panel becomes a bottom
    sheet -- still out of flow, still leaves the list where it was. */
 @media (max-width: 800px) {
   .reg-detail { top: auto; left: 0; width: auto; height: 85vh;
     border-left: 0; border-top: 3px solid var(--prism-accent);
-    box-shadow: 0 -18px 40px -30px rgba(0,0,0,.75); }
+    box-shadow: 0 -18px 40px -30px var(--prism-shadow-strong); }
 }
 
 /* The drag handle: a 6px strip on the docked edge. Cursor is the affordance --
@@ -668,31 +762,12 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
     border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm); }
 }
 
-@media (prefers-color-scheme: dark) {
-  .reg-k, .reg-proj-head { color: #fff; }
-  /* .reg-nm, .reg-d, .reg-age, .reg-status-note: S9 moved these to
-     var(--prism-muted)/var(--prism-soft) -- they now resolve correctly under EITHER
-     prefers-color-scheme OR a host :root override, so no media-query duplicate is
-     needed here (that duplication is exactly what left the host page's light-OS
-     case unhandled before -- see S7/S8's flagged hardcoded-hex residue). */
-  .reg-arc-name { color: #dde3ee; }
-  .reg-proj { border-top-color: #33333f; }
-  .reg-counts, .reg-pre { color: #99a; }
-  .reg-controls { background: #1a1a22; }
-  .reg-input, .reg-select, .reg-btn { background: #14141b; border-color: #333; color: #dde; }
-  .reg-btn:hover, .reg-proj-head:hover, .reg-arc-head:hover, .reg-row:hover { background: #1e1e28; }
-  .reg-proj { border-top-color: #26262f; }
-  .reg-proj-n { background: #26262f; color: #9a9aa8; }
-  .reg-arc-name { color: #cdd; } .reg-arc-body { border-left-color: #2a2a34; }
-  .reg-title, .reg-arc-n, .reg-legend { color: #7a7a88; }
-  .reg-pill { background: #26262f; color: #bbc; }
-  .reg-b-active { background: #16304d; color: #8ec2ff; }
-  .reg-b-seeded { background: #3d2f14; color: #e8bd6b; }
-  .reg-b-shipped { background: #14331f; color: #7ddb9c; }
-  .reg-b-broken { background: #3d1616; color: #ff9b9b; }
-  .reg-row-broken { background: #2a1414; }
-  .reg-close { background: #1a1a22; border-color: #333; color: #bbc; }
-}
+/* S10: 20 dark rules deleted here. The S9 comment that used to live in this block --
+   "they now resolve correctly under EITHER prefers-color-scheme OR a host :root
+   override" -- was the correct diagnosis for four properties. This pass applies it to
+   the other twenty. Note `.reg-arc-name` and `.reg-proj` each had TWO conflicting dark
+   rules in this one block (#dde3ee then #cdd; #33333f then #26262f), silently resolved
+   by source order -- a duplication a role vocabulary makes unspellable. */
 
 /* group stats — bucket chips + last-added. A bare count says how MUCH is here,
    never what state it is in. Zero buckets are omitted so the row stays scannable. */
@@ -711,45 +786,32 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    off against the pill base, and `x` was a solid red of its own invention with
    no dark-mode rule at all -- invisible today only because 0 cycles are
    unparseable. (s01-593a6d, verified via getComputedStyle, not by reading CSS.) */
-.reg-stat-A { background: #e3f0ff; color: #14508c; }   /* = .reg-b-active  */
-.reg-stat-S { background: #fff4e0; color: #8a5a12; }   /* = .reg-b-seeded  */
-.reg-stat-C { background: #e3f7e8; color: #1c6b34; }   /* = .reg-b-shipped */
-.reg-stat-O { background: #e8eaf0; color: #445; }      /* = .reg-pill base */
-.reg-stat-x { background: #ffe3e3; color: #a11; }      /* = .reg-b-broken  */
-.reg-stat-added { font-size: var(--prism-text-10); color: #8b8b9c; font-variant-numeric: tabular-nums;
+.reg-stat-A { background: var(--prism-tone-info-bg); color: var(--prism-tone-info-fg); }   /* = .reg-b-active  */
+.reg-stat-S { background: var(--prism-tone-warn-bg); color: var(--prism-tone-warn-fg); }   /* = .reg-b-seeded  */
+.reg-stat-C { background: var(--prism-tone-ok-bg); color: var(--prism-tone-ok-fg); }   /* = .reg-b-shipped */
+.reg-stat-O { background: var(--prism-tone-neutral-bg); color: var(--prism-tone-neutral-fg); }      /* = .reg-pill base */
+.reg-stat-x { background: var(--prism-tone-danger-bg); color: var(--prism-tone-danger-fg); }      /* = .reg-b-broken  */
+.reg-stat-added { font-size: var(--prism-text-10); color: var(--prism-soft); font-variant-numeric: tabular-nums;
   padding-left: var(--prism-sp-2); }
-.reg-stat-fresh { font-size: var(--prism-text-10); color: #5f8a5f; font-variant-numeric: tabular-nums;
-  background: #eef6ee; padding: .05rem var(--prism-sp-2); border-radius: var(--prism-r-sm); }
+.reg-stat-fresh { font-size: var(--prism-text-10); color: var(--prism-tone-ok-fg); font-variant-numeric: tabular-nums;
+  background: var(--prism-tone-ok-bg); padding: .05rem var(--prism-sp-2); border-radius: var(--prism-r-sm); }
 
-@media (prefers-color-scheme: dark) {
-  .reg-stat-A { background: #16304d; color: #8ec2ff; }   /* = .reg-b-active  */
-  .reg-stat-S { background: #3d2f14; color: #e8bd6b; }   /* = .reg-b-seeded  */
-  .reg-stat-C { background: #14331f; color: #7ddb9c; }   /* = .reg-b-shipped */
-  .reg-stat-O { background: #26262f; color: #bbc; }      /* = .reg-pill base */
-  .reg-stat-x { background: #3d1616; color: #ff9b9b; }   /* = .reg-b-broken  */
-  .reg-stat-added { color: #7a7a88; }
-  .reg-stat-fresh { background: #16261a; color: #8fc79a; }
-}
+/* S10: deleted. Every `= .reg-b-*` comment in the block above was an ASSERTION that two
+   hand-written hexes matched. They now share one token, so the claim is structural. */
 
 /* A legacy KIND folder is NOT a missing arc — it is residue scheduled to dissolve.
    Rendering both as "no arc entry" would send someone to fill in the ones meant to
    disappear, entrenching the very axis we are removing. */
-.reg-kindfolder { background: #f3e8ff; color: #6b3fa0; font-style: italic; }
-@media (prefers-color-scheme: dark) { .reg-kindfolder { background: #2a1d3d; color: #c9a6f0; } }
+.reg-kindfolder { background: var(--prism-tone-special-bg); color: var(--prism-tone-special-fg); font-style: italic; }
+
 
 /* Empty state — names the active filters instead of just saying zero. */
-.reg-empty { color: #b45309; }
+.reg-empty { color: var(--prism-tone-caution-fg); }
 .reg-clearbtn {
   font: inherit; font-size: var(--prism-text-11); cursor: pointer;
   background: none; border: 1px solid currentColor; border-radius: var(--prism-r-sm);
   padding: .05rem var(--prism-sp-3); color: inherit;
 }
-@media (prefers-color-scheme: dark) {
-  .reg-empty { color: #fbbf24; }
-  .reg-sticky { background: var(--prism-surface-2); }
-  .reg-sticky.is-stuck { box-shadow: 0 6px 16px -12px rgba(0,0,0,.9); }
-}
-
 /* ── S8 row 6: z0 background layer (shell-header.mjs renderShellBackground) ──────
    Fixed + z-index:0 makes this a POSITIONED element, so it paints ABOVE static
    in-flow content unless that content is ALSO given an explicit z-index -- see
@@ -834,7 +896,7 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   position: absolute; right: 0; top: calc(100% + .3rem); z-index: 30;
   display: flex; flex-direction: column; min-width: 15rem;
   background: var(--prism-card); border: 1px solid var(--prism-border);
-  border-radius: var(--prism-r-sm); padding: var(--prism-sp-2); box-shadow: 0 10px 28px -18px rgba(0,0,0,.6);
+  border-radius: var(--prism-r-sm); padding: var(--prism-sp-2); box-shadow: 0 10px 28px -18px var(--prism-shadow);
 }
 .shell-nav-item {
   display: flex; align-items: baseline; gap: var(--prism-sp-3); justify-content: space-between;
@@ -879,8 +941,17 @@ a.shell-nav-item:hover { background: var(--prism-accent-soft); }
    surrounding name -- only colour and glow differ, so the wordmark reads as ONE
    word with a coloured letter, not as a glyph glued to text.
    --prism-brand defaults to the accent; a host overrides it to its own colour. */
+/* S10: ONE rule, not two. The dark-surface value used to live in a
+   `@media (prefers-color-scheme: dark)` block below -- which meant the mark tracked the
+   READER'S OS rather than the theme it was rendering in: a dark-themed page opened on a
+   light-OS browser drew the pale-surface sigma on a dark panel, at 1.54:1. `--prism-brand`
+   is reassigned in the root dark block and by any theme file, so the brand follows the
+   SURFACE. The glow comes along: it is a no-op until a theme sets `--prism-brand-glow`,
+   which is the correct gate -- a theme knows whether its surface can carry bleed; the
+   operating system does not. */
 .shell-brand-sigma {
-  color: var(--prism-brand-light, var(--prism-accent));
+  color: var(--prism-brand);
+  filter: drop-shadow(0 0 12px var(--prism-brand-glow, transparent));
 }
 /* The wordmark carries FULL-strength text colour, not the inherited muted tone --
    name / symbol / name reads white-gold-white on dark and ink-gold-ink on light.
@@ -891,47 +962,25 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 .shell-brand-sep { color: var(--prism-border-soft); margin: 0 var(--prism-sp-1); font-weight: 300; }
 .shell-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
 
-/* Dark-surface brand value. MUST come after the base .shell-brand-sigma rule: equal
-   specificity means source order decides, and the base rule sitting later silently
-   won in dark mode -- the mark rendered its pale-surface colour on a dark page.
-   A single hex cannot serve both surfaces (11.98:1 here, 1.54:1 on pale); the glow
-   is dark-only because it reads as bleed on a light background. */
-@media (prefers-color-scheme: dark) {
-  .shell-brand-sigma {
-    color: var(--prism-brand-dark, var(--prism-accent));
-    filter: drop-shadow(0 0 12px var(--prism-brand-glow, transparent));
-  }
-}
-
 /* ── registry: FLAT table mode (registry-flat.mjs) ─────────────────────────── */
 .reg-viewtog { display: inline-flex; }
 .reg-viewtog .reg-btn { border-radius: 0; }
 .reg-viewtog .reg-btn:first-child { border-radius: var(--prism-r-sm) 0 0 var(--prism-r-sm); }
 .reg-viewtog .reg-btn:last-child { border-radius: 0 var(--prism-r-sm) var(--prism-r-sm) 0; border-left: none; }
-.reg-btn.reg-vt-on { background: #eef; font-weight: 600; }
+.reg-btn.reg-vt-on { background: var(--prism-surface-hover); font-weight: 600; }
 
 .reg-ftable { width: 100%; border-collapse: collapse; font-size: var(--prism-text-12); }
 .reg-ftable th { text-align: left; padding: var(--prism-sp-3) var(--prism-sp-4); cursor: pointer; user-select: none;
-  font-size: var(--prism-text-11); text-transform: uppercase; letter-spacing: .04em; color: #8b8b9c;
-  border-bottom: 1px solid #ccd; white-space: nowrap; }
-.reg-ftable th:hover { color: #46506a; }
-.reg-ftable th.reg-fsorted { color: #2b3a67; }
+  font-size: var(--prism-text-11); text-transform: uppercase; letter-spacing: .04em; color: var(--prism-soft);
+  border-bottom: 1px solid var(--prism-border); white-space: nowrap; }
+.reg-ftable th:hover { color: var(--prism-fg); }
+.reg-ftable th.reg-fsorted { color: var(--prism-fg); }
 .reg-frow { cursor: pointer; }
-.reg-frow:hover { background: #f6f8ff; }
-.reg-frow td { padding: var(--prism-sp-2) var(--prism-sp-4); border-bottom: 1px solid #eef0f6; vertical-align: baseline; }
-.reg-fd, .reg-fage { font-variant-numeric: tabular-nums; color: #8b8b9c; font-size: var(--prism-text-11); white-space: nowrap; }
+.reg-frow:hover { background: var(--prism-surface-hover); }
+.reg-frow td { padding: var(--prism-sp-2) var(--prism-sp-4); border-bottom: 1px solid var(--prism-border-soft); vertical-align: baseline; }
+.reg-fd, .reg-fage { font-variant-numeric: tabular-nums; color: var(--prism-soft); font-size: var(--prism-text-11); white-space: nowrap; }
 .reg-fage { text-align: right; }
-.reg-farc, .reg-fproj { color: #6a7086; font-size: var(--prism-text-12); }
-
-@media (prefers-color-scheme: dark) {
-  .reg-btn.reg-vt-on { background: #26262f; }
-  .reg-ftable th { border-bottom-color: #333; }
-  .reg-ftable th:hover { color: #a8b0c4; }
-  .reg-ftable th.reg-fsorted { color: #cfd6ea; }
-  .reg-frow:hover { background: #1e1e28; }
-  .reg-frow td { border-bottom-color: #22222c; }
-  .reg-farc, .reg-fproj { color: #7a7a88; }
-}
+.reg-farc, .reg-fproj { color: var(--prism-muted); font-size: var(--prism-text-12); }
 
 /* ── Cycle artifacts: the files a cycle PRODUCED, linked from its row ──────────
    Chips open in a NEW WINDOW (target=_blank) rather than the detail pane, because
@@ -941,19 +990,13 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
   vertical-align: middle; }
 .reg-art { display: inline-block; padding: .05rem var(--prism-sp-4); border-radius: var(--prism-r-sm);
   font-size: var(--prism-text-11); line-height: 1.6; text-decoration: none; white-space: nowrap;
-  border: 1px solid #dcdce4; background: #f4f4f8; color: #55596a; }
-.reg-art:hover { background: #e9e9f2; border-color: #b9b9c8; color: #23252f; }
-.reg-art-view { border-color: #b6d8f5; background: #eaf4fd; color: #1c5a8a; font-weight: 600; }
-.reg-art-view:hover { background: #d8ebfb; border-color: #7fbdec; color: #10395a; }
-.reg-art-more { border-style: dashed; color: #8a8fa0; }
-@media (prefers-color-scheme: dark) {
-  .reg-art { border-color: #33343f; background: #1c1c24; color: #9a9ead; }
-  .reg-art:hover { background: #26262f; border-color: #4a4b59; color: #e6e6ee; }
-  .reg-art-view { border-color: #2b5170; background: #12232f; color: #7fc0ef; }
-  .reg-art-view:hover { background: #17334a; border-color: #3d7ba8; color: #b6ddf8; }
-  .reg-art-more { color: #6a6a78; }
-}
-
+  border: 1px solid var(--prism-border); background: var(--prism-tone-neutral-bg); color: var(--prism-tone-neutral-fg); }
+.reg-art:hover { background: var(--prism-surface-hover); border-color: var(--prism-border-hover); color: var(--prism-fg-strong); }
+.reg-art-view { border-color: var(--prism-tone-info-border); background: var(--prism-tone-info-bg); color: var(--prism-tone-info-fg); font-weight: 600; }
+.reg-art-view:hover { background: color-mix(in srgb, var(--prism-tone-info-bg) 82%, var(--prism-tone-info-fg));
+  border-color: color-mix(in srgb, var(--prism-tone-info-border) 70%, var(--prism-tone-info-fg));
+  color: color-mix(in srgb, var(--prism-tone-info-fg) 82%, var(--prism-fg-strong)); }
+.reg-art-more { border-style: dashed; color: var(--prism-soft); }
 /* A .md artifact renders INLINE, through its own PRISM layout, exactly like a cycle row.
    The chip therefore has to look clickable-in-place rather than leaving-the-page: the
    dotted underline is the whole tell, and it is deliberately quiet -- these sit in dense
@@ -968,22 +1011,13 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    is never inferred from the content. Subtle on purpose -- it disambiguates, it does not
    announce. */
 .reg-detail-kind { display: inline-block; padding: .05rem var(--prism-sp-3); margin-right: var(--prism-sp-1);
-  border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); background: #f4f4f8;
+  border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); background: var(--prism-tone-neutral-bg);
   font-size: var(--prism-text-10); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-  color: #7a7f90; vertical-align: 2px; }
-.reg-detail-of { font-size: var(--prism-text-12); font-weight: 400; color: #8a8fa0; }
-@media (prefers-color-scheme: dark) {
-  .reg-detail-kind { border-color: #33343f; background: #1c1c24; color: #8a8f9e; }
-  .reg-detail-of { color: #6f7484; }
-}
-
+  color: var(--prism-tone-neutral-fg); vertical-align: 2px; }
+.reg-detail-of { font-size: var(--prism-text-12); font-weight: 400; color: var(--prism-soft); }
 /* arc count beside a project's cycle count (s01-2b577f) */
-.reg-proj-arcs { font-size: var(--prism-text-11); color: #8a8fa0; margin-left: var(--prism-sp-4);
-  padding: .05rem var(--prism-sp-3); border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); }
-@media (prefers-color-scheme: dark) {
-  .reg-proj-arcs { color: #7a7a88; border-color: #33343f; }
-}
-
+.reg-proj-arcs { font-size: var(--prism-text-11); color: var(--prism-soft); margin-left: var(--prism-sp-4);
+  padding: .05rem var(--prism-sp-3); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); }
 /* ═══ layout: body — Soma's own body, as a ledger with a cache physics ═══════
    s01-8ba64e. Companion to layouts/body.mjs. The one non-negotiable rule here is
    `.bd-row[hidden]` — an author `display:` on .bd-row outranks the user-agent
@@ -992,128 +1026,106 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
    registry and made "1 shown" display 100+ rows. Do not remove it. */
 .bd-wrap { font-size: var(--prism-text-13); }
 .bd-head h1 { margin: 0 0 var(--prism-sp-1); font-size: var(--prism-text-20); }
-.bd-sub { margin: 0 0 var(--prism-sp-6); font-size: var(--prism-text-11); color: #8a8fa0; }
+.bd-sub { margin: 0 0 var(--prism-sp-6); font-size: var(--prism-text-11); color: var(--prism-soft); }
 .bd-h2 { display: flex; align-items: center; gap: var(--prism-sp-4); font-size: var(--prism-text-13);
-  margin: var(--prism-sp-7) 0 var(--prism-sp-4); padding-bottom: var(--prism-sp-2); border-bottom: 1px solid #e6e6ee; }
-.bd-h2 span { font-weight: 400; color: #8a8fa0; }
+  margin: var(--prism-sp-7) 0 var(--prism-sp-4); padding-bottom: var(--prism-sp-2); border-bottom: 1px solid var(--prism-border-soft); }
+.bd-h2 span { font-weight: 400; color: var(--prism-soft); }
 .bd-filter { margin-left: auto; font: inherit; font-size: var(--prism-text-12); padding: var(--prism-sp-2) var(--prism-sp-4);
-  border: 1px solid #dcdce4; border-radius: var(--prism-r-sm); background: #fff; }
-.bd-shown { font-size: var(--prism-text-11); color: #8a8fa0; }
+  border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm); background: var(--prism-surface-input); }
+.bd-shown { font-size: var(--prism-text-11); color: var(--prism-soft); }
 
 /* three populations — the distinction a file listing cannot show */
 .bd-pops { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--prism-sp-4); margin: var(--prism-sp-5) 0 var(--prism-sp-6); }
-.bd-pop { padding: var(--prism-sp-4) var(--prism-sp-5); border: 1px solid #dcdce4; border-radius: var(--prism-r-sm);
-  background: #fafafd; }
+.bd-pop { padding: var(--prism-sp-4) var(--prism-sp-5); border: 1px solid var(--prism-border); border-radius: var(--prism-r-sm);
+  background: var(--prism-surface-sunken); }
 .bd-pop b { display: block; font-size: var(--prism-text-20); line-height: 1.1; }
 .bd-pop span { font-size: var(--prism-text-11); font-weight: 600; letter-spacing: .03em;
-  text-transform: uppercase; color: #55596a; }
+  text-transform: uppercase; color: var(--prism-muted); }
 .bd-pop em { display: block; margin-top: var(--prism-sp-2); font-size: var(--prism-text-10); font-style: normal;
-  color: #8a8fa0; }
-.bd-pop-res { border-color: #b6d8f5; background: #eaf4fd; }
-.bd-pop-res b { color: #1c5a8a; }
-.bd-pop-sum { border-color: #f0d9a8; background: #fdf7ea; }
-.bd-pop-sum b { color: #8a6a1c; }
-.bd-pop-tot b { color: #23252f; }
+  color: var(--prism-soft); }
+.bd-pop-res { border-color: var(--prism-tone-info-border); background: var(--prism-tone-info-bg); }
+.bd-pop-res b { color: var(--prism-tone-info-fg); }
+.bd-pop-sum { border-color: var(--prism-tone-warn-border); background: var(--prism-tone-warn-bg); }
+.bd-pop-sum b { color: var(--prism-tone-warn-fg); }
+.bd-pop-tot b { color: var(--prism-fg-strong); }
 
 /* the ladder — order is cache order; never sortable */
-.bd-ladder { border: 1px solid #e6e6ee; border-radius: var(--prism-r-sm); overflow: hidden; }
+.bd-ladder { border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm); overflow: hidden; }
 .bd-ladder-head, .bd-slot { display: grid;
   grid-template-columns: 190px minmax(140px, 1fr) 56px minmax(200px, 1.4fr);
   gap: var(--prism-sp-4); align-items: center; padding: var(--prism-sp-2) var(--prism-sp-4); }
 .bd-ladder-head { font-size: var(--prism-text-10); text-transform: uppercase; letter-spacing: .04em;
-  color: #8a8fa0; background: #f7f7fb; border-bottom: 1px solid #e6e6ee; }
-.bd-slot { border-bottom: 1px solid #f2f2f7; }
+  color: var(--prism-soft); background: var(--prism-surface-sunken); border-bottom: 1px solid var(--prism-border-soft); }
+.bd-slot { border-bottom: 1px solid var(--prism-border-soft); }
 .bd-slot:last-of-type { border-bottom: 0; }
 .bd-slot code { font-size: var(--prism-text-12); }
-.bd-line { color: #b0b4c0; font-size: var(--prism-text-10); margin-left: var(--prism-sp-2); }
-.bd-h-src { font-size: var(--prism-text-11); color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+.bd-line { color: var(--prism-soft); font-size: var(--prism-text-10); margin-left: var(--prism-sp-2); }
+.bd-h-src { font-size: var(--prism-text-11); color: var(--prism-muted); overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; }
-.bd-h-n { font-size: var(--prism-text-11); color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-h-n { font-size: var(--prism-text-11); color: var(--prism-muted); text-align: right; font-variant-numeric: tabular-nums; }
 .bd-h-bar { display: flex; align-items: center; gap: var(--prism-sp-4); }
-.bd-bar { flex: 1; height: 7px; border-radius: var(--prism-r-sm); background: #eeeef4; overflow: hidden; }
-.bd-bar i { display: block; height: 100%; background: #9aa0b4; }
-.bd-hot  .bd-bar i { background: #e06a5a; }
-.bd-warm .bd-bar i { background: #e0a34a; }
-.bd-cool .bd-bar i { background: #6aa8d8; }
+.bd-bar { flex: 1; height: 7px; border-radius: var(--prism-r-sm); background: var(--prism-heat-track); overflow: hidden; }
+.bd-bar i { display: block; height: 100%; background: var(--prism-heat-bar); }
+.bd-hot  .bd-bar i { background: var(--prism-heat-hot); }
+.bd-warm .bd-bar i { background: var(--prism-heat-warm); }
+.bd-cool .bd-bar i { background: var(--prism-heat-cool); }
 .bd-pct { font-size: var(--prism-text-11); width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
-.bd-abs { font-size: var(--prism-text-10); color: #a0a4b0; width: 52px; text-align: right;
+.bd-abs { font-size: var(--prism-text-10); color: var(--prism-soft); width: 52px; text-align: right;
   font-variant-numeric: tabular-nums; }
 .bd-mode { display: inline-block; margin-right: var(--prism-sp-3); padding: 0 var(--prism-sp-2); border-radius: var(--prism-r-sm);
   font-size: var(--prism-text-10); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-.bd-mode-full    { background: #eaf4fd; color: #1c5a8a; }
-.bd-mode-lazy    { background: #fdf7ea; color: #8a6a1c; }
-.bd-mode-runtime { background: #f0f0f5; color: #7a7f90; }
-.bd-ladder-foot { padding: var(--prism-sp-4) var(--prism-sp-4); font-size: var(--prism-text-10); color: #8a8fa0;
-  background: #fafafd; border-top: 1px solid #e6e6ee; }
+.bd-mode-full    { background: var(--prism-tone-info-bg); color: var(--prism-tone-info-fg); }
+.bd-mode-lazy    { background: var(--prism-tone-warn-bg); color: var(--prism-tone-warn-fg); }
+.bd-mode-runtime { background: var(--prism-tone-neutral-bg); color: var(--prism-tone-neutral-fg); }
+.bd-ladder-foot { padding: var(--prism-sp-4) var(--prism-sp-4); font-size: var(--prism-text-10); color: var(--prism-soft);
+  background: var(--prism-surface-sunken); border-top: 1px solid var(--prism-border-soft); }
 
 /* file table */
-.bd-table { border: 1px solid #e6e6ee; border-radius: var(--prism-r-sm); overflow: hidden; }
+.bd-table { border: 1px solid var(--prism-border-soft); border-radius: var(--prism-r-sm); overflow: hidden; }
 .bd-row { display: grid;
   grid-template-columns: 240px minmax(200px, 2fr) 56px 56px 110px;
   gap: var(--prism-sp-4); align-items: baseline; padding: var(--prism-sp-2) var(--prism-sp-4); cursor: pointer;
-  border-bottom: 1px solid #f2f2f7; }
+  border-bottom: 1px solid var(--prism-border-soft); }
 .bd-row[hidden] { display: none; }            /* ← load-bearing. See header. */
-.bd-row:hover { background: #f7f9fc; }
-.bd-thead { cursor: default; background: #f7f7fb; font-size: var(--prism-text-10);
-  text-transform: uppercase; letter-spacing: .04em; color: #8a8fa0; }
-.bd-thead:hover { background: #f7f7fb; }
+.bd-row:hover { background: var(--prism-surface-hover); }
+.bd-thead { cursor: default; background: var(--prism-surface-sunken); font-size: var(--prism-text-10);
+  text-transform: uppercase; letter-spacing: .04em; color: var(--prism-soft); }
+.bd-thead:hover { background: var(--prism-surface-sunken); }
 .bd-thead [data-sort] { cursor: pointer; }
-.bd-thead [data-sort]:hover { color: #23252f; text-decoration: underline dotted 1px; }
+.bd-thead [data-sort]:hover { color: var(--prism-fg-strong); text-decoration: underline dotted 1px; }
 .bd-c-name code { font-size: var(--prism-text-12); }
-.bd-c-desc { font-size: var(--prism-text-11); color: #6a6f80; overflow: hidden; text-overflow: ellipsis;
+.bd-c-desc { font-size: var(--prism-text-11); color: var(--prism-muted); overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; }
-.bd-c-n { font-size: var(--prism-text-11); color: #55596a; text-align: right; font-variant-numeric: tabular-nums; }
-.bd-c-when { font-size: var(--prism-text-10); color: #8a8fa0; font-variant-numeric: tabular-nums; }
-.bd-row.bd-pop-res { box-shadow: inset 3px 0 0 #6aa8d8; }
-.bd-row.bd-pop-sum { box-shadow: inset 3px 0 0 #e0a34a; }
-.bd-broken { background: #fff2f0; box-shadow: inset 3px 0 0 #e0503a !important; }
-.bd-err { grid-column: 1 / -1; font-size: var(--prism-text-11); color: #b0301a; font-weight: 600; }
+.bd-c-n { font-size: var(--prism-text-11); color: var(--prism-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.bd-c-when { font-size: var(--prism-text-10); color: var(--prism-soft); font-variant-numeric: tabular-nums; }
+.bd-row.bd-pop-res { box-shadow: inset 3px 0 0 var(--prism-heat-cool); }
+.bd-row.bd-pop-sum { box-shadow: inset 3px 0 0 var(--prism-heat-warm); }
+.bd-broken { background: color-mix(in srgb, var(--prism-tone-danger-bg) 45%, var(--prism-bg)); box-shadow: inset 3px 0 0 var(--prism-tone-danger-solid) !important; }
+.bd-err { grid-column: 1 / -1; font-size: var(--prism-text-11); color: var(--prism-tone-danger-fg); font-weight: 600; }
 .bd-tag { display: inline-block; margin-left: var(--prism-sp-2); padding: 0 var(--prism-sp-2); border-radius: var(--prism-r-sm);
   font-size: var(--prism-text-10); font-weight: 600; letter-spacing: .02em; vertical-align: 1px; }
-.bd-tag-slot  { background: #eaf4fd; color: #1c5a8a; }
-.bd-tag-lazy  { background: #fdf7ea; color: #8a6a1c; }
-.bd-tag-nofm  { background: #f3eaf7; color: #6a3a8a; }
-.bd-tag-drift { background: #fdecea; color: #a8402a; }
+.bd-tag-slot  { background: var(--prism-tone-info-bg); color: var(--prism-tone-info-fg); }
+.bd-tag-lazy  { background: var(--prism-tone-warn-bg); color: var(--prism-tone-warn-fg); }
+.bd-tag-nofm  { background: var(--prism-tone-special-bg); color: var(--prism-tone-special-fg); }
+.bd-tag-drift { background: var(--prism-tone-danger-bg); color: var(--prism-tone-danger-fg); }
 
 /* 002 Phase e adoption (s01-c6692e, 2026-08-05): box-model now comes from `.reg-detail`
    (docked, position:fixed) -- the old inline-block margin/border/padding here would
    fight the docked panel's own spacing. `.bd-detail` stays as a query-selector hook only
    (body.mjs:211), it owns no visual styling anymore. */
 .bd-detail-bar { display: flex; align-items: center; gap: var(--prism-sp-6); margin-bottom: var(--prism-sp-5); }
-.bd-detail-kind { display: inline-block; padding: .05rem var(--prism-sp-3); border: 1px solid #dcdce4;
-  border-radius: var(--prism-r-sm); background: #f4f4f8; font-size: var(--prism-text-10); font-weight: 600;
-  letter-spacing: .04em; text-transform: uppercase; color: #7a7f90; vertical-align: 2px; }
-.bd-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid #ccd; background: #fff;
-  border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: #556; }
+.bd-detail-kind { display: inline-block; padding: .05rem var(--prism-sp-3); border: 1px solid var(--prism-border);
+  border-radius: var(--prism-r-sm); background: var(--prism-tone-neutral-bg); font-size: var(--prism-text-10); font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--prism-tone-neutral-fg); vertical-align: 2px; }
+.bd-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border); background: var(--prism-surface-input);
+  border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: var(--prism-muted); }
 
-@media (prefers-color-scheme: dark) {
-  .bd-sub, .bd-h2 span, .bd-shown, .bd-pop em, .bd-ladder-foot, .bd-abs { color: #7a7a88; }
-  .bd-h2 { border-bottom-color: #2a2a33; }
-  .bd-filter { background: #1a1a22; border-color: #333; color: #ddd; }
-  .bd-pop { background: #16161d; border-color: #2a2a33; }
-  .bd-pop span { color: #9a9ead; }
-  .bd-pop-res { background: #12232f; border-color: #2b5170; }
-  .bd-pop-res b { color: #7fc0ef; }
-  .bd-pop-sum { background: #2a2314; border-color: #6a5424; }
-  .bd-pop-sum b { color: #e0b45c; }
-  .bd-pop-tot b { color: #e6e6ee; }
-  .bd-ladder, .bd-table { border-color: #2a2a33; }
-  .bd-ladder-head, .bd-thead, .bd-ladder-foot { background: #16161d; border-color: #2a2a33; }
-  .bd-slot { border-bottom-color: #1f1f27; }
-  .bd-row { border-bottom-color: #1f1f27; }
-  .bd-row:hover { background: #1c1c24; }
-  .bd-thead:hover { background: #16161d; }
-  .bd-bar { background: #24242e; }
-  .bd-h-src, .bd-c-desc { color: #9a9ead; }
-  .bd-h-n, .bd-c-n { color: #b0b4c0; }
-  .bd-mode-full    { background: #12232f; color: #7fc0ef; }
-  .bd-mode-lazy    { background: #2a2314; color: #e0b45c; }
-  .bd-mode-runtime { background: #22222b; color: #8a8f9e; }
-  .bd-broken { background: #2a1512; }
-  .bd-detail { border-top-color: #333; }
-  .bd-close { background: #1a1a22; border-color: #333; color: #bbc; }
-}
+/* S10: the largest of the twelve deleted dark blocks -- 26 rules, all of them the body
+   ladder restating the registry's own tones under different class names. `.bd-detail`'s
+   `border-top-color` went with it: that rule had no base counterpart and the class's own
+   comment says it "owns no visual styling anymore". A dark-only declaration for an element
+   with no light-mode appearance is a rule nobody could see failing. */
 
 /* ── S7 row 11: motion ─────────────────────────────────────────────────
    Every interactive surface transitions at the hover token; the drawer gets the
