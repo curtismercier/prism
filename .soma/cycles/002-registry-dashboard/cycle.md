@@ -67,10 +67,25 @@ with exactly one deliberate exception (see `decisions-to-surface`).
 | b | Stat cards, doubling as quick filters | ✅ shipped s01-8b4389 |
 | c | Grouping (project / scope / arc / status / flat) + sortable columns + URL state | ✅ shipped s01-8b4389 |
 | d | Multi-axis filter bar (project × arc × status), expanded from the existing sticky control row | ✅ shipped s01-8b4389 |
-| e | In-place editing — frontmatter fields and section bodies. **Curtis 08-05: opens in a PREVIEW/EDITOR PANEL** (same window, separate surface), NOT a scroll-to under the huge list | ⬜ queued — UX shape now specified, see §Phase e UX |
-| g | **Navigation system (Curtis 08-05)** — breadcrumb header (click the logo / "cycle registry" to return), close/X on the preview/editor, and a cross-dashboard MENU to switch between PRISM surfaces (Cycle Registry → delegation timeline → others) | ⬜ new |
+| e | In-place editing — frontmatter fields and section bodies. **Curtis 08-05: opens in a PREVIEW/EDITOR PANEL** (same window, separate surface), NOT a scroll-to under the huge list | ✅ **shipped `55cb306`** (READ + copy-patch; write is out of scope, see §Out of scope) — ⚠ **not on `main`** |
+| g | **Navigation system (Curtis 08-05)** — breadcrumb header (click the logo / "cycle registry" to return), close/X on the preview/editor, and a cross-dashboard MENU to switch between PRISM surfaces (Cycle Registry → delegation timeline → others) | ✅ **shipped `55cb306`** — ⚠ **not on `main`** |
 | f | **Filtering audit + default view** | 🟡 **default view SHIPPED s01-593a6d; audit queued** — see §Phase f |
 | **e-fit** | **The pane is a viewport inside a viewport** — make the docked panel resizable, make projected artifacts fit it, resolve relative paths against the artifact | ✅ **shipped s01-285a12 `04dd03c`** — see §Phase e-fit |
+
+> 🔴 **Table corrected AGAIN s01-9cada0 — e and g read `⬜ queued`/`⬜ new` while §Phase e/g below
+> said "BUILT and HUMAN-VERIFIED". The section was right.** Two things made this hard to see, and
+> both are worth knowing:
+>
+> 1. **The sha in §Phase e/g (`b7cfb38`) is a PRE-REBASE commit.** It still resolves as a git object,
+>    so `git show` works and looks like confirmation — but it is an ancestor of **no branch**. The
+>    work actually landed as **`55cb306`** (identical commit message, rebased). Verifying that record
+>    by its own sha would have said "reachable: NO" and read as *never shipped*.
+> 2. **`55cb306` is an ancestor of `exp/cycles-mechanic` and everything above it, but NOT of
+>    `main`.** So "shipped" here means *in the working lineage*, not released.
+>
+> 🔑 **A dead sha in a record is worse than no sha** — it fails the check while looking like it
+> supports it. Prefer the file-level evidence: `shell-header.mjs` exists and `registry.mjs` is 540
+> lines, exactly the "961 → 540" the section claims.
 
 > **Table corrected s01-593a6d.** b/c/d shipped a session earlier and were never
 > marked — the cycle read `queued` for features that had been live for hours, which
