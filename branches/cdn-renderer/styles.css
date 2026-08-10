@@ -53,8 +53,8 @@
 
   /* ── S10 colour ROLES ───────────────────────────────────────────────────────────
      Every colour in this sheet now names a JOB. Before S10, 283 raw literals sat in
-     component declarations -- 169 in the base cascade, 114 restated inside twelve
-     separate `@media (prefers-color-scheme: dark)` blocks. A declaration that bakes a
+     component declarations -- 169 in the base cascade, 114 restated inside ELEVEN
+     separate component `@media (prefers-color-scheme: dark)` blocks. A declaration that bakes a
      hex cannot be retinted by anything, so `themes/*.css` could set every token
      correctly and still not change the dashboard. These 29 names are what the literals
      were actually saying.
@@ -114,7 +114,7 @@
 }
 
 /* ── The ENTIRE dark cascade. One block, one job: reassign the role names.
-   S10 deleted twelve component-level `@media (prefers-color-scheme: dark)` blocks by
+   S10 deleted the eleven component-level `@media (prefers-color-scheme: dark)` blocks by
    making their declarations read tokens; what those 114 literals were really saying is
    written out here, once, where a theme file can override it. If you are adding a
    colour and reaching for a second dark block -- don't. Add a role. ── */
@@ -1121,7 +1121,7 @@ a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
 .bd-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border); background: var(--prism-surface-input);
   border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: var(--prism-muted); }
 
-/* S10: the largest of the twelve deleted dark blocks -- 26 rules, all of them the body
+/* S10: the largest of the eleven deleted dark blocks -- 26 rules, all of them the body
    ladder restating the registry's own tones under different class names. `.bd-detail`'s
    `border-top-color` went with it: that rule had no base counterpart and the class's own
    comment says it "owns no visual styling anymore". A dark-only declaration for an element

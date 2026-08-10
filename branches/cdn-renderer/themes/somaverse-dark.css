@@ -19,8 +19,8 @@
  * styles.css to restyle — that changes the default for every consumer, not just yours.
  *
  * ✅ CLOSED by S10 (was: "styles.css still carries ~220 hard-coded hex values"). Measured at
- *   the time: 283 raw literals, 169 in the base cascade and 114 across TWELVE component-level
- *   dark blocks — the note above had the ratio backwards. All 283 now name a role; the twelve
+ *   the time: 283 raw literals, 169 in the base cascade and 114 across ELEVEN component-level
+ *   dark blocks — the note above had the ratio backwards. All 283 now name a role; the eleven
  *   blocks are gone; one `:root` dark block remains. This file can retint the dashboard.
  *
  * ⚠ SO: a theme is now responsible for the ROLES below, not just the six base tokens. Omit
