@@ -415,7 +415,15 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    `data-reg-project` dropdown (`registry.mjs` `syncRail`/click handler) rather than a
    second filter mechanism -- see that file's comment for why. */
 .reg-body {
-  display: grid; grid-template-columns: 240px 1fr; gap: var(--prism-sp-8); align-items: start;
+  /* S9 G5 finding: a bare `1fr` track's implicit minimum is `auto` (= its content's
+     min-content), not 0 -- so a `white-space: nowrap` label inside the wrapped rail
+     (e.g. "meetsoma/racecar/lab/mega-kernel-bonsai") forced this track, and the whole
+     grid, to 558px on a 390px viewport. `text-overflow: ellipsis` only fires AFTER a box
+     is sized; it does not shrink the box's own min-content contribution upstream. Same
+     bug class as `.reg-detail-body`'s min-width chain further down this file --
+     `minmax(0, 1fr)` is the actual fix; the row content's `min-width:0`/ellipsis pair
+     (below) then makes the truncation visible instead of merely intended. */
+  display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--prism-sp-8); align-items: start;
 }
 .reg-rail {
   position: sticky; top: calc(var(--prism-header-h) + var(--prism-sp-4)); align-self: start;
@@ -433,12 +441,20 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   font: inherit; font-size: var(--prism-text-14); text-align: left; color: inherit;
   background: none; border: none; border-radius: var(--prism-r-sm); cursor: pointer;
   transition: background-color var(--prism-hover), color var(--prism-hover);
+  min-width: 0;   /* S9 G5 finding: a flex-row BUTTON has no shrink floor of its own --
+    without this a long project path ("meetsoma/racecar/lab/mega-kernel-bonsai") forced
+    the whole .reg-rail wider than the viewport once it wraps to a horizontal row below
+    900px (S8's own residue flagged this breakpoint as "not vision-checked"). Measured:
+    390px viewport, 268px of real page-level horizontal scroll from this alone. */
+}
+.reg-rail-label {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto;
 }
 .reg-rail-row:hover { background: var(--prism-accent-soft); }
 .reg-rail-row.is-active { background: var(--prism-accent-soft); color: var(--prism-accent); font-weight: 600; }
 .reg-rail-count { color: var(--prism-muted); font-variant-numeric: tabular-nums; font-size: var(--prism-text-12); }
 @media (max-width: 900px) {
-  .reg-body { grid-template-columns: 1fr; }
+  .reg-body { grid-template-columns: minmax(0, 1fr); }   /* S9: same blowout fix as above -- this rule OVERRIDES it at this breakpoint, so the bare `1fr` has to be fixed here too, not just once */
   .reg-rail { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; }
 }
 
@@ -496,9 +512,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-status-note { display: block; color: var(--prism-soft); font-size: var(--prism-text-11); font-style: italic; }
 
 /* footer: hairline-separated, artifact chips left / dates right */
-.reg-row-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--prism-sp-4);
+.reg-row-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--prism-sp-2) var(--prism-sp-4);
   padding-top: var(--prism-sp-2); border-top: 1px solid var(--prism-border-soft); }
-.reg-meta { display: inline-flex; gap: var(--prism-sp-6); flex: 0 0 auto; margin-left: auto; }
+/* S9 G5 finding, own defect: the 4 fixed min-width date columns (5.6rem each) forced
+   365px+ on a footer that only has ~350px to work with at a 390px viewport -- unlike
+   the rail (a min-content-vs-grid-track bug), this one is a genuine "too much fixed
+   content" case, so `flex-wrap` (reflow to a 2nd line) is the right fix, not `minmax`. */
+.reg-meta { display: inline-flex; flex-wrap: wrap; row-gap: var(--prism-sp-1); gap: var(--prism-sp-6); flex: 0 0 auto; margin-left: auto; }
 .reg-d, .reg-age { font-size: var(--prism-text-11); color: var(--prism-soft); font-variant-numeric: tabular-nums;
   min-width: 5.6rem; text-align: right; letter-spacing: .01em; }
 .reg-age { min-width: 3rem; }

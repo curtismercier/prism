@@ -164,10 +164,10 @@ export async function renderRegistry({ frontmatter: fm, preamble, srcUrl }) {
   const railHtml = `<aside class="reg-rail" data-reg-rail aria-label="filter by project">
     <div class="reg-rail-head">projects</div>
     <button type="button" class="reg-rail-row is-active" data-reg-rail-row data-reg-rail-project="" aria-pressed="true">
-      <span>all projects</span><span class="reg-rail-count">${rows.length}</span>
+      <span class="reg-rail-label">all projects</span><span class="reg-rail-count">${rows.length}</span>
     </button>
-    ${projects.map((p) => `<button type="button" class="reg-rail-row" data-reg-rail-row data-reg-rail-project="${esc(p)}" aria-pressed="false">
-      <span>${esc(p)}</span><span class="reg-rail-count">${railCounts[p] || 0}</span>
+    ${projects.map((p) => `<button type="button" class="reg-rail-row" data-reg-rail-row data-reg-rail-project="${esc(p)}" aria-pressed="false" title="${esc(p)}">
+      <span class="reg-rail-label">${esc(p)}</span><span class="reg-rail-count">${railCounts[p] || 0}</span>
     </button>`).join('')}
   </aside>`;
 
