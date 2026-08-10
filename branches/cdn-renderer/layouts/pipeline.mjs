@@ -40,13 +40,27 @@ const ms = (n) => n >= 10000 ? `${(n / 1000).toFixed(1)}s` : n >= 1000 ? `${(n /
 
 const STYLE = `
 <style>
-.pl-wrap{--pl-synth:#7c5cff;--pl-play:#18a999;--pl-gap:#e5484d;--pl-ink:#1a1a22;--pl-dim:#6b7280;--pl-line:#e4e4ee;--pl-bg:#fff;color:var(--pl-ink);font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif}
+/* --pl-on-solid: the ink for text sitting ON a data colour. It is #000 and not --prism-on-solid
+   (#fff) because white FAILS AA on all three: play 2.93, gap 3.91, synth 4.35. Measured every
+   candidate between #000 and #1a1a22 -- only pure black clears 4.5 on all three (7.17 / 5.37 /
+   4.83), because these are mid-tone hues with no comfortable ink at either end.
+   The right long-term fix is a COMPUTED per-colour ink (darken-or-lighten to contrast), which is
+   what tincture's palette.mjs already does; this is the honest minimum until that is adopted.
+   The data colours themselves are NOT adjusted -- they are the encoding, not decoration. */
+.pl-wrap{--pl-synth:#7c5cff;--pl-play:#18a999;--pl-gap:#e5484d;--pl-on-solid:#000;--pl-ink:#1a1a22;--pl-dim:#6b7280;--pl-line:#e4e4ee;--pl-bg:#fff;color:var(--pl-ink);font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif}
 @media (prefers-color-scheme:dark){.pl-wrap{--pl-ink:#e8e8f0;--pl-dim:#9aa0ae;--pl-line:#2a2a36;--pl-bg:#14141b}}
 .pl-wrap h1{font-size:1.6rem;margin:0 0 .2em}
 .pl-banner{border-radius:10px;padding:.85em 1.1em;margin:1.2em 0;border:1px solid}
-.pl-banner.modelled{background:#fff4e5;border-color:#f0a23c;color:#5c3a00}
-.pl-banner.measured{background:#e9f9f2;border-color:#18a999;color:#04503f}
-@media (prefers-color-scheme:dark){.pl-banner.modelled{background:#33240c;color:#ffd9a0}.pl-banner.measured{background:#0c2e26;color:#8ff0d6}}
+/* Banner SURFACES adopt the shared status tones, so they inherit light+dark from :root and this
+   layout no longer needs its own dark override for them (the @media line that used to sit below
+   is deleted, not moved). The BORDERS stay literal on purpose: #18a999 IS --pl-play, a DATA
+   colour -- the measured banner is bordered in the same hue its measured bars use, and folding
+   that into a status tone would break the association the reader decodes. Same rule that kept
+   the heat bars out of the tone vocabulary.
+   NOTE: this whole stylesheet lives inside a JS template literal. No backticks in comments --
+   they terminate the string, and the SyntaxError points at the comment, not at the CSS. */
+.pl-banner.modelled{background:var(--prism-tone-warn-bg);border-color:#f0a23c;color:var(--prism-tone-warn-fg)}
+.pl-banner.measured{background:var(--prism-tone-ok-bg);border-color:var(--pl-play);color:var(--prism-tone-ok-fg)}
 .pl-banner b{display:block;margin-bottom:.25em;letter-spacing:.02em}
 .pl-evidence{border-left:3px solid var(--pl-dim);padding:.5em 0 .5em 1em;margin:1.2em 0;color:var(--pl-dim);font-size:.93em}
 .pl-group{margin:2.2em 0;border:1px solid var(--pl-line);border-radius:12px;overflow:hidden}
@@ -64,7 +78,7 @@ const STYLE = `
 .pl-row{display:grid;grid-template-columns:5.5em 1fr;gap:.6em;align-items:center;margin:.22em 0}
 .pl-lbl{font-size:.78em;color:var(--pl-dim);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pl-track{position:relative;height:22px;background:color-mix(in srgb,var(--pl-line) 35%,transparent);border-radius:5px;overflow:hidden}
-.pl-bar{position:absolute;top:0;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 5px;font-size:.7em;color:#fff;white-space:nowrap;overflow:hidden;box-sizing:border-box}
+.pl-bar{position:absolute;top:0;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 5px;font-size:.7em;color:var(--pl-on-solid);white-space:nowrap;overflow:hidden;box-sizing:border-box}
 .pl-bar.synth{background:repeating-linear-gradient(45deg,var(--pl-synth),var(--pl-synth) 5px,color-mix(in srgb,var(--pl-synth) 72%,#000) 5px,color-mix(in srgb,var(--pl-synth) 72%,#000) 10px);opacity:.92}
 .pl-bar.play{background:var(--pl-play)}
 .pl-bar.gap{background:repeating-linear-gradient(45deg,transparent,transparent 4px,var(--pl-gap) 4px,var(--pl-gap) 8px);opacity:.85;border:1px solid var(--pl-gap)}
@@ -87,14 +101,14 @@ const STYLE = `
 .pl-pc li{margin:.3em 0;font-size:.88em}
 .pl-live{position:sticky;top:0;z-index:5;background:var(--pl-bg);border:1px solid var(--pl-line);border-radius:11px;padding:.8em 1em;margin:1.4em 0;display:flex;gap:.6em;align-items:center;flex-wrap:wrap}
 .pl-live button{font:inherit;font-size:.87em;padding:.42em .95em;border-radius:7px;border:1px solid var(--pl-line);background:var(--pl-bg);color:var(--pl-ink);cursor:pointer}
-.pl-live button.primary{background:var(--pl-play);border-color:var(--pl-play);color:#fff}
-.pl-live button.danger{background:var(--pl-gap);border-color:var(--pl-gap);color:#fff}
+.pl-live button.primary{background:var(--pl-play);border-color:var(--pl-play);color:var(--pl-on-solid)}
+.pl-live button.danger{background:var(--pl-gap);border-color:var(--pl-gap);color:var(--pl-on-solid)}
 .pl-live button:disabled{opacity:.45;cursor:not-allowed}
 .pl-live .pl-status{margin-left:auto;font-size:.85em;color:var(--pl-dim);font-variant-numeric:tabular-nums}
 .pl-playhead{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--pl-gap);box-shadow:0 0 6px var(--pl-gap);z-index:3;pointer-events:none}
 .pl-track{position:relative}
 .pl-measured{border:2px solid var(--pl-play);border-radius:12px;margin:1.4em 0;overflow:hidden}
-.pl-measured>header{background:var(--pl-play);color:#fff;padding:.55em 1em;font-weight:600;font-size:.92em}
+.pl-measured>header{background:var(--pl-play);color:var(--pl-on-solid);padding:.55em 1em;font-weight:600;font-size:.92em}
 </style>`;
 
 function bars(chunks, scale) {
