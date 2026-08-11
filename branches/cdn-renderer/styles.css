@@ -34,6 +34,16 @@
   --prism-hover: 0.15s ease;
   --prism-spring: cubic-bezier(0.34,1.56,0.64,1);
 
+  /* Scrollbars. `-w` is the TRACK width; the thumb reads ~4px narrower because it carries a
+     2px transparent border with background-clip: content-box (see the scrollbar rules). Track is
+     transparent so the surface underneath shows through instead of a second grey stripe. */
+  --prism-brand-size: 24px;   /* the wordmark sits ABOVE the 7-step type scale, which caps at 20px
+                                 and is designed for chrome, not for a display mark */
+  --prism-scrollbar-w: 10px;
+  --prism-scrollbar-track: transparent;
+  --prism-scrollbar-thumb: #c9ccd6;
+  --prism-scrollbar-thumb-hover: #a8adbb;
+
   --prism-sp-1: 2px;  --prism-sp-2: 4px;  --prism-sp-3: 6px;  --prism-sp-4: 8px;
   --prism-sp-5: 12px; --prism-sp-6: 16px; --prism-sp-7: 24px; --prism-sp-8: 32px;
   --prism-sp-9: 48px; --prism-sp-10: 64px;
@@ -120,6 +130,8 @@
    colour and reaching for a second dark block -- don't. Add a role. ── */
 @media (prefers-color-scheme: dark) {
   :root {
+    --prism-scrollbar-thumb:       #3a3a44;
+    --prism-scrollbar-thumb-hover: #50505e;
     --prism-bg:           #1a1a1a;
     --prism-fg:           #ecebe6;
     --prism-muted:        #a6a6a6;
@@ -681,6 +693,67 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
    so switching artifacts cannot shift the text sideways mid-read. */
 .reg-detail-body { overflow: auto; flex: 1; overscroll-behavior: contain;
   padding-right: var(--prism-sp-6); scrollbar-gutter: stable; }
+
+/* ── SCROLLBARS ────────────────────────────────────────────────────────────────────────────
+   The default macOS scrollbar is a light overlay drawn by the OS. On a dark surface it reads as
+   a bright foreign stripe and it does not change with the theme, so every themed dashboard had
+   one un-themeable element in it.
+
+   Both syntaxes are required and they are NOT alternatives:
+     · `scrollbar-width` / `scrollbar-color` — the STANDARD (Firefox, and the spec direction).
+       Only two knobs, and `scrollbar-color` takes exactly `<thumb> <track>`.
+     · `::-webkit-scrollbar*` — WebKit/Blink (Safari, Chrome, Brave, Electron). Ignored by
+       Firefox, so it cannot replace the above.
+   Declaring only one leaves half the browsers on the OS default, which is the bug.
+
+   Tokenised so a theme controls it: styles.css carries light defaults, the theme overrides.
+   Scoped to the scrolling SURFACES rather than `*` on purpose — a global rule would also restyle
+   the page scrollbar and every nested widget, which is a bigger visual decision than this is.
+
+   ⚠ MEASURED, and it corrects the obvious assumption: in Chromium the rendered track is 11px and
+   `--prism-scrollbar-w` does NOT drive it. Setting the token to 30px at runtime changed the
+   measured width by zero (`offsetWidth - clientWidth` stayed 11 against a 15px UA default). The
+   width comes from `scrollbar-width: thin`, which WINS over `::-webkit-scrollbar { width }` where
+   both are supported. The token is kept because it still applies in engines without
+   `scrollbar-width`, but do NOT reach for it expecting to resize this in Chrome or Brave — change
+   `scrollbar-width` instead. The COLOURS are genuinely themed either way: `scrollbar-color`
+   resolves to the theme's values (verified in the computed style). */
+.reg-detail-body,
+.reg-rail,
+.cycle-body > .toc {
+  scrollbar-width: thin;
+  scrollbar-color: var(--prism-scrollbar-thumb) var(--prism-scrollbar-track);
+}
+.reg-detail-body::-webkit-scrollbar,
+.reg-rail::-webkit-scrollbar,
+.cycle-body > .toc::-webkit-scrollbar {
+  width: var(--prism-scrollbar-w); height: var(--prism-scrollbar-w);
+}
+.reg-detail-body::-webkit-scrollbar-track,
+.reg-rail::-webkit-scrollbar-track,
+.cycle-body > .toc::-webkit-scrollbar-track {
+  background: var(--prism-scrollbar-track);
+}
+.reg-detail-body::-webkit-scrollbar-thumb,
+.reg-rail::-webkit-scrollbar-thumb,
+.cycle-body > .toc::-webkit-scrollbar-thumb {
+  background: var(--prism-scrollbar-thumb);
+  border-radius: var(--prism-r-sm);
+  /* A transparent border + background-clip keeps the thumb visually narrower than its hit
+     target, so it stays easy to grab while looking slim. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.reg-detail-body::-webkit-scrollbar-thumb:hover,
+.reg-rail::-webkit-scrollbar-thumb:hover,
+.cycle-body > .toc::-webkit-scrollbar-thumb:hover {
+  background: var(--prism-scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+/* The corner where two scrollbars meet defaults to opaque white in WebKit. */
+.reg-detail-body::-webkit-scrollbar-corner,
+.reg-rail::-webkit-scrollbar-corner,
+.cycle-body > .toc::-webkit-scrollbar-corner { background: transparent; }
 .reg-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border);
   background: var(--prism-surface-input); border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: var(--prism-muted); }
 
@@ -865,7 +938,10 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   backdrop-filter: blur(var(--prism-blur));
   border-bottom-color: var(--prism-border-soft);
 }
-.shell-topbar .shell-title { margin: 0; font-size: var(--prism-text-20); letter-spacing: -0.01em; }
+/* The container no longer dictates one size for everything inside it -- the brand and the
+   breadcrumb each set their own, which is the whole point of the hierarchy below. */
+.shell-topbar .shell-title { margin: 0; font-size: var(--prism-text-16); letter-spacing: -0.01em;
+  display: inline-flex; align-items: baseline; gap: var(--prism-sp-3); }
 .shell-topmeta { display: flex; align-items: center; gap: var(--prism-sp-4); }
 /* NVIDIA measured nav links at 14px (S5 §3) -- this dropdown's items are the only
    always-navigable "nav" surface the header has (the breadcrumb is chrome, not a
@@ -884,8 +960,14 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 /* The breadcrumb (g.1). Underlined only on hover: it must READ as chrome and
    BEHAVE as a link, because a header that looks like a link everywhere makes the
    whole banner feel clickable when only part of it is. */
-.shell-crumb { color: var(--prism-muted); text-decoration: none; font-weight: 400; letter-spacing: .01em; }
-.shell-crumb:hover { color: var(--prism-accent); text-decoration: underline; }
+/* The breadcrumb is a LABEL, not a title. Uppercase + tracking is what makes 12px read as
+   deliberate chrome rather than shrunken body text, and it puts the wordmark unambiguously
+   first in the reading order. `text-underline-offset` keeps the hover rule off the caps. */
+.shell-crumb {
+  color: var(--prism-muted); text-decoration: none; font-weight: 600;
+  font-size: var(--prism-text-12); text-transform: uppercase; letter-spacing: .085em;
+}
+.shell-crumb:hover { color: var(--prism-accent); text-decoration: underline; text-underline-offset: 3px; }
 
 /* The cross-dashboard menu (g.3). <details> so it opens with zero JS — one less
    thing that can fail to attach, and keyboard support comes free. */
@@ -962,9 +1044,20 @@ a.shell-nav-item:hover { background: var(--prism-accent-soft); }
    name / symbol / name reads white-gold-white on dark and ink-gold-ink on light.
    It was inheriting the muted grey, which made the brand quieter than its own
    subtitle. */
-.shell-brand-name { font-weight: 650; letter-spacing: -0.01em; color: var(--prism-fg); }
+/* HIERARCHY (Curtis, s01-9cada0): the wordmark and the breadcrumb were BOTH 20px, differing
+   only in weight -- so "Cycle Registry" read as a size-peer of the logo instead of a subtitle
+   under it. The brand now gets its own scale step above the type scale's 20px cap, and the
+   breadcrumb drops to a caption treatment: small, uppercase, wide-tracked. That is the pairing
+   that complements a wordmark without a second typeface -- CONTRAST OF ROLE (display vs label)
+   rather than contrast of family, which matters here because there is no webfont and every
+   family is a system stack that differs per machine. */
+.shell-brand { font-size: var(--prism-brand-size); }
+.shell-brand-name { font-weight: 680; letter-spacing: -0.022em; color: var(--prism-fg); }
 a.shell-brand:hover .shell-brand-name { color: var(--prism-accent); }
-.shell-brand-sep { color: var(--prism-border-soft); margin: 0 var(--prism-sp-1); font-weight: 300; }
+.shell-brand-sep {
+  color: var(--prism-border-soft); margin: 0 var(--prism-sp-3); font-weight: 200;
+  font-size: var(--prism-text-16); position: relative; top: -0.05em;
+}
 .shell-product { font-weight: 400; color: var(--prism-muted); letter-spacing: .01em; }
 
 /* ── registry: FLAT table mode (registry-flat.mjs) ─────────────────────────── */

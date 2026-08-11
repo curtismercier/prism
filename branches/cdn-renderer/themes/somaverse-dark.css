@@ -115,6 +115,19 @@
   --prism-mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   --prism-serif: "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", Georgia, serif;
 
+  /* The wordmark's own size, deliberately outside the 7-step type scale (which caps at 20px and
+     exists for chrome). A theme that cannot resize the brand cannot really rebrand. */
+  --prism-brand-size: 24px;
+
+  /* ── scrollbars ──
+     The macOS default is an OS-drawn light overlay: on this canvas it reads as a bright foreign
+     stripe and ignores the theme entirely. Tuned to the somaverse surface ramp — visible enough
+     to grab, quiet enough not to compete with content. */
+  --prism-scrollbar-w:            10px;
+  --prism-scrollbar-track:        transparent;
+  --prism-scrollbar-thumb:        #2a3140;
+  --prism-scrollbar-thumb-hover:  #3b4658;
+
   /* ── chrome + motion ── */
   --prism-header-h:48px;
   --prism-blur:12px;
