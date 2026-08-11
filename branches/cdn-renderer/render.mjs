@@ -154,6 +154,35 @@ async function resolveLayout(type, srcUrl) {
   return entry;
 }
 
+/**
+ * What renders an artifact whose `type` nothing claims.
+ *
+ * It used to be `renderDefault` unconditionally — a frontmatter dump with no TOC. That was
+ * invisible because, as the LAYOUTS comment above says of `phase`, "the body renders, so it looks
+ * fine, and only the missing TOC gives it away."
+ *
+ * MEASURED over the live corpus (1,211 artifacts in cycle trees):
+ *   745 (61%) declare a type nothing registers — feature, report, meta, brief, plan, research,
+ *              cycle-report, mlr, doc, and 60 with no `type:` at all
+ *   731 of those 745 carry `@section` markers or `## ` headings — they are cycle-SHAPED documents
+ *    14 are genuinely unstructured, and for those a frontmatter dump is the right answer
+ *
+ * So the list was never going to be the fix. Registering nine more types would leave the next nine
+ * broken, and the corpus invents types faster than anyone edits this file — the same
+ * list-kept-in-step-by-hand failure that killed the roster line count and the test's module list.
+ *
+ * ⇒ DISPATCH ON STRUCTURE when the type is unknown. A document with sections is a document with
+ *   navigation; renderCycle already handles heading-derived anchors and MARKS them `derived`, so
+ *   nothing is claimed to be a stable address that isn't.
+ *
+ * A registered type ALWAYS wins — this only runs when nothing claimed the artifact.
+ */
+function fallbackLayout(parsed) {
+  const hasSections = parsed?.sections?.size > 0;
+  const hasHeadings = /^## /m.test(parsed?.rawBody || '');
+  return (hasSections || hasHeadings) ? LAYOUTS.cycle : renderDefault;
+}
+
 class SomaArtifact extends HTMLElement {
   static get observedAttributes() { return ['src']; }
 
@@ -254,7 +283,7 @@ class SomaArtifact extends HTMLElement {
 
     // Dispatch by type
     const type = parsed.frontmatter?.type || 'unknown';
-    const entry = (await resolveLayout(type, parsed.srcUrl)) || renderDefault;
+    const entry = (await resolveLayout(type, parsed.srcUrl)) || fallbackLayout(parsed);
     const layout = typeof entry === 'function' ? entry : entry.render;
     const attach = typeof entry === 'function' ? null : entry.attach;
 
