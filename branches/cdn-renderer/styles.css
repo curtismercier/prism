@@ -616,7 +616,13 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-row-eyebrow { display: flex; align-items: center; gap: var(--prism-sp-3); }
 .reg-row-id { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: var(--prism-sp-2); }
 .reg-nm { font-weight: 400; color: var(--prism-muted); font-size: var(--prism-text-11); }
-.reg-entry-mark { color: var(--prism-accent); font-weight: 700; }
+/* SOFT, not accent. This ↳ is a STRUCTURAL marker and it repeats ~29 times on one screen, which
+   made it 29 of the page's 31 accent uses (94%) and pushed accent density to 22/1000px against
+   website-master's G-V2 target of <=4. An accent that appears 29 times is not an accent, it is
+   wallpaper -- it stops meaning "look here", which is the only job it has.
+   The glyph is `aria-hidden` decoration; its function is positional, so it does not need the
+   attention colour to work. Accent is now spent only on the brand sigma and the ACTIVE rail row. */
+.reg-entry-mark { color: var(--prism-soft); font-weight: 700; }
 .reg-row-entry { border-left: 2px solid var(--prism-accent-soft); }
 
 /* title (frontmatter title:, promoted) -> description (status_note / error) */
