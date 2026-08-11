@@ -685,12 +685,16 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
   padding-bottom: var(--prism-sp-4); border-bottom: 1px solid var(--prism-border-soft); }
 /* The pane scrolls ITSELF. Scrolling the page instead is what put the reader
    somewhere they did not ask to be. */
-/* padding-right, not a symmetric padding: the 15px scrollbar lives INSIDE this box,
-   so the right edge already had 15px of chrome and 0px of breathing room while the
-   left had the pane's 16px (Curtis, 2026-08-09: "right appears to hit right side of
-   pane"). Measured: content right 1390 · scrollbar 1390-1405 · pane edge 1421.
-   `scrollbar-gutter: stable` reserves the track even when the pane does not scroll,
-   so switching artifacts cannot shift the text sideways mid-read. */
+/* padding-right, not a symmetric padding: the scrollbar lives INSIDE this box, so the right edge
+   already had chrome and 0px of breathing room while the left had the pane's 16px (Curtis,
+   2026-08-09: "right appears to hit right side of pane").
+   `scrollbar-gutter: stable` reserves the track even when the pane does not scroll, so switching
+   artifacts cannot shift the text sideways mid-read.
+   ⚠ The original measurement said 15px (content right 1390 · scrollbar 1390-1405 · pane edge
+   1421). That was the macOS default; since the scrollbars were themed the track measures 11px.
+   The padding is deliberately NOT retuned to it — `--prism-sp-6` is breathing room, not a
+   scrollbar offset, and `scrollbar-gutter` already handles the reservation. Recorded because a
+   stale number in a comment is how the next reader "corrects" a value that was never wrong. */
 .reg-detail-body { overflow: auto; flex: 1; overscroll-behavior: contain;
   padding-right: var(--prism-sp-6); scrollbar-gutter: stable; }
 
