@@ -196,8 +196,16 @@ if (!existsSync(DATA)) {
   };
   globalThis.document = { baseURI: pathToFileURL(DATA).href };
 
-  const base = execFileSync('git', ['-C', REPO, 'merge-base', 'HEAD', 'exp/cycles-mechanic'],
-    { encoding: 'utf8' }).trim();
+  // PINNED, not computed. This was `merge-base(HEAD, exp/cycles-mechanic)`, which meant "the last
+  // commit before the split" only while the split lived on an unmerged branch. Once it merged,
+  // merge-base resolved to a POST-split commit, so the "old" side stopped being old: the two
+  // shape guards below could never pass again and the suite carried permanent red. A red that
+  // cannot go green is a dead gate -- the same failure as the ERR_MODULE_NOT_FOUND crash this
+  // file already fixed once, arriving by a different road.
+  //
+  // 7fadb17 is the commit immediately before the split (registry.mjs 974 lines, no
+  // shell-header.mjs). It is an ancestor of main, so it cannot be GC'd or rebased away.
+  const base = '7fadb17a9b43202959a0c399de0042b9afbb6e2d';
   const scratch = join(tmpdir(), `prism-old-registry-${base.slice(0, 7)}`);
   mkdirSync(scratch, { recursive: true });
   // ENUMERATE, never list. This was `['registry.mjs', 'registry-flat.mjs']` hardcoded. When the
@@ -224,28 +232,33 @@ if (!existsSync(DATA)) {
   const oldHtml = await oldMod.renderRegistry({ frontmatter: fm, preamble: '<p>hi</p>', srcUrl });
   const newHtml = await newMod.renderRegistry({ frontmatter: fm, preamble: '<p>hi</p>', srcUrl });
 
-  // The region that must not have changed: everything from the sticky sentinel to the
-  // preview pane — stat cards, every control, the legend, the full tree, the flat table.
-  // trimEnd, and ONLY trimEnd: the seam between the flat table and the pane differs by
-  // the indentation the pane's template literal carries. Inter-element whitespace is not
-  // behaviour — but the trim is at the boundary only, so nothing inside can hide in it.
-  const middle = (h) => {
-    const a = h.indexOf('<div data-reg-sentinel');
-    const b = h.search(/<(?:div|aside) class="reg-detail"/);
-    assert.ok(a > 0 && b > a, 'could not locate the comparable region');
-    return h.slice(a, b).trimEnd();
-  };
+  // (The `middle()` region slicer that lived here was deleted with the differential it served.
+  //  Dead code left beside a retired test is how the next reader concludes the test still runs.)
 
-  await ta('the tree, cards, controls, legend and flat table are byte-identical', () => {
-    const o = middle(oldHtml), n = middle(newHtml);
-    console.log(`       compared ${o.length} bytes of rendered markup`);
-    if (o !== n) {
-      // Report WHERE, not just that — a bare inequality on 400KB is unactionable.
-      let i = 0; while (i < o.length && i < n.length && o[i] === n[i]) i++;
-      throw new Error(`diverges at ${i}:\n  old …${o.slice(i - 60, i + 90)}\n  new …${n.slice(i - 60, i + 90)}`);
-    }
-    assert.ok(o.length > 10000, `comparable region suspiciously small (${o.length}b) — is the fixture real?`);
-  });
+  // ── RETIRED: the byte-identical differential ──────────────────────────────────────────────
+  //
+  // It did its job and the job is over. It existed to prove ONE migration -- that splitting
+  // registry.mjs by concern changed no rendered byte outside the header and the pane -- and it
+  // proved exactly that, at 55cb306, on ~400KB of markup.
+  //
+  // Everything it guarded has since been deliberately changed, by rows the gap table authorised:
+  //   S8  36c7ad6  background orbs, a 48px scroll-aware header, a 240px filter rail
+  //   S9  a65cc9e  card anatomy -- the leaf row RESTRUCTURED (eyebrow/title/description/footer)
+  //   S10 f4cd7a9  283 colour literals become 29 roles
+  // So "byte-identical to the pre-split render" is now a claim we do not want to be true, and an
+  // assertion nobody wants to pass is noise that hides the 18 that matter.
+  //
+  // 🔑 A MIGRATION test is not a regression test. Delete it when the migration lands, or it decays
+  //    into permanent red and takes the suite's signal with it.
+  //
+  // The SHAPE guards below are kept and are NOT the same thing: they assert the refactor's
+  // invariants still hold (the pane is out of flow, the header is the shared module, nothing calls
+  // scrollIntoView) and they stay meaningful for as long as those decisions do.
+  //
+  // Coverage did not shrink -- it moved and widened. What renders correctly is now checked by
+  // verify-all-layouts.py, which drives all SEVEN registered layouts rather than one page, and by
+  // verify-widths / verify-chrome / verify-typography.
+  //   → releases/cycles/prism-universal-registry/p1-family-consolidation/
 
   await ta('the preview pane keeps every hook the close ✕ and the projection need', () => {
     for (const hook of ['data-reg-detail', 'data-reg-detail-title', 'data-reg-detail-body',
