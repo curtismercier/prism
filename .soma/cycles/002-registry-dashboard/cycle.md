@@ -275,6 +275,40 @@ host. Leaning: specify the *contract*, ship no server.
 <!-- @section: publication-readiness -->
 ## Publication readiness — BLOCKER before this repo goes public
 
+> 🔴 **THE BLOCKER WAS BREACHED AND REVERTED — 2026-08-12, `s01-5390f1`.**
+> The repo was made public at ~16:00 on Curtis's instruction and reverted to private at ~17:5x.
+> **Public window ≈ 2h**, `examples/cycle-215.{md,html,json,xml}` reachable the whole time.
+>
+> **Why the pre-flight missed it:** I scanned for CREDENTIALS across all branches (0 hits) and
+> concluded "safe to publish". **This blocker was never about credentials** — it is about a real
+> production dossier. *A leak scan answers "are there secrets"; it cannot answer "should this be
+> public", and only the owning cycle knew the second question existed.*
+> ⇒ **Read the target repo's own cycles before flipping visibility.** `code.find` for
+> `public|private` in its `.soma/` would have surfaced this in one call.
+>
+> **Measured severity (lower than feared, not nil):** `/Users/user` paths **0** · secret-store refs
+> **0** · domains **0** · `gravicity` 8 · `orchestrator` 7 · `cloud-host` 16 · SPOF language **1**. No credentials.
+> The genuinely non-inferable item is the **SPOF note**.
+>
+> ⚠ **`main` alone is not the fix: 11 of 11 branches carry all 6 files**, and every branch is public
+> on a public repo. Deleting on main would have closed nothing — which is why visibility was
+> reverted instead of the file deleted.
+
+### Re-publish gate (must pass BEFORE the next flip)
+
+```bash
+# 1. no branch anywhere still carries the internal fixture
+for b in $(git for-each-ref --format='%(refname:short)' refs/heads); do \
+  git ls-tree -r --name-only "$b" | grep -q cycle-215 && echo "STILL PRESENT: $b"; done
+# 2. credentials (necessary, NOT sufficient — this is what passed last time)
+git grep -InE 'sk-|gho_|ghp_|AKIA|BEGIN [A-Z ]*PRIVATE KEY' $(git for-each-ref --format='%(refname:short)' refs/heads)
+# 3. the question a leak scan cannot ask:
+#    does any cycle in this repo's .soma/ name a publication blocker?
+```
+**Open decision (Curtis's):** git HISTORY retains the fixture even after replacement. For a ~2h
+window with no credentials, rewriting history is probably disproportionate — but it is a choice, not
+an oversight, and it should be made rather than defaulted.
+
 The repo is **private today** (verified `gh repo view` → `isPrivate: true`), but it is licensed,
 CONTRIBUTING-gated and structured for publication. Two things must be settled before that flip.
 
