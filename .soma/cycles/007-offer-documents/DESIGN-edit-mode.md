@@ -158,6 +158,54 @@ persisted source (open question in that cycle, unresolved — flag it there, don
    the answer is "author narrower nested anchors in the source," not a second, finer-grained editing UI —
    that keeps exactly one edit primitive in the system instead of two.
 
+## ✅ SPEC — offer edit mode, now that the prerequisite shipped (s01-5390f1)
+
+Written so the next agent does not re-derive it. **Probed, not assumed:** `offer-config-v9.json`
+exists with the prose fields this doc names (`performance`, `need`) as real top-level keys;
+`offer-serve.py` is still 56 lines with no write path.
+
+🔴 **IT IS A CROSS-LANE FEATURE, AND THAT IS WHY IT WILL STALL IF NOBODY SAYS SO.**
+
+| piece | lives in | lane |
+|---|---|---|
+| the editing PATTERN (PUT + optimistic concurrency + containment) | `soma-prism-serve.py`, already built | prism |
+| the SURFACE being edited (`offer-serve.py`, the config) | `yoshi-platform` | yoshi (`4c1557`) |
+
+⇒ **Do not port the pattern by copying it.** That is a third implementation of a write path, and
+this estate has already paid for two copies of one contract today. Either `offer-serve.py` imports
+the shared handler, or the offer dir is served BY `soma-prism-serve.py`. **Deciding which is the
+first task, and it is a lane question before it is a technical one.**
+
+### What differs from the cycle-dashboard case — the whole design delta
+
+**The edit target is the CONFIG, not the rendered document.** Prism edits a markdown SECTION in
+place. Here the artifact is generated, so:
+
+1. **Edit `offer-config-v9.json` field, then REBUILD.** `build_offer.js <config-path>` regenerates
+   the HTML. Never edit the HTML — that is the defect cycle 007 exists to remove.
+2. **Addressing is a JSON path** (`performance.caveat`, `need[2].why`), not a section anchor. The
+   rendered markup has **no `data-*` trace back to the field**, so click-to-edit needs the
+   generator to emit one — that is a `build_offer.js` change, in yoshi's lane, and it is the
+   largest single unknown here.
+3. **Concurrency: reuse `expected`/`replacement` on the FIELD VALUE**, not mtime — same reason it
+   was right for prism: it survives a touch that changes no content.
+4. **The rebuild is the risky half, not the write.** A bad config write is one field; a rebuild
+   overwrites a client-facing deliverable. ⚠ `proposal-v9-DRAFT.html` is COMMITTED and
+   byte-reproducible from the config (`s01-4c1557` verified) — **that reproduction IS the gate**:
+   rebuild must be byte-identical before any edit is accepted as safe.
+
+### Acceptance (pre-registered)
+
+| # | gate | pass |
+|---|---|---|
+| G1 | rebuild from unedited config | byte-identical to the committed HTML |
+| G2 | edit one field → rebuild | exactly that field's text changes in the HTML |
+| G3 | stale `expected` | 409, config untouched |
+| G4 | write outside the config path | 403 |
+| G5 | **generator emits `data-field` for edited prose** | click maps to a JSON path — else there is no edit MODE, only an edit API |
+
+**G5 is the one that decides whether this is a feature or a curl recipe.**
+
 ## What I would not build
 
 - **Not** a shared server merge (Q1) — real divergent purpose, only the cache-defeat idiom overlaps, and
