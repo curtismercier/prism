@@ -15,9 +15,18 @@
 // and the list does not move at all. The scrollIntoView is deleted, not re-tuned —
 // there is nothing left to scroll to.
 //
-// ⛔ EDITING (Phase e write) IS OUT OF SCOPE. Ruled: this panel ships READ +
-// COPY-PATCH. Real writes route through a live soma session, and no PUT/POST endpoint
-// goes into this repo while it is being prepared for publication.
+// ⛔ NO PUT/POST ENDPOINT GOES INTO THIS REPO. Ruled, and UNCHANGED: this panel ships
+// READ + COPY-PATCH; real writes route through a live soma session. The repo is being
+// prepared for publication and a published artifact must carry no write path.
+//
+// ✅ AMENDED 2026-08-12 (Curtis): a CAPABILITY-GATED, DORMANT edit affordance MAY live
+// here — the endpoint still may not. The write half lives only in
+// meetsoma/.soma/amps/scripts/soma-prism-serve.py, which is never published.
+//   why: keeping the affordance out too would force a SECOND copy of this file on the
+//   meetsoma side, tracking this one forever. Curtis: "we don't want to have to track
+//   or update in code." Purity here, paid for in drift, is the worse trade.
+//   The affordance is inert without a local --write server AND a per-session opt-in.
+//   Spec + gates: personal/prism/.soma/cycles/006-line-scoped-editing/cycle.md
 //
 // The projection indirection is UNCHANGED and deliberate: the pane renders
 // `<soma-artifact src=…>`, which dispatches to the artifact's OWN layout (cycle / arc /

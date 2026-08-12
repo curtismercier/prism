@@ -255,8 +255,27 @@ argument for it beyond leak-safety.
 
 ## Open questions
 
-1. 🔴 **Curtis: amend the `registry-detail.mjs` no-write ruling along the repo split above?** Nothing
-   starts until this is answered.
+1. ✅ **RESOLVED — Curtis, 2026-08-12: AMEND, along the repo split. G1 is unblocked.**
+   > *"yes i agree — we don't want to have to track or update in code."*
+
+   **The ruling now reads:** no PUT/POST **endpoint** enters `prism`, ever — that half stands
+   unchanged. A **capability-gated, dormant edit affordance** may. The write path lives only in
+   `meetsoma/.soma/amps/scripts/soma-prism-serve.py`.
+
+   **The deciding argument was drift, not purity.** Keeping the affordance out too would force a
+   second copy of `registry-detail.mjs` on the meetsoma side, tracking the published one forever.
+   **That is the two-surfaces failure this estate keeps paying for** — bridge vs somadian, four
+   DAG-ish surfaces, `personal/yoshi` vs its successor. Purity in the published repo, paid for in
+   drift, is the worse trade.
+
+   🔑 **What actually protects publication is that the ENDPOINT never exists there.** The worst case
+   for the shipped artifact is inert UI, not an exposure.
+
+   ⚡ **Tightening (mine, reversible, Curtis delegated the detail):** the capability probe must be an
+   **explicit per-session opt-in**, not merely "the server advertises write." ⇒ **G5 gains a third
+   assertion:** with the server started `--write` but no session opt-in, **the pencil still must not
+   render.** Otherwise dormant UI can wake up by accident the first time someone runs the local tool
+   for an unrelated reason.
 2. Does the pane write through to **disk only**, or also `git add`? The `.soma` auto-committer will
    pick it up either way — so probably disk only, and let the existing machinery do its job.
 3. **Beyond table rows** — list items and paragraphs can wrap across source lines, so they need a
