@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build/host decoupling — move image builds off the app host, add a local runner, eventual HA</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<article class="prism prism-cycle" data-type="cycle">
+    <header class="cycle-header">
+      <div class="cycle-title-row">
+        <h1>Build/host decoupling — move image builds off the app host, add a local runner, eventual HA <span class="cycle-no">#215</span></h1>
+        <span class="status status-drafted">drafted</span>
+      </div>
+      <div class="meta-row"><span class="meta-item"><span class="meta-label">created</span> 2026-05-12</span> · <span class="meta-item"><span class="meta-label">updated</span> 2026-08-12</span> · <span class="meta-item"><span class="meta-label">author</span> PRISM example fixture</span> · <span class="meta-item"><span class="meta-label">session</span> <code>example</code></span></div>
+      <div class="refs-row"><span class="ref-group"><span class="ref-label">depends on:</span> <span class="ref">cycle:162</span> <span class="ref">cycle:153</span></span> · <span class="ref-group"><span class="ref-label">companion:</span> <span class="ref">cycle:152</span> <span class="ref">cycle:165</span></span></div>
+      
+    </header>
+    <div class="cycle-body">
+      <nav class="toc" aria-label="Sections">
+    <a href="#section-trigger" class="toc-item">trigger</a><a href="#section-context" class="toc-item">context</a><a href="#section-phases" class="toc-item">phases</a><a href="#section-decisions-locked" class="toc-item">decisions-locked</a><a href="#section-decisions-to-surface" class="toc-item">decisions-to-surface</a><a href="#section-out-of-scope" class="toc-item">out-of-scope</a><a href="#section-outtake" class="toc-item">outtake</a><a href="#section-ruled-out" class="toc-item">ruled-out</a><a href="#section-scope-clarification" class="toc-item">scope-clarification</a><a href="#section-local-runner-spectrum" class="toc-item">local-runner-spectrum</a><a href="#section-parity-discipline" class="toc-item">parity-discipline</a>
+  </nav>
+      <main class="cycle-main">
+        <div class="preamble"><h1>Build/host decoupling — EX-INFRA cycle 215</h1>
+</div>
+        <section id="section-trigger" data-section="trigger">
+      <header class="section-header"><span class="section-tag">trigger</span></header>
+      <div class="section-body"><h2>Trigger</h2>
+<p>A routine dependency bump saturated the app host&#39;s CPU for eleven minutes. Nothing was
+lost, but every request served during the build was slow, and the incident review found
+the cause was structural rather than accidental: <strong>the machine that serves traffic is the
+machine that builds images.</strong> A build is a scheduled, self-inflicted load spike on the
+serving path.</p>
+</div>
+    </section>
+<section id="section-context" data-section="context">
+      <header class="section-header"><span class="section-tag">context</span></header>
+      <div class="section-body"><h2>Context — the architectural cost the outage exposed</h2>
+<p>One host runs the reverse proxy, three application containers, the job queue and the
+build tooling. That was the correct shape when the whole system was one container. It has
+survived three growth steps without anyone deciding it should.</p>
+<p>Three consequences, in increasing order of how much they cost:</p>
+<ol>
+<li><strong>Builds compete with requests.</strong> No cgroup limit is set, so a compile takes whatever
+it can reach.</li>
+<li><strong>A rollback needs a rebuild.</strong> Images are built in place and not retained, so
+&quot;roll back&quot; means &quot;build the previous commit again&quot; — the slowest possible action at
+the worst possible time.</li>
+<li><strong>There is exactly one of everything.</strong> The host is a single point of failure for
+serving, building and the queue simultaneously. Losing it is not a degraded mode.</li>
+</ol>
+</div>
+    </section>
+<section id="section-phases" data-section="phases">
+      <header class="section-header"><span class="section-tag">phases</span></header>
+      <div class="section-body"><h2>Phases (cheapest → most strategic)</h2>
+<!-- @section: phases.phase-0 -->
+<h3>Phase 0 — Now (zero infra change) ✅ already true</h3>
+<ul>
+<li>Builds are manual and announced, so the spike is at least predictable.</li>
+<li>Nightly filesystem snapshot to object storage; restore rehearsed once, 2026-03.</li>
+<li><strong>Nothing in this phase is a fix.</strong> It is the baseline the later phases are measured
+against.<!-- /@section: phases.phase-0 --></li>
+</ul>
+<!-- @section: phases.phase-1 -->
+<h3>Phase 1 — CI builds the image and pushes to a registry (the big single win)</h3>
+<ul>
+<li>Move the build to hosted CI; publish to a container registry on tag.</li>
+<li>The host&#39;s deploy step becomes <code>pull</code> + <code>up -d</code> — seconds, no compile.</li>
+<li><strong>Rollback becomes real</strong>: previous tags exist, so rolling back is a pull.</li>
+<li>Cost: one registry, roughly the price of a coffee per month at current image counts.</li>
+<li>⚠ Requires build secrets to move into CI. That is the entire risk of this phase and it
+is a well-trodden one.<!-- /@section: phases.phase-1 --></li>
+</ul>
+<!-- @section: phases.phase-2 -->
+<h3>Phase 2 — A local runner for development parity</h3>
+<ul>
+<li>A small always-on machine on the office network registers as a second runner.</li>
+<li>Developers get the production build path without contending for hosted CI minutes.</li>
+<li><strong>Not a production dependency.</strong> If it is off, hosted CI still serves every job. This
+boundary is what keeps the phase cheap; the moment production depends on the local
+runner, this becomes Phase 3 wearing a smaller label.<!-- /@section: phases.phase-2 --></li>
+</ul>
+<!-- @section: phases.phase-3 -->
+<h3>Phase 3 — Second host as warm standby (HA tier)</h3>
+<ul>
+<li>Identical stack, cold data replicated hourly, DNS ready to move.</li>
+<li>Manual failover, target 15 minutes. Automatic failover is explicitly NOT in this phase:
+a split-brain in the queue is worse than the outage it prevents.</li>
+<li>Doubles the hosting line item. Justified only once revenue depends on uptime rather
+than on the team being awake.<!-- /@section: phases.phase-3 --></li>
+</ul>
+<!-- @section: phases.phase-4 -->
+<h3>Phase 4 — Full replication (far horizon)</h3>
+<ul>
+<li>Active/active behind a load balancer, shared session store, replicated queue.</li>
+<li>Listed for completeness so that Phases 1–3 can be judged as steps toward something
+rather than as three unrelated purchases.<!-- /@section: phases.phase-4 --></li>
+</ul>
+</div>
+    </section>
+<section id="section-decisions-locked" data-section="decisions-locked">
+      <header class="section-header"><span class="section-tag">decisions-locked</span></header>
+      <div class="section-body"><h2>Decisions locked</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>decision</th>
+<th>why it is locked</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D1</td>
+<td>Registry is the artifact boundary</td>
+<td>every later phase assumes a pullable image</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>Tag on release, not on merge</td>
+<td>a tag per merge makes the registry the new mess</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>The local runner is never a production dependency</td>
+<td>it is the line between Phase 2 and Phase 3</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Manual failover in Phase 3</td>
+<td>automatic failover needs a leader election nobody has designed</td>
+</tr>
+</tbody></table>
+</div>
+    </section>
+<section id="section-decisions-to-surface" data-section="decisions-to-surface">
+      <header class="section-header"><span class="section-tag">decisions-to-surface</span></header>
+      <div class="section-body"><h2>Decisions to surface (before executing any phase)</h2>
+<ul>
+<li><strong>Secret custody.</strong> Build secrets must exist somewhere CI can read. Vault, CI-native
+store, or per-repo — this is a security decision, not a plumbing one.</li>
+<li><strong>Image retention.</strong> Keeping every tag forever is simple and eventually expensive.
+Retention policy should be chosen while the registry is empty.</li>
+<li><strong>Who owns the runner.</strong> A machine in an office with no named owner becomes nobody&#39;s
+problem at exactly the moment it becomes everybody&#39;s.</li>
+</ul>
+</div>
+    </section>
+<section id="section-out-of-scope" data-section="out-of-scope">
+      <header class="section-header"><span class="section-tag">out-of-scope</span></header>
+      <div class="section-body"><h2>Out of scope (this cycle)</h2>
+<ul>
+<li>Application code changes of any kind</li>
+<li>Database topology</li>
+<li>Anything about the queue beyond &quot;do not split-brain it&quot;</li>
+<li>Cost optimisation of the existing host</li>
+</ul>
+</div>
+    </section>
+<section id="section-outtake" data-section="outtake">
+      <header class="section-header"><span class="section-tag">outtake</span></header>
+      <div class="section-body"><h2>Out-take</h2>
+<p>The outage was eleven minutes and nothing was lost. The finding was not the outage — it
+was that <strong>nobody had ever decided the build and the serve should share a machine.</strong> It
+was true when it was correct, and stayed true after it stopped being correct.</p>
+<p><strong>A structure nobody chose is the hardest kind to notice</strong>, because there is no decision
+to revisit and no author to ask.</p>
+</div>
+    </section>
+<section id="section-ruled-out" data-section="ruled-out">
+      <header class="section-header"><span class="section-tag">ruled-out</span></header>
+      <div class="section-body"><h2>What ruled OUT</h2>
+<h3>Shared hosting with a build add-on</h3>
+<p>Cheaper on paper and rejected on three counts, any one of which is sufficient:</p>
+<table>
+<thead>
+<tr>
+<th>criterion</th>
+<th>shared hosting</th>
+<th>rejected because</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>container support</td>
+<td>none, or a wrapper</td>
+<td>the whole system is containers</td>
+</tr>
+<tr>
+<td>build isolation</td>
+<td>shared CPU pool</td>
+<td>this is the exact problem being solved</td>
+</tr>
+<tr>
+<td>rollback</td>
+<td>none</td>
+<td>Phase 1&#39;s main deliverable is impossible</td>
+</tr>
+</tbody></table>
+</div>
+    </section>
+<section id="section-scope-clarification" data-section="scope-clarification">
+      <header class="section-header"><span class="section-tag">scope-clarification</span></header>
+      <div class="section-body"><h2>Phase 1 scope clarification — the other images</h2>
+<p>The storefront is not the only thing built on the host. Two smaller images are built the
+same way and are easy to forget because they change rarely:</p>
+<ul>
+<li>the scheduled-jobs image, rebuilt on dependency bumps only</li>
+<li>the docs site, rebuilt on content changes</li>
+</ul>
+<p><strong>Both must move in Phase 1 or the host still needs the build toolchain</strong>, and the phase
+delivers a fraction of its value while carrying all of its risk. A phase that leaves the
+old path installed has not removed the old path.</p>
+</div>
+    </section>
+<section id="section-local-runner-spectrum" data-section="local-runner-spectrum">
+      <header class="section-header"><span class="section-tag">local-runner-spectrum</span></header>
+      <div class="section-body"><h2>Useful-local spectrum</h2>
+<p>The local runner can be anywhere on a spectrum, and naming the position prevents it from
+drifting up the list by accident:</p>
+<ol>
+<li><strong>Build cache only</strong> — no jobs, just a warm layer cache. Nearly free, nearly useless.</li>
+<li><strong>Development builds</strong> — the Phase 2 proposal. Real value, no production coupling.</li>
+<li><strong>Overflow capacity</strong> — takes hosted-CI spillover. Production now depends on it.</li>
+<li><strong>Primary builder</strong> — the office is now infrastructure.</li>
+</ol>
+<p><strong>Phase 2 is position 2 and stays there.</strong> Positions 3 and 4 are a different cycle with a
+different risk profile.</p>
+</div>
+    </section>
+<section id="section-parity-discipline" data-section="parity-discipline">
+      <header class="section-header"><span class="section-tag">parity-discipline</span></header>
+      <div class="section-body"><h2>Dev/prod parity discipline — gating prerequisite for Phase 2+</h2>
+<p>Before any local runner is trusted, the two paths must be provably the same:</p>
+<ul>
+<li>same base image digest, asserted in CI rather than assumed</li>
+<li>same build arguments, from one checked-in file</li>
+<li>a build produced locally and one produced in CI must yield <strong>identical image digests</strong></li>
+</ul>
+<p>⚠ <strong>If the digests differ, Phase 2 is not ready</strong> — a runner that produces a
+different-but-plausible image is worse than no runner, because the difference will be
+discovered during an incident.</p>
+</div>
+    </section>
+        
+      </main>
+    </div>
+  </article>
+</body>
+</html>

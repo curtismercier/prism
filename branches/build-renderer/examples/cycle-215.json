@@ -1,0 +1,61 @@
+{
+  "type": "cycle",
+  "frontmatter": {
+    "type": "cycle",
+    "cycle": 215,
+    "title": "Build/host decoupling — move image builds off the app host, add a local runner, eventual HA",
+    "status": "drafted",
+    "created": "2026-05-12",
+    "updated": "2026-08-12",
+    "author": "PRISM example fixture",
+    "session": "example",
+    "depends_on": [
+      "cycle:162",
+      "cycle:153"
+    ],
+    "companion": [
+      "cycle:152",
+      "cycle:165"
+    ],
+    "ticket_prefix": "EX-INFRA",
+    "spans_repos": [
+      "example-org/infra",
+      "example-org/storefront",
+      "example-org/services"
+    ],
+    "license": "CC BY 4.0",
+    "example_note": "SYNTHETIC FIXTURE. Every host, service, org and repo name here is invented.\nIt exists to give both renderer branches a realistic multi-section artifact to be\ncompared against — the comparison value is in the SHAPE (nested phases, decision\ntables, ruled-out options), which a synthetic document reproduces exactly.\n\nIt replaced a real internal infrastructure dossier on 2026-08-12. That artifact was\nthe right instinct for the comparison and the wrong thing to keep: a fixture is read\nby everyone who ever evaluates this tool, so it must be publishable BY CONSTRUCTION,\nnot by review. If you need a bigger fixture, GROW THIS ONE — do not reach for a real\ncycle again."
+  },
+  "sections": {
+    "trigger": "## Trigger\n\nA routine dependency bump saturated the app host's CPU for eleven minutes. Nothing was\nlost, but every request served during the build was slow, and the incident review found\nthe cause was structural rather than accidental: **the machine that serves traffic is the\nmachine that builds images.** A build is a scheduled, self-inflicted load spike on the\nserving path.",
+    "context": "## Context — the architectural cost the outage exposed\n\nOne host runs the reverse proxy, three application containers, the job queue and the\nbuild tooling. That was the correct shape when the whole system was one container. It has\nsurvived three growth steps without anyone deciding it should.\n\nThree consequences, in increasing order of how much they cost:\n\n1. **Builds compete with requests.** No cgroup limit is set, so a compile takes whatever\n   it can reach.\n2. **A rollback needs a rebuild.** Images are built in place and not retained, so\n   \"roll back\" means \"build the previous commit again\" — the slowest possible action at\n   the worst possible time.\n3. **There is exactly one of everything.** The host is a single point of failure for\n   serving, building and the queue simultaneously. Losing it is not a degraded mode.",
+    "phases": "## Phases (cheapest → most strategic)\n\n<!-- @section: phases.phase-0 -->\n### Phase 0 — Now (zero infra change) ✅ already true\n\n- Builds are manual and announced, so the spike is at least predictable.\n- Nightly filesystem snapshot to object storage; restore rehearsed once, 2026-03.\n- **Nothing in this phase is a fix.** It is the baseline the later phases are measured\n  against.\n<!-- /@section: phases.phase-0 -->\n\n<!-- @section: phases.phase-1 -->\n### Phase 1 — CI builds the image and pushes to a registry (the big single win)\n\n- Move the build to hosted CI; publish to a container registry on tag.\n- The host's deploy step becomes `pull` + `up -d` — seconds, no compile.\n- **Rollback becomes real**: previous tags exist, so rolling back is a pull.\n- Cost: one registry, roughly the price of a coffee per month at current image counts.\n- ⚠ Requires build secrets to move into CI. That is the entire risk of this phase and it\n  is a well-trodden one.\n<!-- /@section: phases.phase-1 -->\n\n<!-- @section: phases.phase-2 -->\n### Phase 2 — A local runner for development parity\n\n- A small always-on machine on the office network registers as a second runner.\n- Developers get the production build path without contending for hosted CI minutes.\n- **Not a production dependency.** If it is off, hosted CI still serves every job. This\n  boundary is what keeps the phase cheap; the moment production depends on the local\n  runner, this becomes Phase 3 wearing a smaller label.\n<!-- /@section: phases.phase-2 -->\n\n<!-- @section: phases.phase-3 -->\n### Phase 3 — Second host as warm standby (HA tier)\n\n- Identical stack, cold data replicated hourly, DNS ready to move.\n- Manual failover, target 15 minutes. Automatic failover is explicitly NOT in this phase:\n  a split-brain in the queue is worse than the outage it prevents.\n- Doubles the hosting line item. Justified only once revenue depends on uptime rather\n  than on the team being awake.\n<!-- /@section: phases.phase-3 -->\n\n<!-- @section: phases.phase-4 -->\n### Phase 4 — Full replication (far horizon)\n\n- Active/active behind a load balancer, shared session store, replicated queue.\n- Listed for completeness so that Phases 1–3 can be judged as steps toward something\n  rather than as three unrelated purchases.\n<!-- /@section: phases.phase-4 -->",
+    "phases.phase-0": "### Phase 0 — Now (zero infra change) ✅ already true\n\n- Builds are manual and announced, so the spike is at least predictable.\n- Nightly filesystem snapshot to object storage; restore rehearsed once, 2026-03.\n- **Nothing in this phase is a fix.** It is the baseline the later phases are measured\n  against.",
+    "phases.phase-1": "### Phase 1 — CI builds the image and pushes to a registry (the big single win)\n\n- Move the build to hosted CI; publish to a container registry on tag.\n- The host's deploy step becomes `pull` + `up -d` — seconds, no compile.\n- **Rollback becomes real**: previous tags exist, so rolling back is a pull.\n- Cost: one registry, roughly the price of a coffee per month at current image counts.\n- ⚠ Requires build secrets to move into CI. That is the entire risk of this phase and it\n  is a well-trodden one.",
+    "phases.phase-2": "### Phase 2 — A local runner for development parity\n\n- A small always-on machine on the office network registers as a second runner.\n- Developers get the production build path without contending for hosted CI minutes.\n- **Not a production dependency.** If it is off, hosted CI still serves every job. This\n  boundary is what keeps the phase cheap; the moment production depends on the local\n  runner, this becomes Phase 3 wearing a smaller label.",
+    "phases.phase-3": "### Phase 3 — Second host as warm standby (HA tier)\n\n- Identical stack, cold data replicated hourly, DNS ready to move.\n- Manual failover, target 15 minutes. Automatic failover is explicitly NOT in this phase:\n  a split-brain in the queue is worse than the outage it prevents.\n- Doubles the hosting line item. Justified only once revenue depends on uptime rather\n  than on the team being awake.",
+    "phases.phase-4": "### Phase 4 — Full replication (far horizon)\n\n- Active/active behind a load balancer, shared session store, replicated queue.\n- Listed for completeness so that Phases 1–3 can be judged as steps toward something\n  rather than as three unrelated purchases.",
+    "ruled-out": "## What ruled OUT\n\n### Shared hosting with a build add-on\n\nCheaper on paper and rejected on three counts, any one of which is sufficient:\n\n| criterion | shared hosting | rejected because |\n|---|---|---|\n| container support | none, or a wrapper | the whole system is containers |\n| build isolation | shared CPU pool | this is the exact problem being solved |\n| rollback | none | Phase 1's main deliverable is impossible |",
+    "decisions-locked": "## Decisions locked\n\n| # | decision | why it is locked |\n|---|---|---|\n| D1 | Registry is the artifact boundary | every later phase assumes a pullable image |\n| D2 | Tag on release, not on merge | a tag per merge makes the registry the new mess |\n| D3 | The local runner is never a production dependency | it is the line between Phase 2 and Phase 3 |\n| D4 | Manual failover in Phase 3 | automatic failover needs a leader election nobody has designed |",
+    "decisions-to-surface": "## Decisions to surface (before executing any phase)\n\n- **Secret custody.** Build secrets must exist somewhere CI can read. Vault, CI-native\n  store, or per-repo — this is a security decision, not a plumbing one.\n- **Image retention.** Keeping every tag forever is simple and eventually expensive.\n  Retention policy should be chosen while the registry is empty.\n- **Who owns the runner.** A machine in an office with no named owner becomes nobody's\n  problem at exactly the moment it becomes everybody's.",
+    "scope-clarification": "## Phase 1 scope clarification — the other images\n\nThe storefront is not the only thing built on the host. Two smaller images are built the\nsame way and are easy to forget because they change rarely:\n\n- the scheduled-jobs image, rebuilt on dependency bumps only\n- the docs site, rebuilt on content changes\n\n**Both must move in Phase 1 or the host still needs the build toolchain**, and the phase\ndelivers a fraction of its value while carrying all of its risk. A phase that leaves the\nold path installed has not removed the old path.",
+    "local-runner-spectrum": "## Useful-local spectrum\n\nThe local runner can be anywhere on a spectrum, and naming the position prevents it from\ndrifting up the list by accident:\n\n1. **Build cache only** — no jobs, just a warm layer cache. Nearly free, nearly useless.\n2. **Development builds** — the Phase 2 proposal. Real value, no production coupling.\n3. **Overflow capacity** — takes hosted-CI spillover. Production now depends on it.\n4. **Primary builder** — the office is now infrastructure.\n\n**Phase 2 is position 2 and stays there.** Positions 3 and 4 are a different cycle with a\ndifferent risk profile.",
+    "parity-discipline": "## Dev/prod parity discipline — gating prerequisite for Phase 2+\n\nBefore any local runner is trusted, the two paths must be provably the same:\n\n- same base image digest, asserted in CI rather than assumed\n- same build arguments, from one checked-in file\n- a build produced locally and one produced in CI must yield **identical image digests**\n\n⚠ **If the digests differ, Phase 2 is not ready** — a runner that produces a\ndifferent-but-plausible image is worse than no runner, because the difference will be\ndiscovered during an incident.",
+    "out-of-scope": "## Out of scope (this cycle)\n\n- Application code changes of any kind\n- Database topology\n- Anything about the queue beyond \"do not split-brain it\"\n- Cost optimisation of the existing host",
+    "outtake": "## Out-take\n\nThe outage was eleven minutes and nothing was lost. The finding was not the outage — it\nwas that **nobody had ever decided the build and the serve should share a machine.** It\nwas true when it was correct, and stayed true after it stopped being correct.\n\n**A structure nobody chose is the hardest kind to notice**, because there is no decision\nto revisit and no author to ask."
+  },
+  "preamble": "# Build/host decoupling — EX-INFRA cycle 215",
+  "trailer": "",
+  "references": {
+    "depends_on": [
+      "cycle:162",
+      "cycle:153"
+    ],
+    "companion": [
+      "cycle:152",
+      "cycle:165"
+    ],
+    "supersedes": null,
+    "parent": null
+  }
+}
