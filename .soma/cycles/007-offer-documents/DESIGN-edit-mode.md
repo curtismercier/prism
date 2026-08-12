@@ -7,7 +7,35 @@ parent: 007-offer-documents
 goal: answer whether cycle-dashboard and offer-harness edit modes are one mechanism, and design the smallest safe write path
 ---
 
-# Edit mode — design + review (read-only, not implemented)
+# Edit mode — design + review
+
+> ✅ **THE CYCLE-DASHBOARD HALF IS IMPLEMENTED — verified live 2026-08-12 (`s01-5390f1`).**
+> This doc still said "read-only, not implemented" and *"neither has a `do_POST`… zero hits"*.
+> Both were true when written and are not now. **I nearly rebuilt it from this doc.**
+>
+> `skills/prism/scripts/soma-prism-serve.py` ships `do_PUT /_write`, gated by `WRITE_ENABLED`
+> (`--write` / `PRISM_WRITE=1`), with `/_write` GET as the capability probe.
+>
+> **Driven, not read** — temp root, real server, four probes:
+>
+> | probe | result |
+> |---|---|
+> | `GET /_write` capability | `write: true` |
+> | real section edit | `200 ok` — and the byte landed on disk |
+> | **stale re-edit** (same `expected`, now absent) | **409** |
+> | **path escape** `../../../etc/hosts` | **403** |
+>
+> Concurrency is **content-based** (`expected`/`replacement`), not the `expectedMtime` this doc
+> proposed — a better choice: it survives a touch that changes no content.
+>
+> 🔑 **The lesson is about this doc, not the server.** A design doc that states the state of the
+> world is a MEASUREMENT with a timestamp, and it rots exactly like any other. *"Grepped both
+> files, zero hits"* was true and is now false, and nothing marked it. **A design's premises need
+> re-probing before you build on them — including when the design is your own team's, and recent.**
+>
+> ⚠ Still open: `soma-prism-serve.py --help` crashes (`int('--help')`) — arg parsing assumes argv[0]
+> is the port. And the startup self-check refuses any ROOT without the dashboard; the escape
+> (`PRISM_SERVE_SKIP_SELFCHECK=1`) is printed in the error, which is why it cost nothing.
 
 Verified live, this session: `:8910` = `python3 skills/prism/scripts/soma-prism-serve.py 8910 /Users/user/Gravicity`
 (pid 59118) · `:8899` = `python3 offer-serve.py . --port 8899` (pid 76877,
