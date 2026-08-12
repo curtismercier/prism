@@ -155,6 +155,104 @@ feature rather than a nicety.
 | `prism/branches/cdn-renderer/styles.css` | editor affordance styling |
 | `prism/branches/cdn-renderer/layouts/cycle.mjs` | stamp each rendered block with the source line that produced it |
 
+## 🆕 AGENT CONCURRENCY — the case this cycle does not yet cover (Curtis, 2026-08-12)
+
+> *"an agent may also be in the process of editing — so a user's edits need to be respectful to
+> current state, and where there is a conflict their edit/save would be initially blocked."*
+
+The CAS above solves **user vs disk**. It does not solve **user vs a live agent**, and the two differ:
+
+**1. 🔴 An agent's edit is not one write.** `N files = N edit calls`, and a failed multi-edit batch
+rolls back **entirely**. So a user can land a valid CAS write into the *middle* of an agent's
+sequence — every individual write consistent, the resulting file incoherent. **Line-level CAS cannot
+see a multi-file intention.**
+
+**2. `.soma` auto-commits ~every 60s.** An agent's intermediate state is committed before it is
+finished, so "committed" is not "settled". ⚠ Measured today: a truncated file was checkpointed
+empty within a minute, and `git checkout HEAD -- f` then restored **0 bytes**. **Recency of commit
+proves nothing about coherence.**
+
+**3. The agent is a stale cache too.** It may write from content it read minutes ago — the same
+failure the 409 protects the user from. **The rule must be symmetric: an AGENT write should also
+carry `expected` and take a 409.** Today a `write_text` with no such check destroyed a 364-line file.
+
+**4. A 409 has no UX for an agent.** A human sees the current text and re-decides. An agent needs a
+**machine-readable** conflict: current content + a hint of what changed, so it can re-read and retry
+rather than treat 409 as failure and give up (or worse, force).
+
+**5. Non-hypothetical, same day:** a librarian child was moving/archiving `.md` files in the
+workspace root while two orchestrators were live. **"Who else is editing right now" is a question the
+estate cannot currently answer** — `soma:agent.list` shows children, not what they hold open.
+
+### Sketch to argue with, not adopt
+
+- **Advisory intent, not a lock.** An agent about to edit declares `path + expected-duration`; the
+  pane shows *"an agent is editing this — save will be checked"*. **Advisory, because a real lock
+  will be orphaned by a killed pane** and then the estate needs lock-breaking, which is worse.
+- **Both sides use the same endpoint and the same `expected` check.** No privileged writer. If the
+  agent path bypasses CAS, the guarantee is decorative.
+- **Conflict returns a DIFF, not a rejection** — enough for either party to merge or re-decide.
+- ⚠ **Falsify with a real race**, not a unit test: land a user save mid-way through a scripted 3-file
+  agent edit and assert the file is coherent. **A test that serialises the two proves nothing.**
+
+## 🆕 COMMENT MODE — a second verb, not a variant of edit (Curtis, 2026-08-12)
+
+> *"the ability to edit OR comment on artifacts — which would land differently than an edit — maybe
+> a comment at the end of the line — these could then be used by the soma agent to update."*
+
+**Select a rendered line → attach a comment → it appends to that line in source → an agent reads the
+comments and actions them.** A review loop where the human annotates and the agent executes. This is
+the more valuable half: **editing asks a human to do the agent's job; commenting asks the human to do
+the part only they can do — decide.**
+
+### 🔴 The hazard to settle FIRST: a comment on a client-facing artifact can LEAK
+
+The motivating example is a line in the **offer harness** — which renders the **proposal**, a document
+that goes to the client. **An HTML comment is visible in view-source and survives export.**
+⚠ Precedent, same estate, this month: `gsc-28d-AS-IS-do-not-send.png` sat inside the client's own git
+repo. **Internal annotation reaching a client surface is a thing that has already happened here.**
+
+⇒ **Never write a comment into an artifact that ships.** Options, in order of preference:
+
+| approach | leaks? | survives an edit to the line? | notes |
+|---|---|---|---|
+| **Sidecar file, keyed by content-hash** | ✅ no | ✅ yes — rehash and re-anchor | `<artifact>.comments.json` beside the file, gitignored on client paths. **Recommended.** |
+| Inline `<!-- -->` in source | 🔴 **yes** for `.html`/rendered output | ❌ no — mutates the line | Curtis's literal sketch. Fine for a `.md` cycle, **not** for a proposal |
+| A separate review branch | ✅ no | ✅ | Heavy; a reviewer should not need git |
+
+🔑 **Split by artifact class, not by preference:** internal `.md` (cycles, notes) can take inline
+comments safely. **Anything that renders to a client takes a sidecar.** The same UI, two backends —
+and the artifact class decides, never the user.
+
+### Why comment mode collides with the CAS above — and why that is good
+
+**Appending a comment CHANGES THE LINE**, so any pending edit whose `expected` matched the old text
+now gets a **409**. That is correct behaviour and worth stating: *a comment is a write, and it takes
+part in the same conflict protocol.*
+⚠ But it means **a reviewer commenting can 409 an agent mid-edit** — the exact race in §AGENT
+CONCURRENCY. **A sidecar avoids this entirely** (the artifact is untouched), which is a second
+argument for it beyond leak-safety.
+
+### What the agent needs to consume them
+
+- **An anchor that survives reflow.** Line numbers rot; the CAS lesson applies — anchor on **content
+  hash of the line**, and on re-anchor failure surface the comment as *orphaned*, never drop it.
+  **A silently-dropped review comment is worse than no comment mode.**
+- **State per comment:** `open → actioned → dismissed`, with the actioning commit. Otherwise the agent
+  re-actions the same note every session — the `runs: 0` failure inverted.
+- **A comment is an INSTRUCTION, not prose.** *"tell me which address you actually watch"* is a
+  question to Curtis; *"change this to X"* is work. The agent must not guess — **unclear comment ⇒
+  ask, do not act.**
+
+### Open, and genuinely undecided
+
+- Does an agent mid-edit **block** a user save, or **warn** it? Blocking is safer and will be
+  resented; warning is honest and will be ignored. **Curtis's call — it is a UX ruling, not a
+  technical one.**
+- Same mode for the **offer preview/dashboard** (Curtis) →
+  `project-b/.soma/cycles/102-offer-dashboard-into-prism`. **Do not build a second editor** —
+  if that artifact renders through PRISM, it inherits this one.
+
 ## Open questions
 
 1. 🔴 **Curtis: amend the `registry-detail.mjs` no-write ruling along the repo split above?** Nothing

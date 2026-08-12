@@ -43,6 +43,30 @@ surface too.
   solved it with `no-store` and a manifest stamp. **Same problem, two solutions, neither shared.**
 - Both needed **version/variant selection**; the harness grew a dropdown, the registry grew filters.
 
+### 🆕 New evidence FOR, 2026-08-12: the bespoke server lied about its own state
+
+The offer dashboard 404'd everything and **nothing was broken** — not a file, not a reference.
+`deliverables/` moved from `clients/` to `internal/` (tenant-topology work), and a server started the
+previous evening had resolved its directory to an **absolute path string at startup**.
+
+🔑 **`lsof` showed the process's cwd following the inode to the NEW path — so it looked healthy while
+serving nothing.** Every static check passed: the harness is self-contained, `offer-serve.py` takes a
+directory argument and hardcodes nothing, `offer-versions.json` was present. **Only driving the real
+surface found it.** Fix was kill-and-restart.
+
+⇒ **A long-running bespoke server is a second source of truth about where files are, and it goes
+stale silently.** PRISM resolves per request; there is no startup-time path to rot. **This is the
+strongest argument in this cycle that is not about code duplication** — it is about a whole class of
+failure disappearing.
+
+⚠ **Make it an acceptance gate, because it is cheap and it falsifies the whole premise:**
+**move the artifact directory, reload the dashboard, it must still resolve.** If the PRISM version
+fails that, consolidating bought nothing.
+
+🔗 Sibling need: **cycle 78's RST-D2 dashboard** (restaurant, Curtis's stated priority loop-breaker).
+**One dashboard system should serve both** rather than each growing its own server — which is exactly
+how this one accreted.
+
 ## The evidence AGAINST, which is not weak
 
 - `soma-prism-serve.py` is **341 lines and bound to the cycle-registry corpus by name** — it
