@@ -44,10 +44,111 @@ export function buildDetailPane() {
          aria-label="resize preview pane" tabindex="0"></div>
     <div class="reg-detail-bar">
       <strong data-reg-detail-title></strong>
+      <button type="button" data-reg-edit-toggle class="reg-edit-toggle" hidden
+              title="cycle 006: opt in to line editing for this browser tab -- off by default, and a --write server alone does not turn it on">✎ editing off</button>
       <button type="button" data-reg-close class="reg-close">close ✕</button>
     </div>
     <div class="reg-detail-body" data-reg-detail-body></div>
   </aside>`;
+}
+
+// ── cycle 006: line-scoped editing ──────────────────────────────────────────
+//
+// The write ENDPOINT lives only in meetsoma/.soma/amps/scripts/soma-prism-serve.py
+// (never published -- see this file's header for the standing ruling + its
+// 2026-08-12 amendment). This half is the DORMANT, capability-gated affordance:
+// inert unless (1) the server was started --write AND (2) the reader clicked
+// the toggle THIS session. Neither alone is enough -- §Open questions item 1.
+
+const EDIT_SESSION_KEY = 'prism.edit-session';
+
+function escText(s) {
+  return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+// A `src="/meetsoma/.soma/cycles/x/cycle.md"` on <soma-artifact> is already
+// root-relative to the SAME root soma-prism-serve.py serves (it starts the
+// server FROM that root -- see its docstring). Stripping the leading slash is
+// therefore the whole conversion; no path math, no guessing.
+function toServerPath(src) {
+  const u = new URL(src, document.baseURI);
+  return decodeURIComponent(u.pathname).replace(/^\//, '');
+}
+
+let closeActiveRowEditor = null;
+
+function openRowEditor(tr, detailBody) {
+  if (closeActiveRowEditor) closeActiveRowEditor();
+  const raw = tr.dataset.srcLine;
+  const artEl = detailBody.querySelector('soma-artifact');
+  const src = artEl && artEl.getAttribute('src');
+  if (raw == null || !src) return;
+  const section = tr.closest('[data-section]')?.dataset.section || undefined;
+  const cols = tr.children.length || 1;
+
+  const editRow = document.createElement('tr');
+  editRow.className = 'reg-row-editor';
+  const td = document.createElement('td');
+  td.colSpan = cols;
+  td.innerHTML = `<div class="reg-edit-box">
+    <textarea class="reg-edit-textarea" rows="2" spellcheck="false">${escText(raw)}</textarea>
+    <div class="reg-edit-actions">
+      <button type="button" class="reg-edit-save">save</button>
+      <button type="button" class="reg-edit-cancel">cancel</button>
+    </div>
+    <pre class="reg-edit-status" hidden></pre>
+  </div>`;
+  editRow.appendChild(td);
+  tr.after(editRow);
+  tr.classList.add('reg-row-editing');
+
+  const ta = td.querySelector('.reg-edit-textarea');
+  const statusEl = td.querySelector('.reg-edit-status');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  const cleanup = () => { editRow.remove(); tr.classList.remove('reg-row-editing'); };
+  closeActiveRowEditor = cleanup;
+
+  td.querySelector('.reg-edit-cancel').addEventListener('click', cleanup);
+
+  td.querySelector('.reg-edit-save').addEventListener('click', async () => {
+    const replacement = ta.value;
+    statusEl.hidden = true;
+    let res, body;
+    try {
+      res = await fetch('/_write', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: toServerPath(src), expected: raw, replacement, section }),
+      });
+      body = await res.json().catch(() => ({}));
+    } catch (err) {
+      statusEl.hidden = false;
+      statusEl.textContent = `network error: ${err.message}`;
+      return;
+    }
+    if (res.status === 200) {
+      cleanup();
+      closeActiveRowEditor = null;
+      // Re-fetch + re-render from disk -- the same round trip a page reload would
+      // give (cycle.md §G6), without actually reloading the page.
+      artEl.render();
+      return;
+    }
+    statusEl.hidden = false;
+    if (res.status === 409 && body.error === 'ambiguous') {
+      statusEl.textContent = `refused (409 ambiguous) -- this exact line appears ${body.count}× in this section. Narrow it with more context, or edit the source directly.`;
+    } else if (res.status === 409) {
+      statusEl.textContent = `refused (409 stale) -- this line changed on disk since you opened it.\nCurrent text:\n${body.current || '(unknown)'}`;
+    } else if (res.status === 403) {
+      statusEl.textContent = 'refused (403) -- path escapes the served root.';
+    } else if (res.status === 404) {
+      statusEl.textContent = 'refused (404) -- this server was not started with --write, or /_write is unreachable.';
+    } else {
+      statusEl.textContent = `refused (${res.status}): ${body.error || 'unknown error'}`;
+    }
+  });
 }
 
 /**
@@ -64,9 +165,57 @@ export function attachDetail(wrap, esc) {
   const detailBody = wrap.querySelector('[data-reg-detail-body]');
   const detailTitle = wrap.querySelector('[data-reg-detail-title]');
   const closeBtn = wrap.querySelector('[data-reg-close]');
+  const editToggle = wrap.querySelector('[data-reg-edit-toggle]');
   if (!detail) return { open() {}, close() {}, isOpen: () => false };
 
   const isOpen = () => !detail.hidden;
+
+  // cycle 006: per-SESSION opt-in (sessionStorage — gone when the tab closes), never a
+  // preference a --write server's mere existence can flip on. Restoring `true` from an
+  // earlier click THIS tab is still an opt-in this session; a fresh tab always starts false.
+  let editSessionActive = sessionStorage.getItem(EDIT_SESSION_KEY) === '1';
+
+  function paintEditToggle() {
+    if (!editToggle) return;
+    editToggle.textContent = editSessionActive ? '✎ editing ON' : '✎ editing off';
+    editToggle.classList.toggle('reg-edit-on', editSessionActive);
+    wrap.classList.toggle('reg-edit-session', editSessionActive);
+  }
+
+  if (editToggle) {
+    editToggle.hidden = false;
+    paintEditToggle();
+    editToggle.addEventListener('click', async () => {
+      if (editSessionActive) {
+        editSessionActive = false;
+        sessionStorage.removeItem(EDIT_SESSION_KEY);
+        if (closeActiveRowEditor) { closeActiveRowEditor(); closeActiveRowEditor = null; }
+        paintEditToggle();
+        return;
+      }
+      // The probe fires HERE, on a real click, and nowhere else — never on page load,
+      // never merely because a --write server exists to be asked. Third G5 assertion
+      // (cycle.md §Open questions item 1): server advertising write ≠ session opt-in.
+      editToggle.disabled = true;
+      try {
+        const res = await fetch('/_write', { cache: 'no-store' });
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 200 && body.write === true) {
+          editSessionActive = true;
+          sessionStorage.setItem(EDIT_SESSION_KEY, '1');
+        } else {
+          editToggle.textContent = '✎ not writable';
+          setTimeout(paintEditToggle, 1600);
+        }
+      } catch {
+        editToggle.textContent = '✎ offline';
+        setTimeout(paintEditToggle, 1600);
+      } finally {
+        editToggle.disabled = false;
+        paintEditToggle();
+      }
+    });
+  }
 
   function open() {
     detail.hidden = false;
@@ -80,9 +229,20 @@ export function attachDetail(wrap, esc) {
     detail.hidden = true;
     wrap.classList.remove('reg-detail-open');
     detailBody.innerHTML = '';
+    if (closeActiveRowEditor) { closeActiveRowEditor(); closeActiveRowEditor = null; }
   }
 
   wrap.addEventListener('click', (e) => {
+    // cycle 006: row editor takes priority. A `[data-src-line]` only ever appears on a
+    // <tr> already INSIDE the open detail pane's rendered content, so this cannot
+    // shadow the registry-list click handling below it.
+    if (editSessionActive) {
+      const srcRow = e.target.closest('[data-src-line]');
+      if (srcRow && detailBody.contains(srcRow) && !srcRow.classList.contains('reg-row-editing')) {
+        openRowEditor(srcRow, detailBody);
+        return;
+      }
+    }
     // Artifacts split by whether PRISM can PROJECT them.
     //
     // A .md sibling is the same species as the cycle.md next to it -- frontmatter plus

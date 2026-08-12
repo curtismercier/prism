@@ -65,6 +65,47 @@ function renderMd(md, base) {
 
 const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'section';
 
+// cycle 006 (line-scoped-editing): stamp each rendered TABLE BODY ROW with the
+// literal raw source line that produced it -- the content-addressed `expected`
+// PUT /_write needs later. GFM: line 1 of a table is the header, line 2 the
+// `---` delimiter, everything after is one source line per body row -- so raw
+// body lines zip 1:1 against rendered `<tbody><tr>` elements, IN ORDER, per
+// table. Line NUMBERS are never used or stored; the raw TEXT is the address.
+//
+// This only runs on markdown that HAS tables (measured: 99.19% of cycle.md
+// table rows are uniquely addressable by content alone -- see cycle.md §The 87
+// for the non-unique 0.81%, which G3 exists to refuse rather than guess at).
+function stampTableSourceLines(html, rawMd) {
+  if (!rawMd || !html.includes('<table')) return html;
+  const lines = rawMd.split('\n');
+  const isRow = l => /^\s*\|.*\|\s*$/.test(l);
+  const isDelim = l => /^\s*\|?[\s:-]+\|[\s:|-]*\|?\s*$/.test(l);
+  const tableBodies = []; // raw body-row text, one array per table found in source order
+  for (let i = 0; i < lines.length; i++) {
+    if (isRow(lines[i]) && i + 1 < lines.length && isDelim(lines[i + 1])) {
+      const body = [];
+      let j = i + 2;
+      while (j < lines.length && isRow(lines[j])) { body.push(lines[j]); j++; }
+      tableBodies.push(body);
+      i = j - 1;
+    }
+  }
+  if (tableBodies.length === 0) return html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('table').forEach((table, ti) => {
+    const raw = tableBodies[ti];
+    if (!raw) return;
+    table.querySelectorAll('tbody tr').forEach((tr, ri) => {
+      // Fewer rendered rows than raw is possible (marked can drop a malformed
+      // row); more rendered than raw should not happen. Either way: stamp only
+      // what has a matching raw line -- an unstamped row has no `data-src-line`
+      // and the editor (registry-detail.mjs) simply will not offer it.
+      if (ri < raw.length) tr.setAttribute('data-src-line', raw[ri]);
+    });
+  });
+  return doc.body.innerHTML;
+}
+
 // Derive sections from `## ` headings for documents that carry no @section anchors.
 // This is a VIEWER affordance, not a spec behaviour: the PRISM parser stays
 // anchor-only, so conformance is unchanged. Fenced code is tracked so a `## ` inside
@@ -185,9 +226,14 @@ export function renderCycle({ frontmatter: fm, sections, preamble, trailer, srcU
     const content = sections.get(name);
     const hAnchor = `section-${name}`;
     const label = titles.get(name) || name;
+    // Only real @section anchors are stable write addresses (cycle.md §Spec) --
+    // a DERIVED (heading-based) section has no anchor to send as `section:` in a
+    // PUT, so stamping it would offer editing on an address the server cannot
+    // narrow by. Row edits on a derived doc still work; `section` is just omitted.
+    const body = derived ? renderMd(content, srcUrl) : stampTableSourceLines(renderMd(content, srcUrl), content);
     return `<section id="${escape(hAnchor)}" data-section="${escape(name)}"${derived ? ' data-derived="true"' : ''}>
       <header class="section-header"><span class="section-tag">${escape(label)}</span></header>
-      <div class="section-body">${renderMd(content, srcUrl)}</div>
+      <div class="section-body">${body}</div>
     </section>`;
   }).join('\n');
 

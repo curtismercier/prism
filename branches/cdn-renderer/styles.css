@@ -767,6 +767,33 @@ body { background: var(--prism-bg); color: var(--prism-fg); font-family: var(--p
 .reg-close { margin-left: auto; padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border);
   background: var(--prism-surface-input); border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); color: var(--prism-muted); }
 
+/* ── cycle 006: line-scoped editing ──────────────────────────────────────── */
+.reg-edit-toggle { padding: var(--prism-sp-2) var(--prism-sp-4); border: 1px solid var(--prism-border);
+  background: var(--prism-surface-input); border-radius: var(--prism-r-sm); cursor: pointer; font: inherit;
+  font-size: var(--prism-text-12); color: var(--prism-muted); }
+.reg-edit-toggle.reg-edit-on { color: var(--prism-accent); border-color: var(--prism-accent); }
+.reg-edit-toggle:disabled { opacity: .55; cursor: default; }
+
+/* Pencil affordance only appears once a session has opted in -- a row is never
+   hinted as editable on a merely-writable server (cycle.md §Open questions item 1). */
+.reg-edit-session [data-src-line] { cursor: pointer; }
+.reg-edit-session [data-src-line]:hover { background: var(--prism-surface-hover); }
+.reg-edit-session [data-src-line]:hover::after { content: '✎'; opacity: .6; margin-left: var(--prism-sp-2); }
+.reg-row-editing { outline: 1px dashed var(--prism-accent); outline-offset: -1px; }
+
+.reg-row-editor td { padding: var(--prism-sp-3) var(--prism-sp-2) !important; background: var(--prism-surface); }
+.reg-edit-box { display: flex; flex-direction: column; gap: var(--prism-sp-3); }
+.reg-edit-textarea { width: 100%; box-sizing: border-box; resize: vertical; font-family: var(--prism-mono);
+  font-size: var(--prism-text-12); padding: var(--prism-sp-3); border: 1px solid var(--prism-border);
+  border-radius: var(--prism-r-sm); background: var(--prism-surface-input); color: var(--prism-fg); }
+.reg-edit-actions { display: flex; gap: var(--prism-sp-3); }
+.reg-edit-actions button { padding: var(--prism-sp-2) var(--prism-sp-5); border: 1px solid var(--prism-border);
+  border-radius: var(--prism-r-sm); cursor: pointer; font: inherit; font-size: var(--prism-text-12); }
+.reg-edit-save { background: var(--prism-accent); color: var(--prism-bg); border-color: var(--prism-accent) !important; }
+.reg-edit-cancel { background: var(--prism-surface-input); color: var(--prism-muted); }
+.reg-edit-status { white-space: pre-wrap; font-family: var(--prism-mono); font-size: var(--prism-text-11);
+  color: var(--prism-accent); background: transparent; margin: 0; }
+
 /* Narrow screens have no room beside the list, so the panel becomes a bottom
    sheet -- still out of flow, still leaves the list where it was. */
 @media (max-width: 800px) {
