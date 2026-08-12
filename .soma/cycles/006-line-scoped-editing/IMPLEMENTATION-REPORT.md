@@ -190,3 +190,5 @@ text — is unverified.
   Server-side file (`meetsoma/.soma/amps/scripts/soma-prism-serve.py`) is in meetsoma's own `.soma/`,
   which auto-commits itself; it is not part of this git branch/commit.
 - Test fixture + logs: `/tmp/prism-006-test/` (scratch, not committed anywhere — gone on reboot).
+- Server-side commit: `meetsoma/.soma` auto-committed `soma-prism-serve.py` at checkpoint `73700003b`
+  (2026-08-12T16:01:01Z), confirmed via `git diff HEAD` returning empty against the working file.
