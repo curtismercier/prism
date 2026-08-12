@@ -3,6 +3,7 @@ type: cycle
 n: 007
 name: offer-documents
 status: seeded
+status_note: "🔴 BLOCKED ON A PREREQUISITE IN ANOTHER LANE (recorded s01-5390f1). Design is DONE — `DESIGN-edit-mode.md`, now committed (was untracked). Its verdict: **do not build offer-harness edit mode yet** — `build_offer.js` takes the offer config as an EPHEMERAL CLI argv, not a file; `sources/` holds only an HTML snapshot and a brief. There is nothing to write to, so building it means editing GENERATED OUTPUT, which is the bug this cycle exists to fix. ⇒ Unblocker = persist the offer config as a file, and that lives in `yoshi-platform` (s01-dd1dfa's lane), not here. The cycle-dashboard half IS ready and is prism's to build."
 created: 2026-08-11
 session: s01-93e7ac@meetsoma
 opened_by: Curtis — "this could become a new dashboard / plugin for the prism dashboard system — this actually kinda brings it back to the original idea of the prism, which there is some drift since, it's more of a cycle dashboard"
