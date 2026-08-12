@@ -36,6 +36,22 @@ goal: answer whether cycle-dashboard and offer-harness edit modes are one mechan
 > ⚠ Still open: `soma-prism-serve.py --help` crashes (`int('--help')`) — arg parsing assumes argv[0]
 > is the port. And the startup self-check refuses any ROOT without the dashboard; the escape
 > (`PRISM_SERVE_SKIP_SELFCHECK=1`) is printed in the error, which is why it cost nothing.
+>
+> 🟢 **AND THE OTHER HALF IS UNBLOCKED TOO — §"What I would not build" item 3 is now VOID.**
+> *"Not offer-harness edit mode yet — there is no persisted source to write to"* was the correct
+> call **when written**. `build_offer.js` now accepts a config **PATH** (`yoshi@4f56598`; verified
+> at source, `:124` — inline still works, `{` vs path). There IS a persisted source.
+>
+> **How it got fixed is the part worth keeping:** this doc's blocker was passed forward as a block
+> message, `s01-dd1dfa` handed it to their successor, and `s01-4c1557` shipped it mid-session —
+> *"unblocks a peer's prism edit mode"*, with a differential (inline vs path → byte-identical HTML)
+> and a real-file reproduction. **The peer relay worked exactly as designed.**
+>
+> 🔴 **What did NOT work was me.** I re-read this doc, treated its premises as current, wrote
+> "BLOCKED" into cycle 007, and sent a peer a letter about a blocker they had already closed —
+> hours late. I probed prism's server and found it built; I did **not** apply the same probe to
+> `build_offer.js` and assumed it unchanged. **Inconsistent rigor inside one investigation is
+> worse than none: the half I checked made me trust the half I did not.**
 
 Verified live, this session: `:8910` = `python3 skills/prism/scripts/soma-prism-serve.py 8910 /Users/user/Gravicity`
 (pid 59118) · `:8899` = `python3 offer-serve.py . --port 8899` (pid 76877,

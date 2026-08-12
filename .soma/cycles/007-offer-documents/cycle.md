@@ -3,7 +3,7 @@ type: cycle
 n: 007
 name: offer-documents
 status: seeded
-status_note: "🔴 BLOCKED ON A PREREQUISITE IN ANOTHER LANE (recorded s01-5390f1). Design is DONE — `DESIGN-edit-mode.md`, now committed (was untracked). Its verdict: **do not build offer-harness edit mode yet** — `build_offer.js` takes the offer config as an EPHEMERAL CLI argv, not a file; `sources/` holds only an HTML snapshot and a brief. There is nothing to write to, so building it means editing GENERATED OUTPUT, which is the bug this cycle exists to fix. ⇒ Unblocker = persist the offer config as a file, and that lives in `yoshi-platform` (s01-dd1dfa's lane), not here. The cycle-dashboard half IS ready and is prism's to build."
+status_note: "🟢 BOTH HALVES UNBLOCKED — corrected s01-5390f1 after Curtis pointed at s01-4c1557's log. (1) cycle-dashboard: `do_PUT /_write` SHIPPED in `soma-prism-serve.py`, driven live — 200+disk, 409 stale, 403 escape. (2) offer harness: `build_offer.js` now takes a config PATH (`yoshi@4f56598`, verified at source :124 — inline still works, `{` vs path). ⚠ I recorded BLOCKED here hours after both were fixed: the block message had been passed forward and dd1dfa's successor shipped the unblocker mid-session. **I read this cycle's own design doc as current instead of probing the artifact.** Next step is to BUILD offer edit mode on the persisted config, not to wait."
 created: 2026-08-11
 session: s01-93e7ac@meetsoma
 opened_by: Curtis — "this could become a new dashboard / plugin for the prism dashboard system — this actually kinda brings it back to the original idea of the prism, which there is some drift since, it's more of a cycle dashboard"
